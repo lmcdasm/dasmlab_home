@@ -1,102 +1,86 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <!-- Top Toolbar -->
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-
+        <q-btn flat dense round icon="menu" @click="leftDrawerOpen = !leftDrawerOpen" aria-label="Menu" />
         <q-toolbar-title>
-          Quasar App
+          DASMLAB Home Page
         </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
+    <!-- Sidebar Navigation -->
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
+        <q-item-label header class="text-bold text-primary">DASMLAB.org</q-item-label>
 
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
+        <q-item clickable to="/about" v-ripple>
+          <q-item-section avatar><q-icon name="school" /></q-item-section>
+          <q-item-section>About DASMLAB.org</q-item-section>
+        </q-item>
+
+        <q-item clickable tag="a" href="https://github.com/lmcdasm" target="_blank" v-ripple>
+          <q-item-section avatar><q-icon name="code" /></q-item-section>
+          <q-item-section>GitHub</q-item-section>
+        </q-item>
+
+        <q-separator spaced />
+
+        <q-item-label header class="text-bold text-primary">Projects</q-item-label>
+
+	<q-item clickable to="/projects/frontend" v-ripple>
+  		<q-item-section avatar><q-icon name="web" /></q-item-section>
+  		<q-item-section>Frontend Projects</q-item-section>
+	</q-item>
+
+	<q-item clickable to="/projects/backend" v-ripple>
+  		<q-item-section avatar><q-icon name="storage" /></q-item-section>
+  		<q-item-section>Backend Projects</q-item-section>
+	</q-item>
+
+	<q-item clickable to="/projects/ai-ml" v-ripple>
+  		<q-item-section avatar><q-icon name="psychology" /></q-item-section>
+  		<q-item-section>AI/ML Projects</q-item-section>
+	</q-item>
+
+	<q-item clickable to="/projects/cloud" v-ripple>
+  		<q-item-section avatar><q-icon name="cloud" /></q-item-section>
+  		<q-item-section>Cloud Provider Projects</q-item-section>
+	</q-item>
+
+	<q-item clickable to="/projects/infrastructure" v-ripple>
+  		<q-item-section avatar><q-icon name="dns" /></q-item-section>
+  		<q-item-section>Infrastructure Projects</q-item-section>
+	</q-item>
+
+	<q-item clickable to="/projects/security" v-ripple>
+  		<q-item-section avatar><q-icon name="security" /></q-item-section>
+  		<q-item-section>Security Projects</q-item-section>
+	</q-item>
+
+        <q-separator spaced />
+
+        <q-item clickable to="/contact" v-ripple>
+          <q-item-section avatar><q-icon name="mail" /></q-item-section>
+          <q-item-section>Contact</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- Footer -->
+    <q-footer class="bg-primary text-white text-center q-pa-sm">
+           © 2025 DASMLAB Inc. All rights reserved.
+    </q-footer>
   </q-layout>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
-
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-]
-
-const leftDrawerOpen = ref(false)
-
-function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
+import { ref } from 'vue';
+const leftDrawerOpen = ref(true);
 </script>
+
