@@ -64,13 +64,28 @@ jobs:
 
         git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab_live_cicd.git
 
-        mkdir -p dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home
-        cp generated.yaml dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home/dasmlab-home-${VERSION_TAG}.yaml
+        TARGET_DIR=dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home
+        ARCHIVE_DIR="${TARGET_DIR}/.archive"
+        NEW_MANIFEST="${TARGET_DIR}/dasmlab-home-${VERSION_TAG}.yaml"
+        CURRENT_MANIFEST="${TARGET_DIR}/current.yaml"
+
+        mkdir -p "$ARCHIVE_DIR"
+
+        # Archive existing manifest if any
+        if [ -f "$CURRENT_MANIFEST" ]; then
+          OLD_HASH=$(sha256sum "$CURRENT_MANIFEST" | cut -d' ' -f1)
+          mv "$CURRENT_MANIFEST" "${ARCHIVE_DIR}/archived-${OLD_HASH}.yaml"
+        fi
+
+        # Move in new manifest
+        cp generated.yaml "$NEW_MANIFEST"
+        cp "$NEW_MANIFEST" "$CURRENT_MANIFEST"
 
         cd dasmlab_live_cicd
         git add .
-        git commit -m "Auto-publish dasmlab-home ${VERSION_TAG}"
+        git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} and archive previous manifest"
         git push
+
 
     - name: Teardown (Clean Containers & Network)
       if: always()
