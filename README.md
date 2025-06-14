@@ -96,7 +96,7 @@ lmcdasm/dasmlab_live_cicd/
         └── dasmlab_home/<tagged_manifest>.yaml
 ```
 
- See: [DASMLAB LIVE CICD REPO] (https://github.com/lmcdasm/dasmlab_live_cicd)
+ See: [DASMLAB LIVE CICD REPO](https://github.com/lmcdasm/dasmlab_live_cicd)
 
 This GitOps target repo is picked up by **FluxCD** or **ArgoCD**, which applies the deployment to the live cluster.
 
