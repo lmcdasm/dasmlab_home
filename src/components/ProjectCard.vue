@@ -34,17 +34,24 @@
       </template>
     </div>
 
-    <!-- Tutorial button (inline modal popup planned later) -->
-    <div v-if="tutoUrl" class="q-mt-sm">
-      <q-btn color="accent" label="View Tutorial" :href="tutoUrl" target="_blank" flat />
+    <!-- Tutorial Link -->
+    <div v-if="tutoUrl" class="q-mt-sm text-caption">
+      <q-icon name="school" class="q-mr-xs" />
+      <span class="text-grey-9">Tutorial:</span>
+      <a href="#" class="text-secondary" @click.prevent="showTutorial">
+        View Tutorial
+      </a>
     </div>
   </q-card>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useQuasar } from 'quasar'
+import TutorialPlayer from './TutorialPlayer.vue' // adjust if needed
 
-defineProps({
+// ✅ This defines the incoming props
+const props = defineProps({
   title: String,
   description: String,
   url: String,
@@ -54,9 +61,23 @@ defineProps({
   tutoUrl: String
 })
 
-const isVisible = ref(false)
+// ✅ Access Quasar Dialog plugin
+const $q = useQuasar()
 
-// ESLint-safe scroll trigger
+// ✅ Show tutorial modal (called on link click)
+const showTutorial = () => {
+  if (!props.tutoUrl) return
+
+  $q.dialog({
+    component: TutorialPlayer,
+    componentProps: {
+      tutorialUrl: props.tutoUrl
+    }
+  })
+}
+
+// ✅ Fade-in effect
+const isVisible = ref(false)
 function onScroll() {
   isVisible.value = true
 }
