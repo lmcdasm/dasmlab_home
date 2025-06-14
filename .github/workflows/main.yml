@@ -1,4 +1,4 @@
-name: Dasmlab Home Cx Pipeline (Continuous Develop, Deploy, Secure, Validate and Publish)
+name: Dasmlab Home CX Pipeline (Isolated Builds with Docker Networks)
 
 on:
   push:
@@ -12,34 +12,49 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
+    - name: Setup Build Metadata
+      id: vars
+      run: |
+        echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "VERSION_TAG=v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "NETWORK_NAME=dasmlab-net-${GITHUB_SHA::8}" >> $GITHUB_ENV
+        echo "IMAGE_TAG=dasmlab-home_image:${GITHUB_SHA::8}" >> $GITHUB_ENV
+        echo "CONTAINER_NAME=dasmlab-home_instance-${GITHUB_SHA::8}" >> $GITHUB_ENV
+
     - name: Build Phase
       run: |
-        docker build -t dasmlab-home_image:scratch .
+        docker build -t $IMAGE_TAG .
 
-    - name: Run Phase
+    - name: Create Isolated Docker Network
       run: |
-        docker run -d --name temp-instance dasmlab-home_image:scratch
+        docker network create $NETWORK_NAME || true
+
+    - name: Run Phase (App Container)
+      run: |
+        docker rm -f $CONTAINER_NAME 2>/dev/null || true
+        docker run -d --name $CONTAINER_NAME --network $NETWORK_NAME $IMAGE_TAG
         sleep 5
-        curl -f http://localhost:8080 || (echo "Container failed to start" && exit 1)
+        docker exec $CONTAINER_NAME curl -f http://localhost:80 || (echo "App failed health check" && exit 1)
 
     - name: Secure Phase (Stub)
       run: |
-        echo "Run SAST/DAST tools here"
+        echo "Run SAST/DAST tools here using $CONTAINER_NAME on $NETWORK_NAME"
+        # docker run --rm --network $NETWORK_NAME dasmlab-security-suite:latest
         exit 0
 
-    - name: Test Phase (Selenium & Cucumber Stubs)
+    - name: Test Phase (Stub)
       run: |
-        echo "Run Selenium / Cucumber / Playwright etc here"
+        echo "Run Selenium/Playwright/etc against $CONTAINER_NAME on $NETWORK_NAME"
+        # docker run --rm --network $NETWORK_NAME dasmlab-test-suite:latest
         exit 0
 
     - name: Publish Phase
       run: |
-        docker tag dasmlab-image:latest registry.dasmlab.org/dasmlab-home:latest
-        docker push registry.dasmlab.org/dasmlab-home:latest
+        docker tag $IMAGE_TAG registry.dasmlab.org/dasmlab-home:${VERSION_TAG}
+        docker push registry.dasmlab.org/dasmlab-home:${VERSION_TAG}
 
     - name: GitOps Sync (Deploy) Phase
       run: |
-        export VERSION_TAG="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
         sed "s|__VERSION__|${VERSION_TAG}|g" k8s_envelope/dasmlab-home_deploy.yaml > generated.yaml
 
         git config --global user.name "dasmlab-bot"
@@ -54,4 +69,10 @@ jobs:
         git add .
         git commit -m "Auto-publish dasmlab-home ${VERSION_TAG}"
         git push
+
+    - name: Teardown (Clean Containers & Network)
+      if: always()
+      run: |
+        docker rm -f $CONTAINER_NAME || true
+        docker network rm $NETWORK_NAME || true
 
