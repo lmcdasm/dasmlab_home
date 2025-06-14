@@ -64,26 +64,20 @@ jobs:
 
         git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab_live_cicd.git
 
-        TARGET_DIR=dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home
-        ARCHIVE_DIR="${TARGET_DIR}/.archive"
-        NEW_MANIFEST="${TARGET_DIR}/dasmlab-home-${VERSION_TAG}.yaml"
-        CURRENT_MANIFEST="${TARGET_DIR}/current.yaml"
-
+        DEPLOY_DIR="dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home"
+        ARCHIVE_DIR="$DEPLOY_DIR/.archived"
         mkdir -p "$ARCHIVE_DIR"
 
-        # Archive existing manifest if any
-        if [ -f "$CURRENT_MANIFEST" ]; then
-          OLD_HASH=$(sha256sum "$CURRENT_MANIFEST" | cut -d' ' -f1)
-          mv "$CURRENT_MANIFEST" "${ARCHIVE_DIR}/archived-${OLD_HASH}.yaml"
-        fi
+        # Move old versioned manifests into archive folder (preserve current.yaml)
+        find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -exec mv {} "$ARCHIVE_DIR"/ \;
 
-        # Move in new manifest
-        cp generated.yaml "$NEW_MANIFEST"
-        cp "$NEW_MANIFEST" "$CURRENT_MANIFEST"
+        # Save current version as both current.yaml and version-tagged file
+        cp generated.yaml "$DEPLOY_DIR/current.yaml"
+        cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
 
         cd dasmlab_live_cicd
         git add .
-        git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} and archive previous manifest"
+        git commit -m "Auto-publish dasmlab-home ${VERSION_TAG}"
         git push
 
 
