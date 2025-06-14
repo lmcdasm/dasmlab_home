@@ -62,10 +62,10 @@ jobs:
         git config --global user.name "dasmlab-bot"
         git config --global user.email "ci@dasmlab.org"
 
-        git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab_live_cicd.git
+        git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab-live-cicd.git
 
-        DEPLOY_DIR="dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home"
-        ARCHIVE_DIR="$DEPLOY_DIR/.archived"
+        DEPLOY_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab_home/live"
+        ARCHIVE_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab_home/archived"
         mkdir -p "$ARCHIVE_DIR"
 
         # Move all old versioned manifests into archive (just keep latest clean)
@@ -74,7 +74,7 @@ jobs:
         # Save only new versioned file (Flux watches this)
         cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
 
-        cd dasmlab_live_cicd
+        cd dasmlab-live-cicd
         git add .
         git commit -m "Auto-publish dasmlab-home ${VERSION_TAG}"
         git push
