@@ -33,6 +33,11 @@
         <span class="text-grey-6 q-ml-xs">Coming soon</span>
       </template>
     </div>
+
+    <!-- Tutorial button (inline modal popup planned later) -->
+    <div v-if="tutoUrl" class="q-mt-sm">
+      <q-btn color="accent" label="View Tutorial" :href="tutoUrl" target="_blank" flat />
+    </div>
   </q-card>
 </template>
 
@@ -45,7 +50,8 @@ defineProps({
   url: String,
   language: String,
   badge: String,
-  liveUrl: String
+  liveUrl: String,
+  tutoUrl: String
 })
 
 const isVisible = ref(false)

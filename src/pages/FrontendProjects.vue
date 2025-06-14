@@ -10,6 +10,8 @@
      	 :url="project.url"
      	 :language="project.language"
      	 :badge="project.badge"
+         :liveUrl="project.liveUrl"
+         :tutoUrl="project.tutoUrl"
     	/>
   </q-page>
 </template>
@@ -32,7 +34,10 @@ const projects = [
     description: 'A programmatic tutorial generator for dasmlab projects, blending animation, narration, and branding — all defined in YAML. Each tutorial helps explain complex devops, GitOps, or AI workflows in a visual, animated, and reusable way.',
     url: 'https://github.com/dasmlab/tutorial-generator',
     language: 'GoLang / Python / D3.js / Vue.js / NLP', 
-    badge: 'Public'
+    badge: 'Public',
+    liveUrl: '',
+    tutoUrl: 'https://dasmlab.org/tutorials/demo1.html' // New: to standalonetuto
+
   }
 ]
 </script>
