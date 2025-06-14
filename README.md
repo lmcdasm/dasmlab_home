@@ -117,5 +117,5 @@ This is a living project within the DASMLAB ecosystem. PRs and ideas are welcome
 
 ## 📝 License
 
-MIT License — see [LICENSE](LICENSE)
+AAL License — see [LICENSE](LICENSE)
 
