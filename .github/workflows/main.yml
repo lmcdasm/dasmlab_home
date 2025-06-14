@@ -68,11 +68,10 @@ jobs:
         ARCHIVE_DIR="$DEPLOY_DIR/.archived"
         mkdir -p "$ARCHIVE_DIR"
 
-        # Move old versioned manifests into archive folder (preserve current.yaml)
+        # Move all old versioned manifests into archive (just keep latest clean)
         find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -exec mv {} "$ARCHIVE_DIR"/ \;
 
-        # Save current version as both current.yaml and version-tagged file
-        cp generated.yaml "$DEPLOY_DIR/current.yaml"
+        # Save only new versioned file (Flux watches this)
         cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
 
         cd dasmlab_live_cicd
