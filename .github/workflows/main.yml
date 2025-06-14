@@ -62,7 +62,7 @@ jobs:
         git config --global user.name "dasmlab-bot"
         git config --global user.email "ci@dasmlab.org"
 
-        git clone https://x-access-token:${{ secrets.DASMLAB_CI_PAT }}@github.com/lmcdasm/dasmlab_live_cicd.git
+        git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab_live_cicd.git
 
         mkdir -p dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home
         cp generated.yaml dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home/dasmlab-home-${VERSION_TAG}.yaml
