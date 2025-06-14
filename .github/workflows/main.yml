@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  pipeline:
+  cx-pipeline:
     runs-on: self-hosted
     steps:
 
@@ -51,7 +51,8 @@ jobs:
     - name: Publish Phase
       run: |
         docker tag $IMAGE_TAG ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u lmcdasm --password-stdin
+        echo "${{ secrets.DASMLAB_GHCR_PAT }}" | docker login ghcr.io -u lmcdasm --password-stdin
+
         docker push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
     - name: GitOps Sync (Deploy) Phase
