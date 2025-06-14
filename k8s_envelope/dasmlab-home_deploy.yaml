@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dasmlab-home
+  namespace: dasmlab-home-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dasmlab-home
+  template:
+    metadata:
+      labels:
+        app: dasmlab-home
+    spec:
+      containers:
+        - name: dasmlab-home
+          image: ghcr.io/lmcdasm/dasmlab-home:__VERSION__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dasmlab-home
+  namespace: dasmlab
+spec:
+  type: LoadBalancer
+  selector:
+    app: dasmlab-home
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+

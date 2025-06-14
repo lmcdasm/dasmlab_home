@@ -1,0 +1,57 @@
+name: Dasmlab Home Cx Pipeline (Continuous Develop, Deploy, Secure, Validate and Publish)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  pipeline:
+    runs-on: self-hosted
+    steps:
+
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Build Phase
+      run: |
+        docker build -t dasmlab-home_image:scratch .
+
+    - name: Run Phase
+      run: |
+        docker run -d --name temp-instance dasmlab-home_image:scratch
+        sleep 5
+        curl -f http://localhost:8080 || (echo "Container failed to start" && exit 1)
+
+    - name: Secure Phase (Stub)
+      run: |
+        echo "Run SAST/DAST tools here"
+        exit 0
+
+    - name: Test Phase (Selenium & Cucumber Stubs)
+      run: |
+        echo "Run Selenium / Cucumber / Playwright etc here"
+        exit 0
+
+    - name: Publish Phase
+      run: |
+        docker tag dasmlab-image:latest registry.dasmlab.org/dasmlab-home:latest
+        docker push registry.dasmlab.org/dasmlab-home:latest
+
+    - name: GitOps Sync (Deploy) Phase
+      run: |
+        export VERSION_TAG="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
+        sed "s|__VERSION__|${VERSION_TAG}|g" k8s_envelope/dasmlab-home_deploy.yaml > generated.yaml
+
+        git config --global user.name "dasmlab-bot"
+        git config --global user.email "ci@dasmlab.org"
+
+        git clone https://x-access-token:${{ secrets.DASMLAB_CI_PAT }}@github.com/lmcdasm/dasmlab_live_cicd.git
+
+        mkdir -p dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home
+        cp generated.yaml dasmlab_live_cicd/clusters/dasmlab-prod-1/dasmlab_home/dasmlab-home-${VERSION_TAG}.yaml
+
+        cd dasmlab_live_cicd
+        git add .
+        git commit -m "Auto-publish dasmlab-home ${VERSION_TAG}"
+        git push
+

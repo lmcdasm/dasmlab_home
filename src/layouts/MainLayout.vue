@@ -29,6 +29,12 @@
 
         <q-item-label header class="text-bold text-primary">Projects</q-item-label>
 
+	<q-item clickable to="/" exact>
+  		<q-item-section avatar><q-icon name="home" /></q-item-section>
+  		<q-item-section>Home</q-item-section>
+	</q-item>
+
+
 	<q-item clickable to="/projects/frontend" v-ripple>
   		<q-item-section avatar><q-icon name="web" /></q-item-section>
   		<q-item-section>Frontend Projects</q-item-section>
