@@ -31,7 +31,6 @@ metadata:
   namespace: dasmlab-home-system
   annotations:
     metallb.universe.tf/ip-allocated-from-pool: bgp-pool
-    metallb.universe.tf/loadBalancerIPs: "10.10.1.222"  # optional static override
 spec:
   selector:
     app: dasmlab-home
