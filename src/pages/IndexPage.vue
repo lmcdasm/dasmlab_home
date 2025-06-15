@@ -117,7 +117,7 @@ const cards = [
 onMounted(async () => {
   try {
      const res = await axios.get(
-	'http://whatsnew-service.whatsnew-service-system.svc.cluster.local:10020/get'
+	'https://whatsnew.svc.dasmlab.org/get'
      )
      // comes as JSON { latest_commits: [{elm-1},{elm-2}, ...]}
      whatsNew.value = res.data?.latest_commits || []
