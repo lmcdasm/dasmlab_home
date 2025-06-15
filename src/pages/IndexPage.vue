@@ -146,7 +146,6 @@ onMounted(async () => {
     container.scrollTo({ top: scrollPos, behavior: 'smooth' })
   }, 75)
 })
-
 </script>
 
 <style scoped>
