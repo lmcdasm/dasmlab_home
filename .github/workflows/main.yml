@@ -64,8 +64,8 @@ jobs:
 
         git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab-live-cicd.git
 
-        DEPLOY_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab_home/live"
-        ARCHIVE_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab_home/archived"
+        DEPLOY_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab-home/live"
+        ARCHIVE_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab-home/archived"
         mkdir -p "$ARCHIVE_DIR"
 
         # Move all old versioned manifests into archive (just keep latest clean)
