@@ -7,32 +7,64 @@
     </div>
 
     <!-- Carousel Section -->
-    <div class="q-pa-md">
-      <q-carousel
-        animated
-        height="300px"
-        infinite
-        swipeable
-        transition-prev="slide-right"
-        transition-next="slide-left"
-        navigation
-        control-color="primary"
+    <div class="flex flex-center q-my-md">
+      <q-card flat bordered style="max-width: 700px; width: 100%;">
+        <!-- Carousel "picture frame" -->
+        <div class="flex flex-center" style="padding: 24px;">
+          <div style="border-radius: 16px; overflow: hidden; background: #fff; width: 100%; height: 100%;  display: flex; align-items: center; justify-content: center;">
+            <q-carousel
+              v-model="slide"
+              animated
+              height="300px"
+              :controls="false"
+              :navigation="false"
+              :swipeable="true"
+              :interval="5000"
+              transition-prev="fade"
+              transition-next="fade"
+            >
+              <q-carousel-slide name="1">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg"
+                  alt="Slide 1"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+                />
+              </q-carousel-slide>
+              <q-carousel-slide name="2">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Clouds_over_the_Atlantic_Ocean.jpg/1280px-Clouds_over_the_Atlantic_Ocean.jpg"
+                  alt="Slide 2"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+                />
+              </q-carousel-slide>
+            </q-carousel>
+          </div>
+        </div>
+        <!-- Controls/dots below the image -->
+        <div class="flex flex-center q-pb-md q-pt-sm">
+          <q-carousel-control
+            :total="2"
+            :current="slide"
+            @update:current="slide = $event"
+            color="accent"
+          />
+        </div>
+      </q-card>
+    </div>
+
+    <!-- Custom dot controls below carousel -->
+    <div class="flex flex-center q-pb-md q-pt-sm">
+      <q-btn
+        v-for="n in 2"
+        :key="n"
+        round
+        size="sm"
+        :color="slide === n ? 'accent' : 'grey-5'"
+        @click="slide = n"
+        class="q-mx-xs"
       >
-        <q-carousel-slide name="1">
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg"
-            alt="Slide 1"
-            class="full-width"
-          />
-        </q-carousel-slide>
-        <q-carousel-slide name="2">
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Clouds_over_the_Atlantic_Ocean.jpg/1280px-Clouds_over_the_Atlantic_Ocean.jpg"
-            alt="Slide 2"
-            class="full-width"
-          />
-        </q-carousel-slide>
-      </q-carousel>
+        <span style="width: 8px; height: 8px; display: block; border-radius: 50%; background: currentColor;"></span>
+      </q-btn>
     </div>
 
     <!-- Project Cards -->
@@ -59,9 +91,16 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import WhatsNew from 'src/components/WhatsNew.vue'
+import axios from 'axios'
 
 const router = useRouter()
 const pauseScroll = ref(false)
+
+// Used to pass hold the Slide Carousel (center screen)
+const slide = ref('1')
+
+// Used for our WhatsNew Service inputs (API call onMounted())
+const whatsNew = ref([])
 
 const goTo = (route) => router.push(route)
 
@@ -74,15 +113,27 @@ const cards = [
   { title: 'Security Projects', icon: 'shield', route: '/security' }
 ]
 
-const whatsNew = ref([
-  { id: 1, title: 'MCP Explorer 0.0.7 released', date: '2025-06-13' },
-  { id: 2, title: 'New CI/CD Boilerplate published', date: '2025-06-11' },
-  { id: 3, title: 'Quasar animation system added', date: '2025-06-10' },
-  { id: 4, title: 'Cheapcloud has been scaffolded and basic MSA layout', date: '2025-06-10' }
-])
 
+onMounted(async () => {
+  try {
+     const res = await axios.get(
+	'http://whatsnew-service.whatsnew-service-system.svc.cluster.local:10020/get'
+     )
+     // comes as JSON { latest_commits: [{elm-1},{elm-2}, ...]}
+     whatsNew.value = res.data?.latest_commits || []
+  } catch (err) {
+     console.error('Failed to Fetch from whatsnew-service:', err)
+     // Fall back to OutOfService Messagse on Err
+     whatsNew.value = [
+      {
+        id: 1,
+        project: 'Out of Service',
+        title: 'Connection to WhatsNew Service is down.',
+        date: new Date().toISOString().replace('T', ' ').substring(0, 19) // e.g. 2025-06-15 20:29:15
+      }
+     ]
+  }
 
-onMounted(() => {
   const container = document.querySelector('.scroll-container')
   let scrollPos = 0
 
