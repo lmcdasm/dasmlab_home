@@ -36,6 +36,7 @@ spec:
     app: dasmlab-home
   type: LoadBalancer
   externalTrafficPolicy: Cluster
+  loadBalancerIP: 192.168.19.100
   ports:
     - name: http
       port: 8111        # External LB port
