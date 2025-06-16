@@ -15,6 +15,7 @@
           :key="entry.id + '-' + entry.loop"
           class="entry"
         >
+          <div class="text-subtitle1"><b>{{ entry.project }}</b></div>
           <div class="text-subtitle2">{{ entry.title }}</div>
           <div class="text-caption text-grey-7">{{ entry.date }}</div>
         </div>
