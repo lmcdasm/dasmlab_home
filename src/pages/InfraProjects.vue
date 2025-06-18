@@ -6,10 +6,10 @@
     <div class="row items-center q-mb-xl">
       <div class="col-12 col-md-6 flex flex-center">
         <img
-          src="@/assets/cx-stuff/dasmlab_cdevelop_foundation.png"
+          src="/dasmlab_cdevelop_foundation.png"
           alt="Foundational Principles"
           class="infra-img clickable"
-          @click="openModal('src/assets/cx-stuff/dasmlab_cdevelop_foundation.png')"
+          @click="openModal('/dasmlab_cdevelop_foundation.png')"
         />
       </div>
       <div class="col-12 col-md-6">
@@ -35,10 +35,10 @@
       </div>
       <div class="col-12 col-md-6 flex flex-center">
         <img
-          src="@/assets/cx-stuff/dasmlab_cdevelop_pipeline_overview.png"
+          src="/dasmlab_cdevelop_pipeline_overview.png"
           alt="Infrastructure Overview"
           class="infra-img clickable"
-          @click="openModal('src/assets/cx-stuff/dasmlab_cdevelop_pipeline_overview.png')"
+          @click="openModal('/dasmlab_cdevelop_pipeline_overview.png')"
         />
       </div>
     </div>
@@ -54,8 +54,7 @@
           border-radius: 18px;
           display: flex;
           align-items: center;
-          justify-content: center;"
-      >
+          justify-content: center;">
         <img
           v-if="modalImage"
           :src="modalImage"
