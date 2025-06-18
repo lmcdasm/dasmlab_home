@@ -29,10 +29,11 @@
       </div>
     </div>
 
-    <!-- Image Modal -->
-    <div v-if="modalOpen" style="position: fixed; top: 10px; left: 10px; background: yellow; color: black; z-index: 2000;">
+<!-- DEBUG    <div v-if="modalOpen" style="position: fixed; top: 10px; left: 10px; background: yellow; color: black; z-index: 2000;">
       Modal Open! Entry: {{ selectedEntry && selectedEntry.title }}
-    </div>
+    </div> -->
+
+    <!-- Image Modal -->
     <q-dialog v-model="modalOpen" persistent>
      <div style="position: relative; max-width: 90vw; max-height: 90vh; background: #222; display: flex; align-items: center; justify-content: center;">
        <img
