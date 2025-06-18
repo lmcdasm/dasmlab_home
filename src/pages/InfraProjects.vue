@@ -6,7 +6,7 @@
     <div class="row items-center q-mb-xl">
       <div class="col-12 col-md-6 flex flex-center">
         <img
-          src="src/assets/cx-stuff/dasmlab_cdevelop_foundation.png"
+          src="@/assets/cx-stuff/dasmlab_cdevelop_foundation.png"
           alt="Foundational Principles"
           class="infra-img clickable"
           @click="openModal('src/assets/cx-stuff/dasmlab_cdevelop_foundation.png')"
@@ -35,7 +35,7 @@
       </div>
       <div class="col-12 col-md-6 flex flex-center">
         <img
-          src="src/assets/cx-stuff/dasmlab_cdevelop_pipeline_overview.png"
+          src="@/assets/cx-stuff/dasmlab_cdevelop_pipeline_overview.png"
           alt="Infrastructure Overview"
           class="infra-img clickable"
           @click="openModal('src/assets/cx-stuff/dasmlab_cdevelop_pipeline_overview.png')"
