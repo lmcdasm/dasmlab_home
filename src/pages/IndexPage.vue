@@ -105,12 +105,12 @@ const whatsNew = ref([])
 const goTo = (route) => router.push(route)
 
 const cards = [
-  { title: 'Frontend Projects', icon: 'view_quilt', route: '/frontend' },
-  { title: 'Backend Projects', icon: 'dns', route: '/backend' },
-  { title: 'AI/ML Tech Dives', icon: 'psychology', route: '/ai' },
-  { title: 'Cloud Provider Techs.', icon: 'cloud', route: '/cloud' },
-  { title: 'Infrastructure Projects', icon: 'storage', route: '/infra' },
-  { title: 'Security Projects', icon: 'shield', route: '/security' }
+  { title: 'Frontend Projects', icon: 'view_quilt', route: '/projects/frontend' },
+  { title: 'Backend Projects', icon: 'dns', route: '/projects/backend' },
+  { title: 'AI/ML Tech Dives', icon: 'psychology', route: '/projects/ai-ml' },
+  { title: 'Cloud Provider Techs.', icon: 'cloud', route: '/projects/cloud' },
+  { title: 'Infrastructure Projects', icon: 'storage', route: '/projects/infra' },
+  { title: 'Security Projects', icon: 'shield', route: '/projects/security' }
 ]
 
 
