@@ -54,7 +54,7 @@ const doubledNews = computed(() =>
 .scroll-content {
   display: flex;
   flex-direction: column;
-  animation: scroll-up 10s linear infinite;
+  animation: scroll-up 30s linear infinite;
 }
 
 .scroll-content.paused {
