@@ -2,18 +2,6 @@
   <q-page padding>
     <h2 class="q-mb-xl">Infrastructure Projects</h2>
 
-    <div class="text-body1 q-mb-lg">
-      Project Cards: Here we dive into orchestration, CI/CD, validation frameworks and more. Think Nephio, Cluster API, Terraform, CircleCI and other infrastructure plumbing tools.
-    </div>
-    <ProjectCard
-      v-for="(project, index) in projects"
-      :key="index"
-      :title="project.title"
-      :description="project.description"
-      :url="project.url"
-      :language="project.language"
-      :badge="project.badge"
-    />
 
     <!-- HERO: Image left, Text right -->
     <div class="row items-center q-mb-xl">
@@ -86,7 +74,18 @@
         />
       </div>
     </q-dialog>
-
+    <div class="text-body1 q-mb-lg">
+      Project Cards: Here we dive into orchestration, CI/CD, validation frameworks and more. Think Nephio, Cluster API, Terraform, CircleCI and other infrastructure plumbing tools.
+    </div>
+    <ProjectCard
+      v-for="(project, index) in projects"
+      :key="index"
+      :title="project.title"
+      :description="project.description"
+      :url="project.url"
+      :language="project.language"
+      :badge="project.badge"
+    />
   </q-page>
 </template>
 
@@ -104,18 +103,18 @@ function openModal(src) {
 
 const projects = [
   {
-    title: 'arq1',
-    description: 'Using Terraform GCP providers, GitActions and some scaffolding to demonstrate Terraform code + Git Actions techniques.',
-    url: 'https://github.com/lmcdasm/arq1',
-    language: 'Terraform / Smarty / Git Actions',
-    badge: 'Private'
-  },
-  {
     title: 'Circle-Ci',
     description: 'Using Circle CI config.yml and a K8s Deployed container-agent to provide CX Pipelines Activities for a FastAPI, Python based application. Includes Walkthrough PPT',
     url: 'https://github.com/dasmlab/mcp-server-agent-list-server',
     language: 'CircleCI / FastAPI (Python) / Buildah',
     badge: 'Public'
+  },
+  {
+    title: 'arq1',
+    description: 'Using Terraform GCP providers, GitActions and some scaffolding to demonstrate Terraform code + Git Actions techniques.',
+    url: 'https://github.com/lmcdasm/arq1',
+    language: 'Terraform / Smarty / Git Actions',
+    badge: 'Private'
   },
 ]
 </script>
