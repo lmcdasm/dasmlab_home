@@ -105,7 +105,7 @@ const projects = [
   {
     title: 'Circle-Ci',
     description: 'Using Circle CI config.yml and a K8s Deployed container-agent to provide CX Pipelines Activities for a FastAPI, Python based application. Includes Walkthrough PPT',
-    url: 'https://github.com/dasmlab/mcp-server-agent-list-server',
+    url: 'https://github.com/dasmlab/mcp-server-agent-list-service',
     language: 'CircleCI / FastAPI (Python) / Buildah',
     badge: 'Public'
   },
