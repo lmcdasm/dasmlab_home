@@ -60,7 +60,7 @@ export default defineConfig((/* ctx */) => {
       },
       rawDefine: {
         'process.env.APP_VERSION': JSON.stringify(process.env.APP_VERSION)
-      }
+      },
       // ignorePublicFolder: true,
       // minify: false,
       // polyfillModulePreload: true,
