@@ -81,12 +81,14 @@
     <!-- Footer -->
     <q-footer class="bg-primary text-white text-center q-pa-sm">
            © 2025 DASMLAB Inc. All rights reserved.
+           <span class="q-ml-md"><VisitCounter /></span>
     </q-footer>
   </q-layout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import VisitCounter from 'src/components/VisitCounter.vue'
 const leftDrawerOpen = ref(true);
 </script>
 
