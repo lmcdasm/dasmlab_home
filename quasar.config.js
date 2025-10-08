@@ -58,7 +58,9 @@ export default defineConfig((/* ctx */) => {
         APP_VERSION: process.env.APP_VERSION,
         COUNTER_DEBUG: process.env.COUNTER_DEBUG || 'true'
       },
-      // rawDefine: {}
+      rawDefine: {
+        'process.env.APP_VERSION': JSON.stringify(process.env.APP_VERSION)
+      }
       // ignorePublicFolder: true,
       // minify: false,
       // polyfillModulePreload: true,

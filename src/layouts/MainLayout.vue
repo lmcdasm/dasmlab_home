@@ -91,6 +91,12 @@
 import { ref } from 'vue';
 import VisitCounter from 'src/components/VisitCounter.vue'
 const leftDrawerOpen = ref(true);
-const appVersion = import.meta.env.APP_VERSION || 'dev'
+const appVersion = (process.env.APP_VERSION || import.meta.env.APP_VERSION || 'dev')
+if ((import.meta.env.COUNTER_DEBUG || 'false') === 'true') {
+	console.log('[env] APP_VERSION', {
+		process: process.env.APP_VERSION,
+		meta: import.meta.env.APP_VERSION
+	})
+}
 </script>
 
