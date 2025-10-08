@@ -26,7 +26,7 @@ jobs:
 
       - name: Build Phase
         run: |
-        docker build \
+          docker build \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
