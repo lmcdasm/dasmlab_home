@@ -30,8 +30,8 @@ jobs:
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
-          --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
-          --build-arg APP_VERSION="$VERSION_TAG" \
+            --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
+            --build-arg APP_VERSION="$VERSION_TAG" \
             -t $IMAGE_TAG .
 
       - name: Create Isolated Docker Network
