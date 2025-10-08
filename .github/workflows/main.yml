@@ -20,10 +20,10 @@ jobs:
         echo "NETWORK_NAME=dasmlab-net-${GITHUB_SHA::8}" >> $GITHUB_ENV
         echo "IMAGE_TAG=dasmlab-home_image:${GITHUB_SHA::8}" >> $GITHUB_ENV
         echo "CONTAINER_NAME=dasmlab-home_instance-${GITHUB_SHA::8}" >> $GITHUB_ENV
-        echo "COUNTER_FULL_PATH=${ vars.COUNTER_FULL_PATH }" >> $GITHUB_ENV
-        echo "COUNTER_API_TOKEN=${ vars.COUNTER_API_TOKEN }" >> $GITHUB_ENV
-        echo "COUNTER_COUNTER_SLUG=${ vars.COUNTER_COUNTER_SLUG }" >> $GITHUB_ENV
-        echo "COUNTER_WORKSPACE=${ vars.WORKSPACE }" >> $GITHUB_ENV
+        echo "COUNTER_FULL_PATH=${{ vars.COUNTER_FULL_PATH }}" >> $GITHUB_ENV
+        echo "COUNTER_API_TOKEN=${{ vars.COUNTER_API_TOKEN }}" >> $GITHUB_ENV
+        echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
+        echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
     - name: Build Phase
       run: |
