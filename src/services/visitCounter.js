@@ -1,63 +1,53 @@
-import axios from 'axios'
+import { Counter } from 'counterapi'
 
-const NAMESPACE = 'dasmlab_home'
-const KEY = 'unique_visits'
 const STORAGE_KEY = 'dasmlab_unique_visit_recorded'
 
-// Multiple public base URLs for resilience (DNS or routing issues on some networks)
-const BASE_URLS = [
-	'https://api.countapi.xyz',
-	'https://countapi.xyz'
-]
+// Supported configurations:
+// 1) COUNTER_FULL_PATH: '/v2/workspaces/<workspace>/<slug>' (preferred)
+// 2) COUNTER_WORKSPACE + COUNTER_COUNTER_SLUG
+// 3) Fallback slug 'unique_visits' under provided workspace
 
-const REQUEST_OPTS = { timeout: 5000 }
-
-function encodedPath(parts) {
-	const [ns, key] = [encodeURIComponent(NAMESPACE), encodeURIComponent(KEY)]
-	return parts.replace(':ns', ns).replace(':key', key)
-}
-
-async function tryGetAcrossBases(path) {
-	for (const base of BASE_URLS) {
-		try {
-			const { data } = await axios.get(`${base}${path}`, REQUEST_OPTS)
-			return data
-		} catch {
-			// try next base
+function resolveWorkspaceAndSlug() {
+	const fullPath = import.meta.env.COUNTER_FULL_PATH || process.env.COUNTER_FULL_PATH
+	if (fullPath && typeof fullPath === 'string') {
+		// Extract workspace and slug from '/v2/workspaces/{ws}/{slug}'
+		const matches = fullPath.match(/\/v2\/workspaces\/([^/]+)\/([^/]+)/)
+		if (matches && matches.length === 3) {
+			return { workspace: matches[1], slug: matches[2] }
 		}
 	}
-	throw new Error('All endpoints failed')
+
+	const workspace = import.meta.env.COUNTER_WORKSPACE || process.env.COUNTER_WORKSPACE || 'dasmlab-home'
+	const slug = import.meta.env.COUNTER_COUNTER_SLUG || process.env.COUNTER_COUNTER_SLUG || 'unique_visits'
+	return { workspace, slug }
 }
 
-async function ensureCounterExists() {
-	const createPath = encodedPath('/create?namespace=:ns&key=:key&value=0')
-	for (const base of BASE_URLS) {
-		try {
-			await axios.get(`${base}${createPath}`, REQUEST_OPTS)
-			return
-		} catch {
-			// ignore and try next base; /hit usually autocreates, this is just proactive
-		}
+const { workspace: WORKSPACE, slug: COUNTER_SLUG } = resolveWorkspaceAndSlug()
+const ACCESS_TOKEN = import.meta.env.COUNTER_API_TOKEN || process.env.COUNTER_API_TOKEN || undefined
+
+let client
+function getClient() {
+	if (!client) {
+		client = new Counter({ workspace: WORKSPACE, accessToken: ACCESS_TOKEN, timeout: 8000 })
 	}
+	return client
 }
 
 export async function incrementIfFirstVisit() {
 	try {
 		if (typeof window === 'undefined') return
 		if (localStorage.getItem(STORAGE_KEY)) return
-
-		await ensureCounterExists()
-		await tryGetAcrossBases(encodedPath('/hit/:ns/:key'))
+		const counter = getClient()
+		await counter.up(COUNTER_SLUG)
 		localStorage.setItem(STORAGE_KEY, '1')
-	} catch {
-		// ignore network errors and keep UI stable
-	}
+	} catch {}
 }
 
 export async function getVisitCount() {
 	try {
-		const data = await tryGetAcrossBases(encodedPath('/get/:ns/:key'))
-		return data?.value ?? 0
+		const counter = getClient()
+		const res = await counter.get(COUNTER_SLUG)
+		return res?.value ?? 0
 	} catch {
 		return 0
 	}

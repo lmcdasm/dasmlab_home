@@ -49,7 +49,13 @@ export default defineConfig((/* ctx */) => {
 
       // publicPath: '/',
       // analyze: true,
-      // env: {},
+      // Expose selected env vars to the client
+      env: {
+        COUNTER_WORKSPACE: process.env.COUNTER_WORKSPACE,
+        COUNTER_API_TOKEN: process.env.COUNTER_API_TOKEN,
+        COUNTER_FULL_PATH: process.env.COUNTER_FULL_PATH,
+        COUNTER_COUNTER_SLUG: process.env.COUNTER_COUNTER_SLUG
+      },
       // rawDefine: {}
       // ignorePublicFolder: true,
       // minify: false,
