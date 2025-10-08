@@ -28,7 +28,13 @@ const ACCESS_TOKEN = import.meta.env.COUNTER_API_TOKEN || process.env.COUNTER_AP
 let client
 function getClient() {
 	if (!client) {
-		client = new Counter({ workspace: WORKSPACE, accessToken: ACCESS_TOKEN, timeout: 8000 })
+		const isBrowser = typeof window !== 'undefined'
+		const options = { workspace: WORKSPACE, timeout: 8000 }
+		// Avoid Authorization header in browser to prevent CORS preflight failures
+		if (!isBrowser && ACCESS_TOKEN) {
+			options.accessToken = ACCESS_TOKEN
+		}
+		client = new Counter(options)
 	}
 	return client
 }
