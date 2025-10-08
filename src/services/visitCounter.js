@@ -58,8 +58,17 @@ export async function getVisitCount() {
 	try {
 		const counter = getClient()
 		const res = await counter.get(COUNTER_SLUG)
-		const value = res?.value ?? 0
-		console.log('[counter] get', { value })
+		console.log('[counter] get raw', res)
+		let value = 0
+		if (typeof res?.value === 'number') {
+			value = res.value
+		} else if (res && typeof res === 'object') {
+			// Try common shapes
+			if (typeof res.up_count === 'number') value = res.up_count
+			else if (typeof res.count === 'number') value = res.count
+			else if (res.data && typeof res.data.up_count === 'number') value = res.data.up_count
+		}
+		console.log('[counter] get resolved', { value })
 		return value
 	} catch {
 		return 0
