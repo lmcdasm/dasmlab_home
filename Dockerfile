@@ -11,7 +11,7 @@ ENV COUNTER_API_TOKEN=${COUNTER_API_TOKEN}
 ENV COUNTER_WORKSPACE=${COUNTER_WORKSPACE}
 ENV COUNTER_COUNTER_SLUG=${COUNTER_COUNTER_SLUG}
 ENV COUNTER_FULL_PATH=${COUNTER_FULL_PATH}
-RUN npm install && npm run build
+RUN npm install && npm install counterapi && npm run build
 
 FROM nginx:alpine
 # Propagate envs to runtime container (for future diagnostics or dynamic usage)
