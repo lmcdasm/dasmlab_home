@@ -40,7 +40,9 @@ export async function incrementIfFirstVisit() {
 		const counter = getClient()
 		await counter.up(COUNTER_SLUG)
 		localStorage.setItem(STORAGE_KEY, '1')
-	} catch {}
+	} catch {
+		return
+	}
 }
 
 export async function getVisitCount() {
