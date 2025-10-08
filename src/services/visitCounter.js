@@ -9,7 +9,7 @@ export async function incrementIfFirstVisit() {
 		if (localStorage.getItem(STORAGE_KEY)) return
 		await axios.get(`https://api.countapi.xyz/hit/${NAMESPACE}/${KEY}`)
 		localStorage.setItem(STORAGE_KEY, '1')
-	} catch (_) {
+	} catch {
 		// ignore network errors and keep UI stable
 	}
 }
@@ -18,7 +18,7 @@ export async function getVisitCount() {
 	try {
 		const { data } = await axios.get(`https://api.countapi.xyz/get/${NAMESPACE}/${KEY}`)
 		return data?.value ?? 0
-	} catch (_) {
+	} catch {
 		return 0
 	}
 }
