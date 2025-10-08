@@ -1,6 +1,7 @@
 import { Counter } from 'counterapi'
 
 const STORAGE_KEY = 'dasmlab_unique_visit_recorded'
+const DEBUG = (import.meta.env.COUNTER_DEBUG || 'false') === 'true'
 
 // Supported configurations:
 // 1) COUNTER_FULL_PATH: '/v2/workspaces/<workspace>/<slug>' (preferred)
@@ -35,6 +36,7 @@ function getClient() {
 			options.accessToken = ACCESS_TOKEN
 		}
 		client = new Counter(options)
+		if (DEBUG) console.log('[counter] init', { workspace: WORKSPACE, slug: COUNTER_SLUG, withToken: Boolean(options.accessToken) })
 	}
 	return client
 }
@@ -44,7 +46,8 @@ export async function incrementIfFirstVisit() {
 		if (typeof window === 'undefined') return
 		if (localStorage.getItem(STORAGE_KEY)) return
 		const counter = getClient()
-		await counter.up(COUNTER_SLUG)
+		const res = await counter.up(COUNTER_SLUG)
+		if (DEBUG) console.log('[counter] up', { value: res?.value })
 		localStorage.setItem(STORAGE_KEY, '1')
 	} catch {
 		return
@@ -55,7 +58,9 @@ export async function getVisitCount() {
 	try {
 		const counter = getClient()
 		const res = await counter.get(COUNTER_SLUG)
-		return res?.value ?? 0
+		const value = res?.value ?? 0
+		if (DEBUG) console.log('[counter] get', { value })
+		return value
 	} catch {
 		return 0
 	}

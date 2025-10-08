@@ -54,7 +54,9 @@ export default defineConfig((/* ctx */) => {
         COUNTER_WORKSPACE: process.env.COUNTER_WORKSPACE,
         COUNTER_API_TOKEN: process.env.COUNTER_API_TOKEN,
         COUNTER_FULL_PATH: process.env.COUNTER_FULL_PATH,
-        COUNTER_COUNTER_SLUG: process.env.COUNTER_COUNTER_SLUG
+        COUNTER_COUNTER_SLUG: process.env.COUNTER_COUNTER_SLUG,
+        APP_VERSION: process.env.APP_VERSION,
+        COUNTER_DEBUG: process.env.COUNTER_DEBUG || 'true'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,

@@ -7,6 +7,7 @@
         <q-toolbar-title>
           DASMLAB Home Page
         </q-toolbar-title>
+        <div class="q-mr-sm">Version: {{ appVersion }}</div>
       </q-toolbar>
     </q-header>
 
@@ -90,5 +91,6 @@
 import { ref } from 'vue';
 import VisitCounter from 'src/components/VisitCounter.vue'
 const leftDrawerOpen = ref(true);
+const appVersion = import.meta.env.APP_VERSION || 'dev'
 </script>
 
