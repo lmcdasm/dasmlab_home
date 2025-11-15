@@ -34,28 +34,35 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Install Buildah and Podman
+      - name: Setup Buildah and Podman
         run: |
-          # Install buildah and podman (daemonless container tools)
-          if ! command -v buildah &> /dev/null; then
-            echo "Installing buildah and podman..."
+          # Buildah should already be installed in the runner image
+          # Install podman if not present (needed for running containers and networks)
+          if ! command -v podman &> /dev/null; then
+            echo "Installing podman..."
             # For Debian/Ubuntu
             if [ -f /etc/debian_version ]; then
               sudo apt-get update
-              sudo apt-get install -y buildah podman
+              sudo apt-get install -y podman
             # For RHEL/CentOS/Fedora
             elif [ -f /etc/redhat-release ]; then
-              sudo dnf install -y buildah podman || sudo yum install -y buildah podman
+              sudo dnf install -y podman || sudo yum install -y podman
             # For Alpine
             elif [ -f /etc/alpine-release ]; then
-              sudo apk add --no-cache buildah podman
+              sudo apk add --no-cache podman
             else
               echo "Unsupported OS, trying to install via package manager..."
               exit 1
             fi
           fi
-          buildah --version
-          podman --version
+          buildah --version || (echo "ERROR: buildah not found!" && exit 1)
+          podman --version || (echo "WARNING: podman not found, some steps may fail" && exit 1)
+          
+          # Setup rootless podman if needed
+          # Podman may need user namespace setup for rootless operation
+          if [ ! -d "$HOME/.local/share/containers" ]; then
+            mkdir -p "$HOME/.local/share/containers"
+          fi
 
       - name: Build Phase
         run: |
