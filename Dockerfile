@@ -1,4 +1,4 @@
-FROM node:20 AS build
+FROM node:28 AS build
 # Build-time args (populated by GitHub Actions)
 ARG COUNTER_API_TOKEN
 ARG COUNTER_WORKSPACE
