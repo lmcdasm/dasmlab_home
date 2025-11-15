@@ -1,4 +1,4 @@
-name: Dasmlab Home CX Pipeline (Kaniko - Daemonless)
+name: Dasmlab Home CX Pipeline (Buildah - Daemonless)
 
 on:
   push:
@@ -32,16 +32,17 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Verify Kaniko
+      - name: Verify Buildah
         run: |
-          # Kaniko should already be installed in the runner image
+          # Buildah should already be installed in the runner image
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          if [ ! -f /usr/local/bin/executor ] || [ ! -x /usr/local/bin/executor ]; then
-            echo "ERROR: kaniko executor not found or not executable!"
+          if ! command -v buildah &> /dev/null; then
+            echo "ERROR: buildah command not found!"
             exit 1
           fi
-          echo "Kaniko executor found at /usr/local/bin/executor"
+          buildah --version
+          echo "Buildah is ready!"
 
       - name: Build Phase
         env:
@@ -50,21 +51,10 @@ jobs:
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Ensure /kaniko is writable
-          mkdir -p /kaniko
-          chmod 777 /kaniko 2>/dev/null || true
-          
-          # Setup kaniko authentication - Kaniko looks for config in /kaniko/.docker/config.json
-          mkdir -p /kaniko/.docker
+          # Setup buildah authentication
+          mkdir -p ~/.docker
           AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > /kaniko/.docker/config.json
-          
-          # Also set DOCKER_CONFIG environment variable
-          export DOCKER_CONFIG=/kaniko/.docker
-          
-          # Set kaniko cache directory
-          export KANIKO_CACHE_DIR=/kaniko/.cache
-          mkdir -p ${KANIKO_CACHE_DIR}
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/.docker/config.json
           
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
@@ -73,32 +63,27 @@ jobs:
             exit 1
           fi
           
-          # Verify executor exists and is executable
-          if [ ! -f /usr/local/bin/executor ] || [ ! -x /usr/local/bin/executor ]; then
-            echo "ERROR: kaniko executor not found or not executable!"
-            ls -la /usr/local/bin/executor || true
-            exit 1
-          fi
+          # Build with buildah (daemonless, no Docker needed)
+          # Use storage driver vfs to avoid user namespace issues
+          buildah build \
+            --storage-driver vfs \
+            --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
+            --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
+            --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
+            --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
+            --build-arg APP_VERSION="$VERSION_TAG" \
+            -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+            -f Dockerfile \
+            .
           
-          # Build with kaniko (daemonless, no Docker needed)
-          # Use full path and ensure all arguments are properly quoted
-          /usr/local/bin/executor \
-            --context="${PWD}" \
-            --dockerfile="${PWD}/Dockerfile" \
-            --snapshot-mode=redo \
-            --build-arg="COUNTER_FULL_PATH=${COUNTER_FULL_PATH}" \
-            --build-arg="COUNTER_API_TOKEN=${COUNTER_API_TOKEN}" \
-            --build-arg="COUNTER_COUNTER_SLUG=${COUNTER_COUNTER_SLUG}" \
-            --build-arg="COUNTER_WORKSPACE=${COUNTER_WORKSPACE}" \
-            --build-arg="APP_VERSION=${VERSION_TAG}" \
-            --destination="ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}" \
-            --cache=true \
-            --cache-dir="${KANIKO_CACHE_DIR}"
+          # Login and push
+          echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io
+          buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
       - name: Run Phase (App Container Test)
         run: |
-          # Kaniko builds and pushes directly to registry
-          echo "Container image built and pushed successfully with Kaniko"
+          # Buildah builds and pushes to registry
+          echo "Container image built and pushed successfully with Buildah"
 
       - name: Secure Phase (Stub)
         run: |
@@ -112,7 +97,7 @@ jobs:
 
       - name: Publish Phase
         run: |
-          # Kaniko already pushes during build phase
+          # Buildah already pushes during build phase
           echo "Image published to ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}"
 
       - name: GitOps Sync (Deploy) Phase
@@ -163,5 +148,6 @@ jobs:
       - name: Teardown (Cleanup)
         if: always()
         run: |
-          # Clean up kaniko cache and temp files
-          rm -rf /kaniko/.cache ~/.docker 2>/dev/null || true
+          # Clean up buildah containers and temp files
+          buildah rm -a 2>/dev/null || true
+          rm -rf ~/.docker ~/.local/share/containers 2>/dev/null || true
