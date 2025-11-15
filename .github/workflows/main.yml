@@ -39,7 +39,9 @@ jobs:
 
       - name: Build Phase
         run: |
+          # Use VFS storage driver to avoid user namespace issues
           buildah build \
+            --storage-driver vfs \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
