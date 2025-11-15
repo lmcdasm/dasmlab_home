@@ -35,10 +35,24 @@ jobs:
       - name: Verify Docker
         run: |
           # Docker should be available via DinD
+          # Ensure PATH includes standard directories
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+          
+          # Check for docker in common locations
           if ! command -v docker &> /dev/null; then
-            echo "ERROR: docker command not found!"
-            exit 1
+            echo "ERROR: docker command not found in PATH!"
+            echo "PATH: ${PATH}"
+            echo "Checking /usr/local/bin/docker..."
+            if [ -f /usr/local/bin/docker ]; then
+              echo "Found /usr/local/bin/docker, adding to PATH"
+              export PATH="/usr/local/bin:${PATH}"
+            else
+              echo "ERROR: /usr/local/bin/docker not found either!"
+              ls -la /usr/local/bin/ | grep docker || true
+              exit 1
+            fi
           fi
+          
           docker --version
           docker info
 
@@ -46,6 +60,9 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
+          # Ensure PATH includes standard directories
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+          
           # Login to GitHub Container Registry
           echo "${GHCR_TOKEN}" | docker login ghcr.io -u lmcdasm --password-stdin
           
