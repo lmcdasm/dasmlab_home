@@ -1,4 +1,4 @@
-name: Dasmlab Home CX Pipeline (Docker-in-Docker)
+name: Dasmlab Home CX Pipeline (Kaniko - Daemonless)
 
 on:
   push:
@@ -32,29 +32,16 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Verify Docker
+      - name: Verify Kaniko
         run: |
-          # Docker should be available via DinD
-          # Ensure PATH includes standard directories
+          # Kaniko should already be installed in the runner image
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Check for docker in common locations
-          if ! command -v docker &> /dev/null; then
-            echo "ERROR: docker command not found in PATH!"
-            echo "PATH: ${PATH}"
-            echo "Checking /usr/local/bin/docker..."
-            if [ -f /usr/local/bin/docker ]; then
-              echo "Found /usr/local/bin/docker, adding to PATH"
-              export PATH="/usr/local/bin:${PATH}"
-            else
-              echo "ERROR: /usr/local/bin/docker not found either!"
-              ls -la /usr/local/bin/ | grep docker || true
-              exit 1
-            fi
+          if [ ! -f /usr/local/bin/executor ] || [ ! -x /usr/local/bin/executor ]; then
+            echo "ERROR: kaniko executor not found or not executable!"
+            exit 1
           fi
-          
-          docker --version
-          docker info
+          echo "Kaniko executor found at /usr/local/bin/executor"
 
       - name: Build Phase
         env:
@@ -63,8 +50,18 @@ jobs:
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Login to GitHub Container Registry
-          echo "${GHCR_TOKEN}" | docker login ghcr.io -u lmcdasm --password-stdin
+          # Ensure /kaniko is writable
+          mkdir -p /kaniko
+          chmod 777 /kaniko 2>/dev/null || true
+          
+          # Setup kaniko authentication
+          mkdir -p ~/.docker
+          AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/.docker/config.json
+          
+          # Set kaniko cache directory
+          export KANIKO_CACHE_DIR=/kaniko/.cache
+          mkdir -p ${KANIKO_CACHE_DIR}
           
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
@@ -73,24 +70,24 @@ jobs:
             exit 1
           fi
           
-          # Build the image
-          docker build \
+          # Build with kaniko (daemonless, no Docker needed)
+          /usr/local/bin/executor \
+            --context . \
+            --dockerfile ./Dockerfile \
+            --snapshot-mode=redo \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
             --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
             --build-arg APP_VERSION="$VERSION_TAG" \
-            -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
-            .
-          
-          # Push the image
-          docker push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+            --destination ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+            --cache=true \
+            --cache-dir=${KANIKO_CACHE_DIR}
 
       - name: Run Phase (App Container Test)
         run: |
-          # Basic container test - verify image exists and can be inspected
-          docker image inspect ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} > /dev/null
-          echo "Container image built and pushed successfully"
+          # Kaniko builds and pushes directly to registry
+          echo "Container image built and pushed successfully with Kaniko"
 
       - name: Secure Phase (Stub)
         run: |
@@ -104,7 +101,7 @@ jobs:
 
       - name: Publish Phase
         run: |
-          # Docker already pushes during build phase
+          # Kaniko already pushes during build phase
           echo "Image published to ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}"
 
       - name: GitOps Sync (Deploy) Phase
@@ -155,5 +152,5 @@ jobs:
       - name: Teardown (Cleanup)
         if: always()
         run: |
-          # Clean up Docker images and temp files
-          docker system prune -f || true
+          # Clean up kaniko cache and temp files
+          rm -rf /kaniko/.cache ~/.docker 2>/dev/null || true
