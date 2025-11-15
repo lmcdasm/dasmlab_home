@@ -56,10 +56,8 @@ jobs:
           echo "Testing sudo access..."
           sudo whoami || (echo "ERROR: Cannot use sudo!" && exit 1)
           
-          # Setup buildah authentication (as root via sudo)
-          sudo mkdir -p /root/.docker
-          AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" | sudo tee /root/.docker/config.json > /dev/null
+          # Login to GHCR first (before build, so it can pull base images if needed)
+          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io
           
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
@@ -80,8 +78,7 @@ jobs:
             -f Dockerfile \
             .
           
-          # Login and push (using sudo for root access)
-          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io
+          # Push the image
           sudo buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
       - name: Run Phase (App Container Test)
