@@ -54,10 +54,13 @@ jobs:
           mkdir -p /kaniko
           chmod 777 /kaniko 2>/dev/null || true
           
-          # Setup kaniko authentication
-          mkdir -p ~/.docker
+          # Setup kaniko authentication - Kaniko looks for config in /kaniko/.docker/config.json
+          mkdir -p /kaniko/.docker
           AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/.docker/config.json
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > /kaniko/.docker/config.json
+          
+          # Also set DOCKER_CONFIG environment variable
+          export DOCKER_CONFIG=/kaniko/.docker
           
           # Set kaniko cache directory
           export KANIKO_CACHE_DIR=/kaniko/.cache
@@ -70,19 +73,27 @@ jobs:
             exit 1
           fi
           
+          # Verify executor exists and is executable
+          if [ ! -f /usr/local/bin/executor ] || [ ! -x /usr/local/bin/executor ]; then
+            echo "ERROR: kaniko executor not found or not executable!"
+            ls -la /usr/local/bin/executor || true
+            exit 1
+          fi
+          
           # Build with kaniko (daemonless, no Docker needed)
+          # Use full path and ensure all arguments are properly quoted
           /usr/local/bin/executor \
-            --context . \
-            --dockerfile ./Dockerfile \
+            --context="${PWD}" \
+            --dockerfile="${PWD}/Dockerfile" \
             --snapshot-mode=redo \
-            --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
-            --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
-            --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
-            --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
-            --build-arg APP_VERSION="$VERSION_TAG" \
-            --destination ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+            --build-arg="COUNTER_FULL_PATH=${COUNTER_FULL_PATH}" \
+            --build-arg="COUNTER_API_TOKEN=${COUNTER_API_TOKEN}" \
+            --build-arg="COUNTER_COUNTER_SLUG=${COUNTER_COUNTER_SLUG}" \
+            --build-arg="COUNTER_WORKSPACE=${COUNTER_WORKSPACE}" \
+            --build-arg="APP_VERSION=${VERSION_TAG}" \
+            --destination="ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}" \
             --cache=true \
-            --cache-dir=${KANIKO_CACHE_DIR}
+            --cache-dir="${KANIKO_CACHE_DIR}"
 
       - name: Run Phase (App Container Test)
         run: |
