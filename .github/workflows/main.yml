@@ -45,23 +45,30 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
-          # Ensure PATH includes standard directories and user bin
-          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${HOME}/bin:${PATH}"
+          # Ensure PATH includes standard directories
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Use kaniko to build the image (no daemon, no user namespaces required)
-          # Kaniko needs /kaniko directory - use user-writable location
-          /bin/mkdir -p ~/kaniko/.docker
+          # Setup kaniko authentication
+          /bin/mkdir -p ~/.docker
           AUTH=$(/usr/bin/echo -n "lmcdasm:${GHCR_TOKEN}" | /usr/bin/base64 -w 0)
-          /usr/bin/echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/kaniko/.docker/config.json
+          /usr/bin/echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/.docker/config.json
           
-          # Set kaniko cache and config paths to user directory
-          export KANIKO_CACHE_DIR=~/kaniko/.cache
-          export DOCKER_CONFIG=~/kaniko/.docker
+          # Set kaniko cache directory (user-writable)
+          export KANIKO_CACHE_DIR=~/.kaniko-cache
+          /bin/mkdir -p ${KANIKO_CACHE_DIR}
           
-          # Kaniko executor is installed in /usr/local/bin/executor
+          # Verify Dockerfile exists
+          if [ ! -f Dockerfile ]; then
+            echo "ERROR: Dockerfile not found in current directory"
+            /bin/ls -la
+            exit 1
+          fi
+          
+          # Build with kaniko
+          # Kaniko expects context to be the current directory
           /usr/local/bin/executor \
-            --context . \
-            --dockerfile Dockerfile \
+            --context ${PWD} \
+            --dockerfile ${PWD}/Dockerfile \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
