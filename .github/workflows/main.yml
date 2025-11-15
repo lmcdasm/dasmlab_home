@@ -64,9 +64,8 @@ jobs:
           fi
           
           # Build with buildah (daemonless, no Docker needed)
-          # Use storage driver vfs to avoid user namespace issues
-          buildah build \
-            --storage-driver vfs \
+          # Use sudo since we're running as runner user but container is root
+          sudo buildah build \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
@@ -76,9 +75,9 @@ jobs:
             -f Dockerfile \
             .
           
-          # Login and push
-          echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io
-          buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          # Login and push (using sudo for root access)
+          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io
+          sudo buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
       - name: Run Phase (App Container Test)
         run: |
