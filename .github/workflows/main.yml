@@ -48,15 +48,9 @@ jobs:
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Kaniko needs /kaniko directory for its operations (even as non-root, we can create it)
-          # Use sudo if available, or create in user space if not
-          if [ -w /kaniko ]; then
-            KANIKO_DIR=/kaniko
-          else
-            # Create kaniko directory in user space
-            KANIKO_DIR=~/kaniko
-            /bin/mkdir -p ${KANIKO_DIR}
-          fi
+          # Ensure /kaniko is writable (should already be set up in image, but verify)
+          /bin/mkdir -p /kaniko
+          /bin/chmod 777 /kaniko 2>/dev/null || true
           
           # Setup kaniko authentication
           /bin/mkdir -p ~/.docker
