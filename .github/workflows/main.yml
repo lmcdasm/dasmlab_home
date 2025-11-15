@@ -48,19 +48,27 @@ jobs:
       - name: Build Phase
         env:
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
-          PATH: ${{ env.PATH }}:$HOME/bin
         run: |
+          # Ensure PATH includes standard directories and user bin
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${HOME}/bin:${PATH}"
+          
           # Use kaniko to build the image (no daemon, no user namespaces required)
           # Kaniko needs /kaniko directory - use user-writable location
-          mkdir -p ~/kaniko/.docker
-          AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/kaniko/.docker/config.json
+          /bin/mkdir -p ~/kaniko/.docker
+          AUTH=$(/usr/bin/echo -n "lmcdasm:${GHCR_TOKEN}" | /usr/bin/base64 -w 0)
+          /usr/bin/echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/kaniko/.docker/config.json
           
           # Set kaniko cache and config paths to user directory
           export KANIKO_CACHE_DIR=~/kaniko/.cache
           export DOCKER_CONFIG=~/kaniko/.docker
           
-          executor \
+          # Ensure executor is in PATH
+          if [ ! -f ~/bin/executor ]; then
+            echo "ERROR: kaniko executor not found!"
+            exit 1
+          fi
+          
+          ~/bin/executor \
             --context . \
             --dockerfile Dockerfile \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
