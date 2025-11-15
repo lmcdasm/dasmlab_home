@@ -27,6 +27,8 @@ ENV COUNTER_WORKSPACE=${COUNTER_WORKSPACE}
 ENV COUNTER_COUNTER_SLUG=${COUNTER_COUNTER_SLUG}
 ENV COUNTER_FULL_PATH=${COUNTER_FULL_PATH}
 ENV APP_VERSION=${APP_VERSION}
+# Configure nginx to run as root (for OpenShift anyuid SCC)
+RUN sed -i 's/user nginx;/user root;/' /etc/nginx/nginx.conf
 COPY --from=build /app/dist/spa /usr/share/nginx/html
 EXPOSE 80
 
