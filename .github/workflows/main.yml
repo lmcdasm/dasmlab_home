@@ -32,36 +32,10 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Install Kaniko
+      - name: Verify Kaniko
         run: |
-          # Kaniko is designed for Kubernetes - no daemon or user namespaces needed
-          # Install to user-writable location since we're running as non-root
-          /bin/mkdir -p ~/bin
-          if [ ! -f ~/bin/executor ] || [ ! -s ~/bin/executor ]; then
-            echo "Installing kaniko executor..."
-            # Get the latest release tag and construct download URL
-            LATEST_TAG=$(/usr/bin/curl -s https://api.github.com/repos/GoogleContainerTools/kaniko/releases/latest | /usr/bin/grep -o '"tag_name": "[^"]*"' | /usr/bin/cut -d'"' -f4)
-            if [ -z "$LATEST_TAG" ]; then
-              echo "Failed to get latest tag, using v1.24.0"
-              LATEST_TAG="v1.24.0"
-            fi
-            echo "Downloading kaniko executor version: $LATEST_TAG"
-            KANIKO_URL="https://github.com/GoogleContainerTools/kaniko/releases/download/${LATEST_TAG}/executor-linux-amd64"
-            /usr/bin/curl -L -f "$KANIKO_URL" -o ~/bin/executor
-            if [ $? -ne 0 ] || [ ! -s ~/bin/executor ]; then
-              echo "ERROR: Failed to download kaniko executor"
-              exit 1
-            fi
-            /bin/chmod +x ~/bin/executor
-            # Verify it's a valid ELF binary
-            if ! /usr/bin/file ~/bin/executor | /usr/bin/grep -q "ELF"; then
-              echo "ERROR: Downloaded file is not a valid binary"
-              /usr/bin/cat ~/bin/executor | /usr/bin/head -5
-              exit 1
-            fi
-          fi
-          export PATH="$HOME/bin:$PATH"
-          ~/bin/executor --version || echo "Kaniko installed"
+          # Kaniko should already be installed in the runner image
+          /usr/local/bin/executor --version || (echo "ERROR: kaniko executor not found!" && exit 1)
 
       - name: Build Phase
         env:
@@ -80,13 +54,8 @@ jobs:
           export KANIKO_CACHE_DIR=~/kaniko/.cache
           export DOCKER_CONFIG=~/kaniko/.docker
           
-          # Ensure executor is in PATH
-          if [ ! -f ~/bin/executor ]; then
-            echo "ERROR: kaniko executor not found!"
-            exit 1
-          fi
-          
-          ~/bin/executor \
+          # Kaniko executor is installed in /usr/local/bin/executor
+          /usr/local/bin/executor \
             --context . \
             --dockerfile Dockerfile \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
