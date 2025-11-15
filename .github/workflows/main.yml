@@ -43,10 +43,13 @@ jobs:
           executor --version || echo "Kaniko installed"
 
       - name: Build Phase
+        env:
+          GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
           # Use kaniko to build the image (no daemon, no user namespaces required)
           mkdir -p /kaniko/.docker
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"$(echo -n lmcdasm:$(echo '${{ secrets.DASMLAB_GHCR_PAT }}' | tr -d '\n') | base64 -w 0)\"}}}" > /kaniko/.docker/config.json
+          AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > /kaniko/.docker/config.json
           
           executor \
             --context . \
