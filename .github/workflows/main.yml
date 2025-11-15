@@ -35,7 +35,11 @@ jobs:
       - name: Verify Kaniko
         run: |
           # Kaniko should already be installed in the runner image
-          /usr/local/bin/executor --version || (echo "ERROR: kaniko executor not found!" && exit 1)
+          if [ ! -f /usr/local/bin/executor ] || [ ! -x /usr/local/bin/executor ]; then
+            echo "ERROR: kaniko executor not found or not executable!"
+            exit 1
+          fi
+          echo "Kaniko executor found at /usr/local/bin/executor"
 
       - name: Build Phase
         env:
