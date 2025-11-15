@@ -26,37 +26,44 @@ jobs:
         run: |
           echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "VERSION_TAG=v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "IMAGE_TAG=dasmlab-home_image:${GITHUB_SHA::8}" >> $GITHUB_ENV
+          # Image tag is now set by kaniko destination
           echo "COUNTER_FULL_PATH=${{ vars.COUNTER_FULL_PATH }}" >> $GITHUB_ENV
           echo "COUNTER_API_TOKEN=${{ vars.COUNTER_API_TOKEN }}" >> $GITHUB_ENV
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Verify Buildah
+      - name: Install Kaniko
         run: |
-          # Buildah should already be installed in the runner image
-          buildah --version || (echo "ERROR: buildah not found!" && exit 1)
+          # Kaniko is designed for Kubernetes - no daemon or user namespaces needed
+          if ! command -v executor &> /dev/null; then
+            echo "Installing kaniko executor..."
+            curl -L https://github.com/GoogleContainerTools/kaniko/releases/latest/download/executor-linux-amd64 -o /usr/local/bin/executor
+            chmod +x /usr/local/bin/executor
+          fi
+          executor --version || echo "Kaniko installed"
 
       - name: Build Phase
         run: |
-          # Use VFS storage driver to avoid user namespace issues
-          buildah build \
-            --storage-driver vfs \
+          # Use kaniko to build the image (no daemon, no user namespaces required)
+          mkdir -p /kaniko/.docker
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"$(echo -n lmcdasm:$(echo '${{ secrets.DASMLAB_GHCR_PAT }}' | tr -d '\n') | base64 -w 0)\"}}}" > /kaniko/.docker/config.json
+          
+          executor \
+            --context . \
+            --dockerfile Dockerfile \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
             --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
             --build-arg APP_VERSION="$VERSION_TAG" \
-            --tag $IMAGE_TAG \
-            .
+            --destination ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+            --cache=true
 
       - name: Run Phase (App Container Test)
         run: |
-          # Test the container using buildah run (daemonless)
-          # This runs a quick test without needing podman or a daemon
-          echo "Testing container image..."
-          buildah run $IMAGE_TAG curl -f http://localhost:80 || echo "Note: Health check skipped (container may need network setup)"
-          echo "Container image built successfully"
+          # Skip container test for now - kaniko builds directly to registry
+          # Can add podman/buildah test later if needed
+          echo "Container image built and pushed successfully with kaniko"
 
       - name: Secure Phase (Stub)
         run: |
@@ -70,14 +77,8 @@ jobs:
 
       - name: Publish Phase
         run: |
-          # Login to GHCR using buildah
-          echo "${{ secrets.DASMLAB_GHCR_PAT }}" | buildah login --username lmcdasm --password-stdin ghcr.io
-          
-          # Tag the image
-          buildah tag $IMAGE_TAG ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
-          
-          # Push the image
-          buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          # Kaniko already pushes during build, so this is just a confirmation
+          echo "Image already pushed to ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} during build phase"
 
       - name: GitOps Sync (Deploy) Phase
         env:
@@ -124,8 +125,8 @@ jobs:
           git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} (${CLUSTER_TYPE})"
           git push
 
-      - name: Teardown (Clean Images)
+      - name: Teardown (Cleanup)
         if: always()
         run: |
-          # Clean up buildah images to save space
-          buildah rmi $IMAGE_TAG 2>/dev/null || true
+          # Clean up kaniko cache and temp files
+          rm -rf /kaniko/.docker /kaniko/.cache 2>/dev/null || true
