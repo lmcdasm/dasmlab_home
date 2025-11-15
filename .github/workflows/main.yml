@@ -143,12 +143,22 @@ jobs:
           DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
           ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
           mkdir -p "$ARCHIVE_DIR"
+          mkdir -p "$DEPLOY_DIR"
 
-          # Move all old versioned manifests into archive (just keep latest clean)
-          find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -exec mv {} "$ARCHIVE_DIR"/ \;
+          # Move ALL old versioned manifests into archive BEFORE adding new one
+          # This ensures only one manifest exists in live directory at any time
+          if [ -d "$DEPLOY_DIR" ]; then
+            find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -print0 | while IFS= read -r -d '' file; do
+              if [ -f "$file" ]; then
+                echo "Archiving old manifest: $(basename "$file")"
+                mv "$file" "$ARCHIVE_DIR/"
+              fi
+            done
+          fi
 
           # Save only new versioned file (Flux/ArgoCD watches this)
           cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
+          echo "Created new manifest: dasmlab-home-${VERSION_TAG}.yaml"
 
           cd dasmlab-live-cicd
           git add .
