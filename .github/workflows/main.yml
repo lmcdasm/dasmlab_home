@@ -39,7 +39,15 @@ jobs:
           /bin/mkdir -p ~/bin
           if [ ! -f ~/bin/executor ] || [ ! -s ~/bin/executor ]; then
             echo "Installing kaniko executor..."
-            /usr/bin/curl -L -f https://github.com/GoogleContainerTools/kaniko/releases/latest/download/executor-linux-amd64 -o ~/bin/executor
+            # Get the latest release tag and construct download URL
+            LATEST_TAG=$(/usr/bin/curl -s https://api.github.com/repos/GoogleContainerTools/kaniko/releases/latest | /usr/bin/grep -o '"tag_name": "[^"]*"' | /usr/bin/cut -d'"' -f4)
+            if [ -z "$LATEST_TAG" ]; then
+              echo "Failed to get latest tag, using v1.24.0"
+              LATEST_TAG="v1.24.0"
+            fi
+            echo "Downloading kaniko executor version: $LATEST_TAG"
+            KANIKO_URL="https://github.com/GoogleContainerTools/kaniko/releases/download/${LATEST_TAG}/executor-linux-amd64"
+            /usr/bin/curl -L -f "$KANIKO_URL" -o ~/bin/executor
             if [ $? -ne 0 ] || [ ! -s ~/bin/executor ]; then
               echo "ERROR: Failed to download kaniko executor"
               exit 1
