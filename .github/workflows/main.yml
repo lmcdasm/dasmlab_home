@@ -1,4 +1,4 @@
-name: Dasmlab Home CX Pipeline (Isolated Builds with Docker Networks)
+name: Dasmlab Home CX Pipeline (Isolated Builds with Buildah/Podman)
 
 on:
   push:
@@ -34,45 +34,73 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
+      - name: Install Buildah and Podman
+        run: |
+          # Install buildah and podman (daemonless container tools)
+          if ! command -v buildah &> /dev/null; then
+            echo "Installing buildah and podman..."
+            # For Debian/Ubuntu
+            if [ -f /etc/debian_version ]; then
+              sudo apt-get update
+              sudo apt-get install -y buildah podman
+            # For RHEL/CentOS/Fedora
+            elif [ -f /etc/redhat-release ]; then
+              sudo dnf install -y buildah podman || sudo yum install -y buildah podman
+            # For Alpine
+            elif [ -f /etc/alpine-release ]; then
+              sudo apk add --no-cache buildah podman
+            else
+              echo "Unsupported OS, trying to install via package manager..."
+              exit 1
+            fi
+          fi
+          buildah --version
+          podman --version
+
       - name: Build Phase
         run: |
-          docker build \
+          buildah build \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
             --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
             --build-arg APP_VERSION="$VERSION_TAG" \
-            -t $IMAGE_TAG .
+            --tag $IMAGE_TAG \
+            .
 
-      - name: Create Isolated Docker Network
+      - name: Create Isolated Podman Network
         run: |
-          docker network create $NETWORK_NAME || true
+          podman network create $NETWORK_NAME || true
 
       - name: Run Phase (App Container)
         run: |
-          docker rm -f $CONTAINER_NAME 2>/dev/null || true
-          docker run -d --name $CONTAINER_NAME --network $NETWORK_NAME $IMAGE_TAG
+          podman rm -f $CONTAINER_NAME 2>/dev/null || true
+          podman run -d --name $CONTAINER_NAME --network $NETWORK_NAME $IMAGE_TAG
           sleep 5
-          docker exec $CONTAINER_NAME curl -f http://localhost:80 || (echo "App failed health check" && exit 1)
+          podman exec $CONTAINER_NAME curl -f http://localhost:80 || (echo "App failed health check" && exit 1)
 
       - name: Secure Phase (Stub)
         run: |
           echo "Run SAST/DAST tools here using $CONTAINER_NAME on $NETWORK_NAME"
-          # docker run --rm --network $NETWORK_NAME dasmlab-security-suite:latest
+          # podman run --rm --network $NETWORK_NAME dasmlab-security-suite:latest
           exit 0
 
       - name: Test Phase (Stub)
         run: |
           echo "Run Selenium/Playwright/etc against $CONTAINER_NAME on $NETWORK_NAME"
-          # docker run --rm --network $NETWORK_NAME dasmlab-test-suite:latest
+          # podman run --rm --network $NETWORK_NAME dasmlab-test-suite:latest
           exit 0
 
       - name: Publish Phase
         run: |
-          docker tag $IMAGE_TAG ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
-          echo "${{ secrets.DASMLAB_GHCR_PAT }}" | docker login ghcr.io -u lmcdasm --password-stdin
-
-          docker push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          # Login to GHCR using buildah
+          echo "${{ secrets.DASMLAB_GHCR_PAT }}" | buildah login --username lmcdasm --password-stdin ghcr.io
+          
+          # Tag the image
+          buildah tag $IMAGE_TAG ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          
+          # Push the image
+          buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
       - name: GitOps Sync (Deploy) Phase
         env:
@@ -122,5 +150,7 @@ jobs:
       - name: Teardown (Clean Containers & Network)
         if: always()
         run: |
-          docker rm -f $CONTAINER_NAME || true
-          docker network rm $NETWORK_NAME || true
+          podman rm -f $CONTAINER_NAME || true
+          podman network rm $NETWORK_NAME || true
+          # Clean up buildah images to save space
+          buildah rmi $IMAGE_TAG 2>/dev/null || true
