@@ -35,21 +35,30 @@ jobs:
       - name: Install Kaniko
         run: |
           # Kaniko is designed for Kubernetes - no daemon or user namespaces needed
-          if ! command -v executor &> /dev/null; then
+          # Install to user-writable location since we're running as non-root
+          mkdir -p ~/bin
+          if [ ! -f ~/bin/executor ]; then
             echo "Installing kaniko executor..."
-            curl -L https://github.com/GoogleContainerTools/kaniko/releases/latest/download/executor-linux-amd64 -o /usr/local/bin/executor
-            chmod +x /usr/local/bin/executor
+            curl -L https://github.com/GoogleContainerTools/kaniko/releases/latest/download/executor-linux-amd64 -o ~/bin/executor
+            chmod +x ~/bin/executor
           fi
+          export PATH="$HOME/bin:$PATH"
           executor --version || echo "Kaniko installed"
 
       - name: Build Phase
         env:
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
+          PATH: ${{ env.PATH }}:$HOME/bin
         run: |
           # Use kaniko to build the image (no daemon, no user namespaces required)
-          mkdir -p /kaniko/.docker
+          # Kaniko needs /kaniko directory - use user-writable location
+          mkdir -p ~/kaniko/.docker
           AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > /kaniko/.docker/config.json
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/kaniko/.docker/config.json
+          
+          # Set kaniko cache and config paths to user directory
+          export KANIKO_CACHE_DIR=~/kaniko/.cache
+          export DOCKER_CONFIG=~/kaniko/.docker
           
           executor \
             --context . \
@@ -60,7 +69,8 @@ jobs:
             --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
             --build-arg APP_VERSION="$VERSION_TAG" \
             --destination ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
-            --cache=true
+            --cache=true \
+            --cache-dir=${KANIKO_CACHE_DIR}
 
       - name: Run Phase (App Container Test)
         run: |
@@ -132,4 +142,4 @@ jobs:
         if: always()
         run: |
           # Clean up kaniko cache and temp files
-          rm -rf /kaniko/.docker /kaniko/.cache 2>/dev/null || true
+          rm -rf ~/kaniko/.docker ~/kaniko/.cache ~/bin/executor 2>/dev/null || true
