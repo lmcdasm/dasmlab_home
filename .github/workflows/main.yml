@@ -48,6 +48,16 @@ jobs:
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
+          # Kaniko needs /kaniko directory for its operations (even as non-root, we can create it)
+          # Use sudo if available, or create in user space if not
+          if [ -w /kaniko ]; then
+            KANIKO_DIR=/kaniko
+          else
+            # Create kaniko directory in user space
+            KANIKO_DIR=~/kaniko
+            /bin/mkdir -p ${KANIKO_DIR}
+          fi
+          
           # Setup kaniko authentication
           /bin/mkdir -p ~/.docker
           AUTH=$(/usr/bin/echo -n "lmcdasm:${GHCR_TOKEN}" | /usr/bin/base64 -w 0)
@@ -64,11 +74,16 @@ jobs:
             exit 1
           fi
           
+          # Show current directory and Dockerfile location
+          echo "Current directory: ${PWD}"
+          echo "Dockerfile location: ${PWD}/Dockerfile"
+          /bin/ls -la Dockerfile
+          
           # Build with kaniko
-          # Kaniko expects context to be the current directory
+          # Use relative paths - kaniko will handle the context correctly
           /usr/local/bin/executor \
-            --context ${PWD} \
-            --dockerfile ${PWD}/Dockerfile \
+            --context . \
+            --dockerfile ./Dockerfile \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
