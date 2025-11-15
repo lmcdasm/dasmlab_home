@@ -51,10 +51,15 @@ jobs:
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Setup buildah authentication
-          mkdir -p ~/.docker
+          # Verify we can use sudo
+          echo "Current user: $(whoami)"
+          echo "Testing sudo access..."
+          sudo whoami || (echo "ERROR: Cannot use sudo!" && exit 1)
+          
+          # Setup buildah authentication (as root via sudo)
+          sudo mkdir -p /root/.docker
           AUTH=$(echo -n "lmcdasm:${GHCR_TOKEN}" | base64 -w 0)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" > ~/.docker/config.json
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"${AUTH}\"}}}" | sudo tee /root/.docker/config.json > /dev/null
           
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
