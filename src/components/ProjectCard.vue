@@ -1,31 +1,44 @@
 <template>
   <q-card
-    class="q-mb-md q-pa-md shadow-2"
+    class="q-mb-md q-pa-md glass tilt"
+    v-motion
+    :initial="{ opacity: 0, y: 20 }"
+    :enter="{ opacity: 1, y: 0, transition: { delay: 100 } }"
     bordered
-    v-scroll="onScroll"
-    :class="{ 'animated fadeInUp': isVisible }"
   >
     <div class="row items-center justify-between">
       <div class="text-h6 text-primary">
-        <a :href="url" class="text-primary" target="_blank" rel="noopener">
+        <a
+          :href="url"
+          class="text-primary text-weight-medium"
+          target="_blank"
+          rel="noopener"
+          style="text-decoration: none; transition: color 0.2s;"
+        >
           {{ title }}
         </a>
       </div>
-      <q-badge v-if="badge" color="secondary" outline>{{ badge }}</q-badge>
+      <q-badge v-if="badge" color="secondary" outline class="badge-glow">{{ badge }}</q-badge>
     </div>
 
     <div class="q-mt-sm text-body2 text-grey-8">{{ description }}</div>
 
     <div class="q-mt-sm">
-      <q-icon name="code" size="16px" class="q-mr-xs" />
+      <q-icon name="code" size="16px" class="q-mr-xs text-accent" />
       <span class="text-caption">{{ language }}</span>
     </div>
 
     <div class="q-mt-sm text-caption">
-      <q-icon name="link" class="q-mr-xs" />
+      <q-icon name="link" class="q-mr-xs text-secondary" />
       <span class="text-grey-9">Live Example:</span>
       <template v-if="liveUrl">
-        <a :href="liveUrl" class="text-secondary" target="_blank" rel="noopener">
+        <a
+          :href="liveUrl"
+          class="text-secondary"
+          target="_blank"
+          rel="noopener"
+          style="text-decoration: none; transition: color 0.2s;"
+        >
           {{ liveUrl.replace(/^https?:\/\//, '') }}
         </a>
       </template>
@@ -36,9 +49,14 @@
 
     <!-- Tutorial Link -->
     <div v-if="tutoUrl" class="q-mt-sm text-caption">
-      <q-icon name="school" class="q-mr-xs" />
+      <q-icon name="school" class="q-mr-xs text-accent" />
       <span class="text-grey-9">Tutorial:</span>
-      <a href="#" class="text-secondary" @click.prevent="showTutorial">
+      <a
+        href="#"
+        class="text-secondary"
+        @click.prevent="showTutorial"
+        style="text-decoration: none; transition: color 0.2s; cursor: pointer;"
+      >
         View Tutorial
       </a>
     </div>
@@ -46,11 +64,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useQuasar } from 'quasar'
-import TutorialPlayer from './TutorialPlayer.vue' // adjust if needed
+import TutorialPlayer from './TutorialPlayer.vue'
 
-// ✅ This defines the incoming props
 const props = defineProps({
   title: String,
   description: String,
@@ -61,10 +77,8 @@ const props = defineProps({
   tutoUrl: String
 })
 
-// ✅ Access Quasar Dialog plugin
 const $q = useQuasar()
 
-// ✅ Show tutorial modal (called on link click)
 const showTutorial = () => {
   if (!props.tutoUrl) return
 
@@ -75,31 +89,19 @@ const showTutorial = () => {
     }
   })
 }
-
-// ✅ Fade-in effect
-const isVisible = ref(false)
-function onScroll() {
-  isVisible.value = true
-}
 </script>
 
 <style scoped>
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+a:hover {
+  color: var(--q-accent) !important;
 }
-.animated {
-  animation-duration: 0.6s;
-  animation-fill-mode: both;
+
+.badge-glow {
+  transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.fadeInUp {
-  animation-name: fadeInUp;
+
+.badge-glow:hover {
+  box-shadow: 0 0 8px currentColor;
+  transform: scale(1.05);
 }
 </style>
-

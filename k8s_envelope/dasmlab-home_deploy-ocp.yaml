@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dasmlab-home
+  namespace: dasmlab-home-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dasmlab-home
+  template:
+    metadata:
+      labels:
+        app: dasmlab-home
+    spec:
+      imagePullSecrets:
+      - name: dasmlab-ghcr-pull
+      containers:
+        - name: dasmlab-home
+          image: ghcr.io/lmcdasm/dasmlab-home:__VERSION__
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: dasmlab-home
+  namespace: dasmlab-home-system
+spec:
+  selector:
+    app: dasmlab-home
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http  # Matches named container port (80)
+      protocol: TCP
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: dasmlab-home
+  namespace: dasmlab-home-system
+spec:
+  host: dasmlab.org
+  to:
+    kind: Service
+    name: dasmlab-home
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+

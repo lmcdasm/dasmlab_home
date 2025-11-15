@@ -3,6 +3,16 @@ name: Dasmlab Home CX Pipeline (Isolated Builds with Docker Networks)
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      cluster_type:
+        description: 'Cluster type (ocp or k3s)'
+        required: false
+        default: 'ocp'
+        type: choice
+        options:
+          - ocp
+          - k3s
 
 jobs:
   cx-pipeline:
@@ -65,27 +75,48 @@ jobs:
           docker push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
       - name: GitOps Sync (Deploy) Phase
+        env:
+          # Default to 'ocp' since cluster is now OpenShift
+          # Can override via workflow_dispatch input if needed
+          CLUSTER_TYPE: ${{ inputs.cluster_type || 'ocp' }}
         run: |
-          sed "s|__VERSION__|${VERSION_TAG}|g" k8s_envelope/dasmlab-home_deploy.yaml > generated.yaml
+          # Determine which manifest to use based on CLUSTER_TYPE (default: ocp)
+          # Can be set via workflow_dispatch input or environment variable
+          if [ "$CLUSTER_TYPE" = "ocp" ]; then
+            MANIFEST_SOURCE="k8s_envelope/dasmlab-home_deploy-ocp.yaml"
+            echo "Using OCP manifest for OpenShift deployment"
+          else
+            MANIFEST_SOURCE="k8s_envelope/dasmlab-home_deploy.yaml"
+            echo "Using k3s manifest for k3s deployment"
+          fi
+          
+          sed "s|__VERSION__|${VERSION_TAG}|g" "$MANIFEST_SOURCE" > generated.yaml
 
           git config --global user.name "dasmlab-bot"
           git config --global user.email "ci@dasmlab.org"
 
           git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab-live-cicd.git
 
-          DEPLOY_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab-home/live"
-          ARCHIVE_DIR="dasmlab-live-cicd/clusters/dasmlab-prod-1/dasmlab-home/archived"
+          # Use OCP cluster path for ocp, k3s path for k3s
+          if [ "$CLUSTER_TYPE" = "ocp" ]; then
+            CLUSTER_NAME="ocp-ai-sno-2"
+          else
+            CLUSTER_NAME="dasmlab-prod-1"
+          fi
+          
+          DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
+          ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
           mkdir -p "$ARCHIVE_DIR"
 
           # Move all old versioned manifests into archive (just keep latest clean)
           find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -exec mv {} "$ARCHIVE_DIR"/ \;
 
-          # Save only new versioned file (Flux watches this)
+          # Save only new versioned file (Flux/ArgoCD watches this)
           cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
 
           cd dasmlab-live-cicd
           git add .
-          git commit -m "Auto-publish dasmlab-home ${VERSION_TAG}"
+          git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} (${CLUSTER_TYPE})"
           git push
 
       - name: Teardown (Clean Containers & Network)

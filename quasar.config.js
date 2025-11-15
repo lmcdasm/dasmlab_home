@@ -12,6 +12,8 @@ export default defineConfig((/* ctx */) => {
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
     boot: [
+      'motion',
+      'particles'
     ],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
@@ -89,17 +91,17 @@ export default defineConfig((/* ctx */) => {
     framework: {
       config: {
 	brand: {
-          primary: '#3c6b5e',
-          secondary: '#647550',
-          accent: '#a46cad',
+          primary: '#0A2E5C',      // Ericsson-ish midnight blue
+          secondary: '#1F6FEB',    // action blue
+          accent: '#64FFDA',       // neon mint accent
 
-          dark: '#1d1d1d',
-          'dark-page': '#121212',
+          dark: '#0B1220',         // deep slate
+          'dark-page': '#0B1220',
 
-          positive: '#56ba6d',
-          negative: '#cc4757',
-          info: '#b8cdd1',
-          warning: '#f0d792'
+          positive: '#22C55E',
+          negative: '#EF4444',
+          info: '#60A5FA',
+          warning: '#F59E0B'
         }
       },
 
