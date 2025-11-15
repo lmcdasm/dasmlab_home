@@ -13,6 +13,7 @@ spec:
       labels:
         app: dasmlab-home
     spec:
+      serviceAccountName: dasmlab-home-sa
       imagePullSecrets:
       - name: dasmlab-ghcr-pull
       containers:
@@ -23,6 +24,13 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
           resources:
             requests:
               memory: "64Mi"
@@ -30,6 +38,16 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "500m"
+          volumeMounts:
+          - name: nginx-cache
+            mountPath: /var/cache/nginx
+          - name: nginx-run
+            mountPath: /var/run
+      volumes:
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
 
 ---
 
