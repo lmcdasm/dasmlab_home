@@ -120,4 +120,3 @@ This is a living project within the DASMLAB ecosystem. PRs and ideas are welcome
 ## 📝 License
 
 AAL License — see [LICENSE](LICENSE.md)
-bump
