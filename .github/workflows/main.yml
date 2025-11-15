@@ -56,8 +56,17 @@ jobs:
           echo "Testing sudo access..."
           sudo whoami || (echo "ERROR: Cannot use sudo!" && exit 1)
           
+          # Verify token is set
+          if [ -z "${GHCR_TOKEN}" ]; then
+            echo "ERROR: GHCR_TOKEN is not set!"
+            exit 1
+          fi
+          echo "Token length: ${#GHCR_TOKEN} characters"
+          
           # Login to GHCR first (before build, so it can pull base images if needed)
-          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io
+          echo "Logging in to GHCR..."
+          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
+          echo "Login successful!"
           
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
