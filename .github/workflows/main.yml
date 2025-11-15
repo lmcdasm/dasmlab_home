@@ -80,10 +80,12 @@ jobs:
           /bin/ls -la Dockerfile
           
           # Build with kaniko
-          # Use relative paths - kaniko will handle the context correctly
+          # Use snapshot-mode=redo to avoid chown issues when running as non-root
+          # This mode doesn't preserve file ownership, which is fine for our use case
           /usr/local/bin/executor \
             --context . \
             --dockerfile ./Dockerfile \
+            --snapshot-mode=redo \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
