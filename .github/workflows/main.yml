@@ -36,14 +36,24 @@ jobs:
         run: |
           # Kaniko is designed for Kubernetes - no daemon or user namespaces needed
           # Install to user-writable location since we're running as non-root
-          mkdir -p ~/bin
-          if [ ! -f ~/bin/executor ]; then
+          /bin/mkdir -p ~/bin
+          if [ ! -f ~/bin/executor ] || [ ! -s ~/bin/executor ]; then
             echo "Installing kaniko executor..."
-            curl -L https://github.com/GoogleContainerTools/kaniko/releases/latest/download/executor-linux-amd64 -o ~/bin/executor
-            chmod +x ~/bin/executor
+            /usr/bin/curl -L -f https://github.com/GoogleContainerTools/kaniko/releases/latest/download/executor-linux-amd64 -o ~/bin/executor
+            if [ $? -ne 0 ] || [ ! -s ~/bin/executor ]; then
+              echo "ERROR: Failed to download kaniko executor"
+              exit 1
+            fi
+            /bin/chmod +x ~/bin/executor
+            # Verify it's a valid ELF binary
+            if ! /usr/bin/file ~/bin/executor | /usr/bin/grep -q "ELF"; then
+              echo "ERROR: Downloaded file is not a valid binary"
+              /usr/bin/cat ~/bin/executor | /usr/bin/head -5
+              exit 1
+            fi
           fi
           export PATH="$HOME/bin:$PATH"
-          executor --version || echo "Kaniko installed"
+          ~/bin/executor --version || echo "Kaniko installed"
 
       - name: Build Phase
         env:
