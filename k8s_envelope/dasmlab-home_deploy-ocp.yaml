@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8888
               protocol: TCP
           securityContext:
             runAsUser: 0
@@ -62,8 +62,8 @@ spec:
   type: ClusterIP
   ports:
     - name: http
-      port: 80
-      targetPort: http  # Matches named container port (80)
+      port: 8888
+      targetPort: 8888  # Matches named container port (80)
       protocol: TCP
 
 ---
