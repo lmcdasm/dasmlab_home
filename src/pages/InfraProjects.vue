@@ -29,7 +29,7 @@
     <div class="row items-center q-mb-xl">
       <div class="col-12 col-md-6">
         <div class="infra-text">
-          Everything runs on <b>Kubernetes clusters</b> (k3s with Calico networking and MetalLB in BGP mode, or OpenShift Container Platform with Routes), protected by off-cluster <b>HAProxy</b>, firewall, and router.
+          Everything runs on a <b>K3s Kubernetes cluster</b> (with Calico networking and MetalLB in BGP mode for load balancing), protected by off-cluster <b>HAProxy</b>, firewall, and router.
           Monitoring is integrated via <b>Grafana Cloud (Free Tier)</b> for real-time cluster/pod insights.
           <br><br>
           A self-hosted GitHub Runner handles all CI/CD jobs. Both the runner and the prod K8s cluster are VMs on a single server, joined by a virtual switch on ESXi—an ideal “sandbox” for experiments and production alike.
