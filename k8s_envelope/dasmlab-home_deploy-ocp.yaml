@@ -63,7 +63,7 @@ spec:
   ports:
     - name: http
       port: 8888
-      targetPort: 8888  # Matches named container port (80)
+      targetPort: http  # Matches named container port (80)
       protocol: TCP
 
 ---
