@@ -40,7 +40,7 @@
             </q-list>
           </q-menu>
         </q-btn>
-        <div class="version-chip">v{{ appVersion }}</div>
+        <div v-show="!leftDrawerOpen" class="version-chip">v{{ appVersion }}</div>
       </q-toolbar>
     </q-header>
 
@@ -187,11 +187,13 @@ onBeforeUnmount(() => {
   gap: 0.35rem;
   flex-wrap: nowrap;
   min-height: 58px;
+  overflow: hidden;
 }
 
 .toolbar-title {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
 }
@@ -216,6 +218,7 @@ onBeforeUnmount(() => {
 .top-icon-btn {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.16);
+  flex-shrink: 0;
 }
 
 .approach-menu {
@@ -242,16 +245,18 @@ onBeforeUnmount(() => {
   letter-spacing: 0.06em;
   color: #edf6f4;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .shell-drawer {
-  background: linear-gradient(170deg, rgba(21, 21, 21, 0.98), rgba(14, 14, 14, 0.98));
-  color: #d9d9d9;
+  background: linear-gradient(170deg, rgba(21, 21, 21, 0.98), rgba(14, 14, 14, 0.98)) !important;
+  color: #d9d9d9 !important;
   border-right: 1px solid rgba(184, 205, 209, 0.2);
 }
 
 .drawer-list {
   padding-top: 0.35rem;
+  background: transparent;
 }
 
 .drawer-section {
@@ -266,6 +271,16 @@ onBeforeUnmount(() => {
   margin: 0.15rem 0.35rem;
   transition: background 170ms ease, transform 170ms ease;
   border: 1px solid transparent;
+  color: #d7e1df;
+}
+
+.drawer-item :deep(.q-item__section--main) {
+  color: #d7e1df;
+  font-size: 0.9rem;
+}
+
+.drawer-item :deep(.q-item__section--avatar .q-icon) {
+  color: #9bc0b8;
 }
 
 .drawer-item:hover {
@@ -274,9 +289,18 @@ onBeforeUnmount(() => {
   border-color: rgba(90, 139, 126, 0.28);
 }
 
+.drawer-item:hover :deep(.q-item__section--avatar .q-icon) {
+  color: #c090c9;
+}
+
 .drawer-item--active {
   background: rgba(164, 108, 173, 0.18);
   border: 1px solid rgba(164, 108, 173, 0.48);
+}
+
+.drawer-item--active :deep(.q-item__section--main) {
+  color: #f0f3f2;
+  font-weight: 600;
 }
 
 .shell-footer {
