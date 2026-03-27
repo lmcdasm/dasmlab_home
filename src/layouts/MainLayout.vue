@@ -50,9 +50,24 @@
       bordered
       overlay
       behavior="desktop"
+      content-class="shell-drawer-content"
       class="shell-drawer"
     >
       <q-list class="drawer-list">
+        <q-item class="drawer-topbar">
+          <q-item-section class="text-caption drawer-topbar-label">Navigation</q-item-section>
+          <q-item-section side>
+            <q-btn
+              flat
+              dense
+              round
+              icon="close"
+              size="sm"
+              class="drawer-close-btn"
+              @click="leftDrawerOpen = false"
+            />
+          </q-item-section>
+        </q-item>
         <q-item-label header class="drawer-section">Console</q-item-label>
         <q-item
           v-for="item in topNav"
@@ -173,6 +188,7 @@ onBeforeUnmount(() => {
   position: relative;
   background: linear-gradient(140deg, #2d5248, #3c6b5e, #2f564d);
   border-bottom: 1px solid rgba(184, 205, 209, 0.28);
+  z-index: 4000;
 }
 
 .scroll-progress-wrap {
@@ -270,16 +286,34 @@ onBeforeUnmount(() => {
   border-right: 1px solid rgba(184, 205, 209, 0.2);
   top: 58px !important;
   height: calc(100% - 58px) !important;
+  z-index: 3000 !important;
 }
 
-.shell-drawer :deep(.q-drawer__content) {
+.shell-drawer :deep(.shell-drawer-content) {
   background: linear-gradient(178deg, #171a1a, #0f1212) !important;
-  color: #d8e4e1;
+  color: #d8e4e1 !important;
 }
 
 .drawer-list {
   padding-top: 0.35rem;
   background: transparent;
+}
+
+.drawer-topbar {
+  min-height: 44px;
+  border-bottom: 1px solid rgba(184, 205, 209, 0.16);
+}
+
+.drawer-topbar-label {
+  color: #9bc0b8;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.drawer-close-btn {
+  color: #c7dad5;
+  border: 1px solid rgba(184, 205, 209, 0.3);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .drawer-section {
