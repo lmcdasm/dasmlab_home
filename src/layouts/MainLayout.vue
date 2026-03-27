@@ -45,7 +45,13 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="shell-drawer">
+    <q-drawer
+      v-model="leftDrawerOpen"
+      bordered
+      overlay
+      behavior="desktop"
+      class="shell-drawer"
+    >
       <q-list class="drawer-list">
         <q-item-label header class="drawer-section">Console</q-item-label>
         <q-item
@@ -99,7 +105,7 @@ import VisitCounter from 'src/components/VisitCounter.vue'
 import { useApproach } from 'src/composables/useApproach'
 
 const route = useRoute()
-const leftDrawerOpen = ref(true)
+const leftDrawerOpen = ref(false)
 const scrollProgress = ref(0)
 const appVersion = (process.env.APP_VERSION || import.meta.env.APP_VERSION || 'dev')
 const { approach, approachOptions } = useApproach()
@@ -262,6 +268,8 @@ onBeforeUnmount(() => {
   background: linear-gradient(170deg, rgba(21, 21, 21, 0.98), rgba(14, 14, 14, 0.98)) !important;
   color: #d9d9d9 !important;
   border-right: 1px solid rgba(184, 205, 209, 0.2);
+  top: 58px !important;
+  height: calc(100% - 58px) !important;
 }
 
 .shell-drawer :deep(.q-drawer__content) {
