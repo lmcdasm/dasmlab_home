@@ -32,7 +32,9 @@ const approach = ref(readStored())
 watch(approach, (val) => {
   try {
     localStorage.setItem(STORAGE_KEY, val)
-  } catch (_) {}
+  } catch {
+    return
+  }
 }, { immediate: false })
 
 export function useApproach () {
