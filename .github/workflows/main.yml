@@ -16,7 +16,7 @@ on:
 
 jobs:
   cx-pipeline:
-    runs-on: [self-hosted, Linux, X64, k8s-runner]
+    runs-on: [self-hosted]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
