@@ -259,6 +259,15 @@ onMounted(async () => {
   box-shadow: inset 0 0 0 1px rgba(184, 205, 209, 0.08);
 }
 
+.content-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, rgba(90, 139, 126, 0.8), rgba(164, 108, 173, 0.7));
+  pointer-events: none;
+}
+
 .content-frame::before {
   content: '';
   position: absolute;
