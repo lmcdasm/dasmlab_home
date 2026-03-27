@@ -2,7 +2,7 @@ name: Dasmlab Home CX Pipeline (Buildah - Daemonless)
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "2026-spring-FE-update"]
   workflow_dispatch:
     inputs:
       cluster_type:
@@ -16,7 +16,7 @@ on:
 
 jobs:
   cx-pipeline:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64, k8s-runner]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
