@@ -1,17 +1,32 @@
 <template>
   <q-page padding class="q-gutter-md">
 
-    <!-- What's New? -->
-    <div class="q-pa-sm flex flex-center">
-      <WhatsNew :news="whatsNew" />
-    </div>
+    <!-- Approach: Nav TL;DR — compact summary at top, then explore -->
+    <template v-if="isNavTldr">
+      <div class="tldr-strip q-pa-md q-mb-md rounded-borders bg-grey-9">
+        <p class="text-subtitle1 text-center q-ma-none text-weight-medium">
+          DASMLAB is a living lab and portfolio — technology poked, prodded, and brought to life. Experiments, education, and “how I did it” across the stack.
+        </p>
+        <p class="text-caption text-center q-mt-sm q-mb-none text-grey-5">
+          Pick a category below to explore.
+        </p>
+      </div>
+    </template>
 
-    <!-- Carousel Section -->
-    <div class="flex flex-center q-my-md">
-      <DesignCarousel :entries="carouselEntries" />
-    </div>
+    <!-- Approach: Hero + block — WhatsNew + Carousel + cards -->
+    <template v-else>
+      <!-- What's New? -->
+      <div class="q-pa-sm flex flex-center">
+        <WhatsNew :news="whatsNew" />
+      </div>
 
-    <!-- Project Cards -->
+      <!-- Carousel Section -->
+      <div class="flex flex-center q-my-md">
+        <DesignCarousel :entries="carouselEntries" />
+      </div>
+    </template>
+
+    <!-- Project Cards (shared) -->
     <div class="q-gutter-md row items-start justify-center">
       <q-card
         v-for="card in cards"
@@ -36,9 +51,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import WhatsNew from 'src/components/WhatsNew.vue'
 import DesignCarousel from 'src/components/DesignCarousel.vue'
+import { useApproach } from 'src/composables/useApproach'
 import axios from 'axios'
 
 const router = useRouter()
+const { isNavTldr } = useApproach()
 
 const carouselEntries = ref([])
 const whatsNew = ref([])
@@ -50,7 +67,7 @@ const cards = [
   { title: 'Backend Projects', icon: 'dns', route: '/projects/backend' },
   { title: 'AI/ML Tech Dives', icon: 'psychology', route: '/projects/ai-ml' },
   { title: 'Cloud Provider Techs.', icon: 'cloud', route: '/projects/cloud' },
-  { title: 'Infrastructure Projects', icon: 'storage', route: '/projects/infra' },
+  { title: 'Infrastructure Projects', icon: 'storage', route: '/projects/infrastructure' },
   { title: 'Security Projects', icon: 'shield', route: '/projects/security' }
 ]
 
