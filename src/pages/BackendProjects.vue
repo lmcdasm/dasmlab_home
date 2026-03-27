@@ -1,17 +1,30 @@
 <template>
-  <q-page padding>
-    <h2>Backend Projects</h2>
-    <p>This is where we explore different Backend Service implementations. My preferred stack is GoLang, wrapped in a OCI  (Docker) and served up in a K8s Deployment for a basic MicroService layout. </p>
-	<ProjectCard
-     	 v-for="(project, index) in projects"
-     	 :key="index"
-     	 :title="project.title"
-     	 :description="project.description"
-     	 :url="project.url"
-     	 :language="project.language"
-     	 :badge="project.badge"
-         :liveUrl="project.liveUrl"
-    	/>
+  <q-page padding class="q-gutter-md">
+    <section class="dasm-shell">
+      <div class="dasm-floating-grid" />
+      <div class="dasm-shell__content">
+        <div class="dasm-caps">Project lane</div>
+        <h1 class="dasm-title">Backend projects</h1>
+        <p class="dasm-subtitle">
+          Services built for reliability: Go-based APIs, containerized runtime, and Kubernetes-native deployment patterns.
+        </p>
+      </div>
+    </section>
+
+    <div class="dasm-waypoint">Service endpoints and APIs</div>
+    <section class="dasm-panel">
+      <ProjectCard
+        v-for="(project, index) in projects"
+        :key="index"
+        :title="project.title"
+        :description="project.description"
+        :url="project.url"
+        :language="project.language"
+        :badge="project.badge"
+        category="Backend"
+        :live-url="project.liveUrl"
+      />
+    </section>
   </q-page>
 </template>
 

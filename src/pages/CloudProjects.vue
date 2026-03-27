@@ -1,36 +1,43 @@
 <template>
-  <q-page padding>
-    <h2 class="q-mb-xl">Cloud Provider Projects</h2>
-    <div class="text-body1 q-mb-lg">
-      From serverless to clever hacks for near-free compute, this area covers AWS, Azure, GCP and other cloud providers and their tooling.
-    </div>
+  <q-page padding class="q-gutter-md">
+    <section class="dasm-shell">
+      <div class="dasm-floating-grid" />
+      <div class="dasm-shell__content">
+        <div class="dasm-caps">Project lane</div>
+        <h1 class="dasm-title">Cloud provider projects</h1>
+        <p class="dasm-subtitle">
+          Serverless, platform automation, and cost-aware patterns across AWS, Azure, and GCP.
+        </p>
+      </div>
+    </section>
+    <div class="dasm-waypoint">Provider-by-provider map</div>
 
     <div class="row q-col-gutter-lg">
-      <!-- AWS Column -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-4 dasm-panel">
         <h4 class="q-mb-md">AWS Projects</h4>
         <ProjectCard
           v-for="(project, idx) in awsProjects"
           :key="'aws-' + idx"
           v-bind="project"
+          category="AWS"
         />
       </div>
-      <!-- Azure Column -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-4 dasm-panel">
         <h4 class="q-mb-md">Azure Projects</h4>
         <ProjectCard
           v-for="(project, idx) in azureProjects"
           :key="'azure-' + idx"
           v-bind="project"
+          category="Azure"
         />
       </div>
-      <!-- GCP Column -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-4 dasm-panel">
         <h4 class="q-mb-md">GCP Projects</h4>
         <ProjectCard
           v-for="(project, idx) in gcpProjects"
           :key="'gcp-' + idx"
           v-bind="project"
+          category="GCP"
         />
       </div>
     </div>
