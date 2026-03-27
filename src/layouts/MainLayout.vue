@@ -142,6 +142,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .layout-shell {
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 3% 7%, rgba(60, 107, 94, 0.16), transparent 32%),
     radial-gradient(circle at 96% 10%, rgba(164, 108, 173, 0.14), transparent 34%),
@@ -170,6 +171,9 @@ onBeforeUnmount(() => {
 
 .header-toolbar {
   backdrop-filter: blur(8px);
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  min-height: 58px;
 }
 
 .toolbar-title {
@@ -193,7 +197,8 @@ onBeforeUnmount(() => {
 }
 
 .approach-select {
-  min-width: 154px;
+  min-width: 132px;
+  max-width: 150px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 10px;
   padding: 0 0.35rem;
@@ -207,6 +212,7 @@ onBeforeUnmount(() => {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   color: #edf6f4;
+  white-space: nowrap;
 }
 
 .shell-drawer {
@@ -244,6 +250,17 @@ onBeforeUnmount(() => {
   background: linear-gradient(130deg, #1d1d1d, #212121);
   border-top: 1px solid rgba(184, 205, 209, 0.26);
   color: #b9c1c3;
+}
+
+@media (max-width: 940px) {
+  .title-secondary {
+    display: none;
+  }
+
+  .approach-select {
+    min-width: 114px;
+    max-width: 130px;
+  }
 }
 </style>
 

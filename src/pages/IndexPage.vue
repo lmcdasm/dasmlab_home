@@ -153,6 +153,7 @@ onMounted(async () => {
 <style scoped>
 .home-page {
   position: relative;
+  overflow-x: hidden;
 }
 
 .hero-shell {
@@ -251,9 +252,26 @@ onMounted(async () => {
 .content-frame {
   position: relative;
   width: 100%;
+  overflow: hidden;
   border: 1px solid rgba(100, 117, 80, 0.45);
   border-radius: 14px;
   background: linear-gradient(170deg, rgba(26, 26, 26, 0.96), rgba(21, 21, 21, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(184, 205, 209, 0.08);
+}
+
+.content-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(184, 205, 209, 0.22) 49%,
+    transparent 100%
+  );
+  background-size: 100% 6px;
 }
 
 .frame-label {
@@ -296,6 +314,9 @@ onMounted(async () => {
 
 .card-title {
   font-weight: 600;
+  color: #e5ecea;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .card-cta {
@@ -303,6 +324,12 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: #a8bca5;
+}
+
+@media (max-width: 900px) {
+  .project-card {
+    width: 100%;
+  }
 }
 
 @keyframes float-orb {

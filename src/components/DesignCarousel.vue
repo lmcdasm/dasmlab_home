@@ -22,10 +22,16 @@
               :src="fullImageUrl(entry.image_url)"
               :alt="entry.title"
               class="carousel-image"
+              @error="onImageError"
               @click="openModal(entry)"
             />
           </q-carousel-slide>
         </q-carousel>
+        <div v-else class="carousel-empty">
+          <q-icon name="imagesmode" size="34px" class="q-mb-sm" />
+          <div class="text-subtitle2">Featured experiments are loading</div>
+          <div class="text-caption">Design carousel service not reachable right now.</div>
+        </div>
       </div>
     </div>
 
@@ -64,11 +70,16 @@ const props = defineProps({
 const interval = 5000
 const slide = ref(1)
 const DESIGN_CAROUSEL_HOST = 'https://design-carousel.svc.dasmlab.org'
+const FALLBACK_IMAGE = '/media/hero/lifestyle-placeholder.svg'
 
 function fullImageUrl(path) {
-  if (!path) return ''
+  if (!path) return FALLBACK_IMAGE
   if (/^https?:\/\//.test(path)) return path
   return DESIGN_CAROUSEL_HOST + path
+}
+
+function onImageError(event) {
+  event.target.src = FALLBACK_IMAGE
 }
 
 // Modal dialog state
@@ -133,6 +144,16 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: cover;
   cursor: zoom-in;
+}
+
+.carousel-empty {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #c2cecb;
+  background: radial-gradient(circle at 50% 35%, rgba(90, 139, 126, 0.25), rgba(15, 15, 15, 0.95));
 }
 
 .carousel-modal {
