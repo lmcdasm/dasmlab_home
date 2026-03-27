@@ -20,27 +20,28 @@
             {{ currentViewLabel }}
           </div>
         </q-toolbar-title>
-        <q-space />
-        <q-btn flat dense round icon="tune" class="top-icon-btn">
-          <q-menu class="approach-menu">
-            <q-list dense dark style="min-width: 180px;">
-              <q-item-label header class="approach-menu-label">View approach</q-item-label>
-              <q-item
-                v-for="item in approachOptions"
-                :key="item.value"
-                clickable
-                v-close-popup
-                @click="approach = item.value"
-                :active="approach === item.value"
-                active-class="approach-menu-item--active"
-              >
-                <q-item-section avatar><q-icon :name="approach === item.value ? 'radio_button_checked' : 'radio_button_unchecked'" /></q-item-section>
-                <q-item-section>{{ item.label }}</q-item-section>
-              </q-item>
-            </q-list>
-          </q-menu>
-        </q-btn>
-        <div v-show="!leftDrawerOpen" class="version-chip">v{{ appVersion }}</div>
+        <div class="right-controls">
+          <q-btn flat dense round icon="tune" class="top-icon-btn">
+            <q-menu class="approach-menu">
+              <q-list dense dark style="min-width: 180px;">
+                <q-item-label header class="approach-menu-label">View approach</q-item-label>
+                <q-item
+                  v-for="item in approachOptions"
+                  :key="item.value"
+                  clickable
+                  v-close-popup
+                  @click="approach = item.value"
+                  :active="approach === item.value"
+                  active-class="approach-menu-item--active"
+                >
+                  <q-item-section avatar><q-icon :name="approach === item.value ? 'radio_button_checked' : 'radio_button_unchecked'" /></q-item-section>
+                  <q-item-section>{{ item.label }}</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
+          <div class="version-chip">v{{ appVersion }}</div>
+        </div>
       </q-toolbar>
     </q-header>
 
@@ -184,7 +185,7 @@ onBeforeUnmount(() => {
 
 .header-toolbar {
   backdrop-filter: blur(8px);
-  gap: 0.35rem;
+  gap: 0.42rem;
   flex-wrap: nowrap;
   min-height: 58px;
   overflow: hidden;
@@ -193,7 +194,8 @@ onBeforeUnmount(() => {
 .toolbar-title {
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 45%;
   min-width: 0;
   overflow: hidden;
 }
@@ -218,6 +220,14 @@ onBeforeUnmount(() => {
 .top-icon-btn {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.16);
+  flex-shrink: 0;
+}
+
+.right-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
   flex-shrink: 0;
 }
 
@@ -254,53 +264,66 @@ onBeforeUnmount(() => {
   border-right: 1px solid rgba(184, 205, 209, 0.2);
 }
 
+.shell-drawer :deep(.q-drawer__content) {
+  background: linear-gradient(178deg, #171a1a, #0f1212) !important;
+  color: #d8e4e1;
+}
+
 .drawer-list {
   padding-top: 0.35rem;
   background: transparent;
 }
 
 .drawer-section {
-  color: #a5bbb6;
+  color: #9bc0b8;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .drawer-item {
-  border-radius: 10px;
-  margin: 0.15rem 0.35rem;
-  transition: background 170ms ease, transform 170ms ease;
-  border: 1px solid transparent;
-  color: #d7e1df;
+  border-radius: 11px;
+  margin: 0.18rem 0.35rem;
+  transition: background 170ms ease, transform 170ms ease, border-color 170ms ease;
+  border: 1px solid rgba(90, 139, 126, 0.08);
+  color: #dce8e5;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .drawer-item :deep(.q-item__section--main) {
-  color: #d7e1df;
+  color: #dce8e5;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .drawer-item :deep(.q-item__section--avatar .q-icon) {
-  color: #9bc0b8;
+  color: #93beb4;
 }
 
 .drawer-item:hover {
-  background: rgba(90, 139, 126, 0.16);
+  background: linear-gradient(120deg, rgba(90, 139, 126, 0.28), rgba(164, 108, 173, 0.16));
   transform: translateX(2px);
-  border-color: rgba(90, 139, 126, 0.28);
+  border-color: rgba(164, 108, 173, 0.36);
 }
 
 .drawer-item:hover :deep(.q-item__section--avatar .q-icon) {
-  color: #c090c9;
+  color: #d0a3d7;
 }
 
 .drawer-item--active {
-  background: rgba(164, 108, 173, 0.18);
-  border: 1px solid rgba(164, 108, 173, 0.48);
+  background: linear-gradient(120deg, rgba(90, 139, 126, 0.32), rgba(164, 108, 173, 0.26));
+  border: 1px solid rgba(164, 108, 173, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(184, 205, 209, 0.08);
 }
 
 .drawer-item--active :deep(.q-item__section--main) {
-  color: #f0f3f2;
+  color: #f4f7f6;
   font-weight: 600;
+}
+
+.drawer-item--active :deep(.q-item__section--avatar .q-icon) {
+  color: #e1b6e7;
 }
 
 .shell-footer {
@@ -316,6 +339,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1320px) {
+  .toolbar-title {
+    max-width: 35%;
+  }
+}
+
+@media (max-width: 1140px) {
   .version-chip {
     display: none;
   }
