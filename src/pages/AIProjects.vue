@@ -1,49 +1,55 @@
 <template>
-  <q-page padding>
-    <h2 class="q-mb-xl">AI/ML Projects</h2>
-    <div class="text-body1 q-mb-lg">
-      With AI/ML technologies exploding all around us, this is where we explore models, deployment frameworks, and experimentation. Current focus includes MCP, A2A, and XAgentX stylings.
-    </div>
+  <q-page padding class="q-gutter-md">
+    <section class="dasm-shell">
+      <div class="dasm-floating-grid" />
+      <div class="dasm-shell__content">
+        <div class="dasm-caps">Project lane</div>
+        <h1 class="dasm-title">AI/ML projects</h1>
+        <p class="dasm-subtitle">
+          Model experimentation, deployment patterns, and practical AI architecture across DASMLAB and cloud ecosystems.
+        </p>
+      </div>
+    </section>
+    <div class="dasm-waypoint">From prototypes to production lanes</div>
 
-    <!-- DASMLAB Projects (full-width row) -->
-    <div class="row q-col-gutter-lg q-mb-xl">
+    <div class="row q-col-gutter-lg q-mb-xl dasm-panel">
       <div class="col-12">
-        <h4 class="q-mb-md">DASMLAB AI/ML Projects</h4>
+        <h4 class="q-mb-md">DASMLAB AI/ML projects</h4>
         <ProjectCard
           v-for="(project, idx) in dasmlabProjects"
           :key="'dasmlab-' + idx"
           v-bind="project"
+          category="DASMLAB"
         />
       </div>
     </div>
 
-    <!-- Cloud Provider Columns -->
     <div class="row q-col-gutter-lg">
-      <!-- AWS AI/ML -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-4 dasm-panel">
         <h4 class="q-mb-md">AWS AI/ML</h4>
         <ProjectCard
           v-for="(project, idx) in awsProjects"
           :key="'aws-' + idx"
           v-bind="project"
+          category="AWS"
         />
       </div>
-      <!-- Azure AI/ML -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-4 dasm-panel">
         <h4 class="q-mb-md">Azure AI/ML</h4>
         <ProjectCard
           v-for="(project, idx) in azureProjects"
           :key="'azure-' + idx"
           v-bind="project"
+          category="Azure"
         />
       </div>
-      <!-- GCP AI/ML -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-4 dasm-panel">
         <h4 class="q-mb-md">GCP AI/ML</h4>
         <ProjectCard
           v-for="(project, idx) in gcpProjects"
           :key="'gcp-' + idx"
           v-bind="project"
+          category="GCP"
         />
       </div>
     </div>

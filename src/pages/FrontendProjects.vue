@@ -1,18 +1,31 @@
 <template>
-  <q-page padding>
-    <h2>Frontend Projects</h2>
-    <p>This is where we explore different User Interface types and technologies, from Vue.js / Quasar (my current fav) to Voice, Android/iOS, Biometric based applications. This area is where we play with the "view" from the user’s point of view.</p>
-	<ProjectCard
-     	 v-for="(project, index) in projects"
-     	 :key="index"
-     	 :title="project.title"
-     	 :description="project.description"
-     	 :url="project.url"
-     	 :language="project.language"
-     	 :badge="project.badge"
-         :liveUrl="project.liveUrl"
-         :tutoUrl="project.tutoUrl"
-    	/>
+  <q-page padding class="q-gutter-md">
+    <section class="dasm-shell">
+      <div class="dasm-floating-grid" />
+      <div class="dasm-shell__content">
+        <div class="dasm-caps">Project lane</div>
+        <h1 class="dasm-title">Frontend projects</h1>
+        <p class="dasm-subtitle">
+          UI engineering across Vue, Quasar, mobile, voice, and accessibility-first experiences. Built for clarity and real-world delivery.
+        </p>
+      </div>
+    </section>
+
+    <div class="dasm-waypoint">Scroll and explore active builds</div>
+    <section class="dasm-panel">
+      <ProjectCard
+        v-for="(project, index) in projects"
+        :key="index"
+        :title="project.title"
+        :description="project.description"
+        :url="project.url"
+        :language="project.language"
+        :badge="project.badge"
+        category="Frontend"
+        :live-url="project.liveUrl"
+        :tuto-url="project.tutoUrl"
+      />
+    </section>
   </q-page>
 </template>
 

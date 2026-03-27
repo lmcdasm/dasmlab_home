@@ -1,11 +1,18 @@
 <template>
-  <q-page padding>
-    <h2 class="q-mb-xl">Infrastructure Projects</h2>
+  <q-page padding class="q-gutter-md">
+    <section class="dasm-shell">
+      <div class="dasm-floating-grid" />
+      <div class="dasm-shell__content">
+        <div class="dasm-caps">Project lane</div>
+        <h1 class="dasm-title">Infrastructure projects</h1>
+        <p class="dasm-subtitle">
+          Automation, GitOps, Kubernetes, and deployment foundations that power the lab and production paths.
+        </p>
+      </div>
+    </section>
 
-
-    <!-- HERO: Image left, Text right -->
-    <div class="row items-center q-mb-xl">
-      <div class="col-12 col-md-6 flex flex-center">
+    <div class="dasm-grid dasm-grid--2">
+      <div class="dasm-panel">
         <img
           src="/dasmlab_cdevelop_foundation.png"
           alt="Foundational Principles"
@@ -13,29 +20,27 @@
           @click="openModal('/dasmlab_cdevelop_foundation.png')"
         />
       </div>
-      <div class="col-12 col-md-6">
-        <div class="infra-text">
-          <b>DASMLAB.org</b> projects (including this site) all run inside the infrastructure depicted below.
-          <b>SecDevOps</b> is the guiding principle: every project is built, tested, and published through a live <b>GitHub Actions</b> pipeline (easily adaptable for GitLab-CI too).
-          All releases are <b>semantically versioned</b> and published via manifest to a control SCM, which is continuously deployed to the cluster using <b>FluxCD</b> (or <b>ArgoCD</b>).
-          <br><br>
-          The result: you get a fast, reproducible, fully automated CI/CD workflow you can inspect, test, and extend for your own infrastructure.
-        </div>
+      <div class="dasm-panel infra-text">
+        <p>
+          DASMLAB projects run in a SecDevOps workflow. Every release is built, tested, and published through GitHub Actions,
+          then promoted by manifest into a GitOps control repository.
+        </p>
+        <p>
+          FluxCD and ArgoCD patterns keep deployments versioned, reproducible, and auditable while remaining easy to inspect.
+        </p>
       </div>
     </div>
 
-
-    <!-- INFRA: Text left, Image right (staggered) -->
-    <div class="row items-center q-mb-xl">
-      <div class="col-12 col-md-6">
-        <div class="infra-text">
-          Everything runs on a <b>K3s Kubernetes cluster</b> (with Calico networking and MetalLB in BGP mode for load balancing), protected by off-cluster <b>HAProxy</b>, firewall, and router.
-          Monitoring is integrated via <b>Grafana Cloud (Free Tier)</b> for real-time cluster/pod insights.
-          <br><br>
-          A self-hosted GitHub Runner handles all CI/CD jobs. Both the runner and the prod K8s cluster are VMs on a single server, joined by a virtual switch on ESXi—an ideal “sandbox” for experiments and production alike.
-        </div>
+    <div class="dasm-grid dasm-grid--2">
+      <div class="dasm-panel infra-text">
+        <p>
+          The environment uses K3s with Calico and MetalLB, plus HAProxy/firewall edge controls and Grafana monitoring.
+        </p>
+        <p>
+          A self-hosted GitHub runner and production cluster VMs share a controlled virtual switch, creating a practical sandbox-to-prod path.
+        </p>
       </div>
-      <div class="col-12 col-md-6 flex flex-center">
+      <div class="dasm-panel">
         <img
           src="/dasmlab_cdevelop_pipeline_overview.png"
           alt="Infrastructure Overview"
@@ -45,23 +50,13 @@
       </div>
     </div>
 
-    <!-- MODAL: Consistent with DesignCarousel.vue -->
     <q-dialog v-model="modalOpen" persistent>
-      <div
-        style="
-          position: relative;
-          max-width: 90vw;
-          max-height: 90vh;
-          background: #181818;
-          border-radius: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;">
+      <div class="infra-modal">
         <img
           v-if="modalImage"
           :src="modalImage"
-          :alt="'Preview'"
-          style="max-width: 88vw; max-height: 80vh; background: #181818; display: block; margin: auto;"
+          alt="Preview"
+          class="infra-modal-image"
         />
         <q-btn
           flat
@@ -70,22 +65,23 @@
           icon="close"
           color="white"
           @click="modalOpen = false"
-          style="position: absolute; top: 12px; right: 12px; z-index: 1001; background: rgba(0,0,0,0.42);"
+          class="infra-modal-close"
         />
       </div>
     </q-dialog>
-    <div class="text-body1 q-mb-lg">
-      Project Cards: Here we dive into orchestration, CI/CD, validation frameworks and more. Think Nephio, Cluster API, Terraform, CircleCI and other infrastructure plumbing tools.
-    </div>
-    <ProjectCard
-      v-for="(project, index) in projects"
-      :key="index"
-      :title="project.title"
-      :description="project.description"
-      :url="project.url"
-      :language="project.language"
-      :badge="project.badge"
-    />
+    <div class="dasm-waypoint">Deployment systems and platform plumbing</div>
+    <section class="dasm-panel">
+      <ProjectCard
+        v-for="(project, index) in projects"
+        :key="index"
+        :title="project.title"
+        :description="project.description"
+        :url="project.url"
+        :language="project.language"
+        :badge="project.badge"
+        category="Infrastructure"
+      />
+    </section>
   </q-page>
 </template>
 
@@ -121,27 +117,48 @@ const projects = [
 
 <style scoped>
 .infra-img {
-  max-width: 380px;
+  max-width: 100%;
   width: 100%;
-  border-radius: 18px;
-  box-shadow: 0 4px 24px #0002;
-  margin: 2rem 0;
+  border-radius: 14px;
+  border: 1px solid rgba(184, 205, 209, 0.22);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 170ms ease, transform 170ms ease;
 }
+
 .infra-img.clickable:hover {
-  box-shadow: 0 6px 32px #1976d220;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(60, 107, 94, 0.2);
 }
+
 .infra-text {
-  font-size: 1.08rem;
-  max-width: 520px;
-  margin: 0 auto;
-  line-height: 1.6;
-  padding: 1rem 0;
+  color: #d2d2d2;
+  line-height: 1.58;
 }
-@media (max-width: 1024px) {
-  .infra-img { max-width: 90vw; }
-  .infra-text { max-width: 98vw; padding: 0.5rem 0;}
+
+.infra-modal {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: #181818;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.infra-modal-image {
+  max-width: 88vw;
+  max-height: 80vh;
+  background: #181818;
+}
+
+.infra-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1001;
+  background: rgba(0, 0, 0, 0.42);
 }
 </style>
 

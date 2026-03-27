@@ -1,1 +1,131 @@
 // app global css in SCSS form
+
+:root {
+  --dasm-primary-light: #5a8b7e;
+  --dasm-primary-dark: #2d5248;
+  --dasm-secondary-light: #7d8f6a;
+  --dasm-accent-light: #c090c9;
+  --dasm-dark-elevated: #2a2a2a;
+  --dasm-surface-0: #121212;
+  --dasm-surface-1: #171717;
+  --dasm-surface-2: #1f1f1f;
+  --dasm-border-soft: rgba(184, 205, 209, 0.2);
+  --dasm-border-strong: rgba(90, 139, 126, 0.45);
+  --dasm-text-soft: #c9c9c9;
+  --dasm-text-muted: #9fa6a8;
+  --dasm-glow-primary: rgba(60, 107, 94, 0.35);
+  --dasm-glow-accent: rgba(164, 108, 173, 0.28);
+  --dasm-ease-fast: 170ms ease;
+  --dasm-ease-mid: 260ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body.body--dark {
+  background:
+    radial-gradient(circle at 4% 8%, rgba(60, 107, 94, 0.1), transparent 32%),
+    radial-gradient(circle at 96% 12%, rgba(164, 108, 173, 0.09), transparent 36%),
+    #121212;
+}
+
+.dasm-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--dasm-border-strong);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 8% 18%, var(--dasm-glow-primary), transparent 40%),
+    radial-gradient(circle at 84% 20%, var(--dasm-glow-accent), transparent 44%),
+    linear-gradient(150deg, rgba(18, 18, 18, 0.95), rgba(29, 29, 29, 0.95));
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.dasm-shell__content {
+  position: relative;
+  z-index: 2;
+  padding: 1.2rem 1.15rem;
+}
+
+.dasm-caps {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--dasm-text-muted);
+}
+
+.dasm-title {
+  margin: 0.35rem 0 0.55rem;
+  font-size: clamp(1.35rem, 2.4vw, 2.1rem);
+  line-height: 1.09;
+  font-weight: 700;
+  animation: dasm-title-in 520ms ease both;
+}
+
+.dasm-subtitle {
+  margin: 0;
+  max-width: 840px;
+  color: var(--dasm-text-soft);
+  line-height: 1.58;
+}
+
+.dasm-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dasm-grid > * {
+  grid-column: span 12;
+}
+
+@media (min-width: 900px) {
+  .dasm-grid--2 > * {
+    grid-column: span 6;
+  }
+
+  .dasm-grid--3 > * {
+    grid-column: span 4;
+  }
+}
+
+.dasm-panel {
+  border: 1px solid var(--dasm-border-soft);
+  border-radius: 14px;
+  background: linear-gradient(170deg, rgba(27, 27, 27, 0.95), rgba(20, 20, 20, 0.95));
+  padding: 0.95rem;
+}
+
+.dasm-waypoint {
+  border: 1px dashed rgba(184, 205, 209, 0.38);
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #b9c1c3;
+  text-align: center;
+  padding: 0.35rem 0.55rem;
+}
+
+.dasm-floating-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.17) 0.65px, transparent 0.65px);
+  background-size: 5px 5px;
+}
+
+@keyframes dasm-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    letter-spacing: 0.02em;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    letter-spacing: 0;
+  }
+}

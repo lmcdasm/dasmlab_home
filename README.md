@@ -7,13 +7,13 @@
 ## ✨ Key Features
 
 - ⚡ **Vue.js 3 + Quasar-based SPA**  
-  Leveraging Pinia for state management, Vue Router for navigation, and built-in Quasar components for fast UI scaffolding.
+  Built with Vue Router navigation, composable-driven state patterns, and Quasar components for fast UI scaffolding.
 
 - 🔌 **Live Data via SSE (Server-Sent Events)**  
   Real-time updates from backend agents and controllers streamed directly into the interface.
 
 - 🧩 **Modular Component Design**  
-  Includes reusable ProjectCard, Gauge, StatusPanel, and ConsoleLog components, styled for dark/light mode flexibility.
+  Includes reusable `ProjectCard`, `DesignCarousel`, `WhatsNew`, and `VisitCounter` components with evolving design-system styling.
 
 - 📦 **Containerized Deployment**  
   Packaged via `nginx` as a static web asset container. Wrapped using `buildme.sh` and `runme.sh` for local or CI builds.
