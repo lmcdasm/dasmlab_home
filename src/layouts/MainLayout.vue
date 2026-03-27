@@ -7,6 +7,25 @@
         <q-toolbar-title>
           DASMLAB Home Page
         </q-toolbar-title>
+        <q-space />
+        <!-- Approach switcher: Hero+block vs Nav TL;DR (see docs/TARGET-0.6.0.md) -->
+        <q-select
+          v-model="approach"
+          :options="approachOptions"
+          option-value="value"
+          option-label="label"
+          emit-value
+          map-options
+          dense
+          borderless
+          dark
+          class="approach-select q-mr-md"
+          style="min-width: 140px;"
+        >
+          <template #prepend>
+            <q-icon name="tune" size="xs" />
+          </template>
+        </q-select>
         <div class="q-mr-sm">Version: {{ appVersion }}</div>
       </q-toolbar>
     </q-header>
@@ -88,10 +107,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
 import VisitCounter from 'src/components/VisitCounter.vue'
-const leftDrawerOpen = ref(true);
+import { useApproach } from 'src/composables/useApproach'
+
+const leftDrawerOpen = ref(true)
 const appVersion = (process.env.APP_VERSION || import.meta.env.APP_VERSION || 'dev')
+const { approach, approachOptions } = useApproach()
 if ((import.meta.env.COUNTER_DEBUG || 'false') === 'true') {
 	console.log('[env] APP_VERSION', {
 		process: process.env.APP_VERSION,
