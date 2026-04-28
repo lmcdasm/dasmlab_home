@@ -51,11 +51,6 @@ jobs:
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
-          # Verify we can use sudo
-          echo "Current user: $(whoami)"
-          echo "Testing sudo access..."
-          sudo whoami || (echo "ERROR: Cannot use sudo!" && exit 1)
-          
           # Verify token is set
           if [ -z "${GHCR_TOKEN}" ]; then
             echo "ERROR: GHCR_TOKEN is not set!"
@@ -65,7 +60,7 @@ jobs:
           
           # Login to GHCR first (before build, so it can pull base images if needed)
           echo "Logging in to GHCR..."
-          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
+          echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
           echo "Login successful!"
           
           # Verify Dockerfile exists
@@ -76,8 +71,7 @@ jobs:
           fi
           
           # Build with buildah (daemonless, no Docker needed)
-          # Use sudo since we're running as runner user but container is root
-          sudo buildah build \
+          buildah build \
             --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
             --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
             --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
@@ -88,7 +82,7 @@ jobs:
             .
           
           # Push the image
-          sudo buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
 
       - name: Run Phase (App Container Test)
         run: |
