@@ -32,18 +32,20 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Verify Buildah
+      - name: Verify Container Builder
         run: |
-          # Buildah should already be installed in the runner image
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
-          
-          if ! command -v buildah &> /dev/null; then
-            echo "Buildah not found, installing dependencies..."
-            apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y buildah uidmap fuse-overlayfs slirp4netns
+          if command -v buildah &> /dev/null; then
+            echo "BUILDER_RUNTIME=buildah" >> $GITHUB_ENV
+            buildah --version
+          elif [ -x "/kaniko/executor" ]; then
+            echo "BUILDER_RUNTIME=kaniko" >> $GITHUB_ENV
+            /kaniko/executor version
+          else
+            echo "ERROR: No supported container builder found (buildah or kaniko)"
+            exit 1
           fi
-          buildah --version
-          echo "Buildah is ready!"
+          echo "Container builder is ready!"
 
       - name: Build Phase
         env:
@@ -61,31 +63,45 @@ jobs:
           fi
           echo "Token length: ${#GHCR_TOKEN} characters"
           
-          # Login to GHCR first (before build, so it can pull base images if needed)
-          echo "Logging in to GHCR..."
-          echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
-          echo "Login successful!"
-          
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
             echo "ERROR: Dockerfile not found in current directory"
             ls -la
             exit 1
           fi
-          
-          # Build with buildah (daemonless, no Docker needed)
-          buildah build \
-            --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
-            --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
-            --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
-            --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
-            --build-arg APP_VERSION="$VERSION_TAG" \
-            -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
-            -f Dockerfile \
-            .
-          
-          # Push the image
-          buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+
+          if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+            echo "Logging in to GHCR with buildah..."
+            echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
+
+            buildah build \
+              --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
+              --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
+              --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
+              --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
+              --build-arg APP_VERSION="$VERSION_TAG" \
+              -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+              -f Dockerfile \
+              .
+
+            buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          else
+            echo "Using kaniko to build and push image..."
+            mkdir -p /kaniko/.docker
+            AUTH_B64=$(printf "lmcdasm:%s" "${GHCR_TOKEN}" | base64 -w 0)
+            cat > /kaniko/.docker/config.json <<EOF
+            {"auths":{"ghcr.io":{"auth":"${AUTH_B64}"}}}
+            EOF
+            /kaniko/executor \
+              --context "${GITHUB_WORKSPACE}" \
+              --dockerfile "${GITHUB_WORKSPACE}/Dockerfile" \
+              --destination "ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}" \
+              --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
+              --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
+              --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
+              --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
+              --build-arg APP_VERSION="$VERSION_TAG"
+          fi
 
       - name: Run Phase (App Container Test)
         run: |
