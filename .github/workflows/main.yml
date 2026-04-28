@@ -89,9 +89,7 @@ jobs:
             echo "Using kaniko to build and push image..."
             mkdir -p /kaniko/.docker
             AUTH_B64=$(printf "lmcdasm:%s" "${GHCR_TOKEN}" | base64 -w 0)
-            cat > /kaniko/.docker/config.json <<EOF
-            {"auths":{"ghcr.io":{"auth":"${AUTH_B64}"}}}
-            EOF
+            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "${AUTH_B64}" > /kaniko/.docker/config.json
             /kaniko/executor \
               --context "${GITHUB_WORKSPACE}" \
               --dockerfile "${GITHUB_WORKSPACE}/Dockerfile" \
