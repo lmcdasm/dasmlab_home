@@ -38,8 +38,9 @@ jobs:
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           
           if ! command -v buildah &> /dev/null; then
-            echo "ERROR: buildah command not found!"
-            exit 1
+            echo "Buildah not found, installing dependencies..."
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y buildah uidmap fuse-overlayfs slirp4netns
           fi
           buildah --version
           echo "Buildah is ready!"
@@ -50,6 +51,8 @@ jobs:
         run: |
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+          export BUILDAH_ISOLATION=chroot
+          export STORAGE_DRIVER=vfs
           
           # Verify token is set
           if [ -z "${GHCR_TOKEN}" ]; then
