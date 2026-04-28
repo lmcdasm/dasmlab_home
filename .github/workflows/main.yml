@@ -87,10 +87,14 @@ jobs:
             buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
           else
             echo "Using kaniko to build and push image..."
-            mkdir -p /kaniko/.docker
+            SUDO_CMD=""
+            if command -v sudo >/dev/null 2>&1; then
+              SUDO_CMD="sudo -E"
+            fi
+            ${SUDO_CMD} mkdir -p /kaniko/.docker
             AUTH_B64=$(printf "lmcdasm:%s" "${GHCR_TOKEN}" | base64 -w 0)
-            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "${AUTH_B64}" > /kaniko/.docker/config.json
-            /kaniko/executor \
+            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "${AUTH_B64}" | ${SUDO_CMD} tee /kaniko/.docker/config.json >/dev/null
+            ${SUDO_CMD} /kaniko/executor \
               --context "${GITHUB_WORKSPACE}" \
               --dockerfile "${GITHUB_WORKSPACE}/Dockerfile" \
               --destination "ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}" \
