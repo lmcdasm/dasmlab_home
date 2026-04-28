@@ -122,39 +122,38 @@ jobs:
           
           sed "s|__VERSION__|${VERSION_TAG}|g" "$MANIFEST_SOURCE" > generated.yaml
 
-          git config --global user.name "dasmlab-bot"
-          git config --global user.email "ci@dasmlab.org"
-
           git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab-live-cicd.git
 
-          # Use OCP cluster path for ocp, k3s path for k3s
+          # Use dual-cluster OCP deployment for HA; k3s keeps legacy single target
           if [ "$CLUSTER_TYPE" = "ocp" ]; then
-            CLUSTER_NAME="ocp-ai-sno-2"
+            TARGET_CLUSTERS=("2026-prod-2-1" "2026-prod-1")
           else
-            CLUSTER_NAME="dasmlab-prod-1"
-          fi
-          
-          DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
-          ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
-          mkdir -p "$ARCHIVE_DIR"
-          mkdir -p "$DEPLOY_DIR"
-
-          # Move ALL old versioned manifests into archive BEFORE adding new one
-          # This ensures only one manifest exists in live directory at any time
-          if [ -d "$DEPLOY_DIR" ]; then
-            find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -print0 | while IFS= read -r -d '' file; do
-              if [ -f "$file" ]; then
-                echo "Archiving old manifest: $(basename "$file")"
-                mv "$file" "$ARCHIVE_DIR/"
-              fi
-            done
+            TARGET_CLUSTERS=("dasmlab-prod-1")
           fi
 
-          # Save only new versioned file (Flux/ArgoCD watches this)
-          cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
-          echo "Created new manifest: dasmlab-home-${VERSION_TAG}.yaml"
+          for CLUSTER_NAME in "${TARGET_CLUSTERS[@]}"; do
+            DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
+            ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
+            mkdir -p "$ARCHIVE_DIR"
+            mkdir -p "$DEPLOY_DIR"
+
+            # Keep only one live versioned manifest per cluster
+            if [ -d "$DEPLOY_DIR" ]; then
+              find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -print0 | while IFS= read -r -d '' file; do
+                if [ -f "$file" ]; then
+                  echo "Archiving old manifest for ${CLUSTER_NAME}: $(basename "$file")"
+                  mv "$file" "$ARCHIVE_DIR/"
+                fi
+              done
+            fi
+
+            cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
+            echo "Created manifest for ${CLUSTER_NAME}: dasmlab-home-${VERSION_TAG}.yaml"
+          done
 
           cd dasmlab-live-cicd
+          git config user.name "dasmlab-bot"
+          git config user.email "ci@dasmlab.org"
           git add .
           git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} (${CLUSTER_TYPE})"
           git push
