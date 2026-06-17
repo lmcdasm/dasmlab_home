@@ -1,0 +1,60 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF5FE"/>
+      <stop offset="1" stop-color="#DBECFA"/>
+    </linearGradient>
+    <radialGradient id="orbA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1290 140) rotate(90) scale(250 340)">
+      <stop stop-color="#87B3D2" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#87B3D2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(290 740) rotate(90) scale(235 330)">
+      <stop stop-color="#A7D1EA" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#A7D1EA" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trace" x1="170" y1="160" x2="1440" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6698BD" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#6698BD" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1290" cy="140" r="320" fill="url(#orbA)"/>
+  <circle cx="290" cy="740" r="300" fill="url(#orbB)"/>
+
+  <g opacity="0.62">
+    <path d="M126 154C436 94 764 98 1078 158C1260 192 1398 252 1494 316" stroke="url(#trace)" stroke-width="2"/>
+    <path d="M116 246C438 194 780 202 1096 262C1282 296 1414 354 1500 416" stroke="url(#trace)" stroke-width="2"/>
+    <path d="M108 338C448 294 804 306 1122 366C1300 398 1426 454 1508 512" stroke="url(#trace)" stroke-width="2"/>
+    <path d="M100 430C458 392 826 410 1144 470C1312 498 1438 548 1512 608" stroke="url(#trace)" stroke-width="2"/>
+    <path d="M96 520C470 488 850 512 1170 570C1330 596 1448 642 1520 696" stroke="url(#trace)" stroke-width="2"/>
+  </g>
+
+  <g stroke="#6D9DBE" stroke-opacity="0.56" stroke-width="1.5">
+    <path d="M170 182H324L370 228H506L564 278H706L758 332H922" />
+    <path d="M214 634H370L430 584H604L662 534H826L886 482H1062" />
+    <path d="M922 332H1060L1120 388H1306" />
+    <path d="M1062 482H1184L1248 430H1394" />
+  </g>
+
+  <g fill="#5E8CAD" fill-opacity="0.6">
+    <circle cx="170" cy="182" r="5"/>
+    <circle cx="370" cy="228" r="5"/>
+    <circle cx="564" cy="278" r="5"/>
+    <circle cx="758" cy="332" r="5"/>
+    <circle cx="1120" cy="388" r="5"/>
+    <circle cx="1248" cy="430" r="5"/>
+
+    <circle cx="214" cy="634" r="5"/>
+    <circle cx="430" cy="584" r="5"/>
+    <circle cx="662" cy="534" r="5"/>
+    <circle cx="886" cy="482" r="5"/>
+  </g>
+
+  <g stroke="#85AEC8" stroke-opacity="0.54" stroke-width="1">
+    <rect x="746" y="320" width="24" height="24" rx="6"/>
+    <rect x="1108" y="376" width="24" height="24" rx="6"/>
+    <rect x="650" y="522" width="24" height="24" rx="6"/>
+    <rect x="874" y="470" width="24" height="24" rx="6"/>
+  </g>
+</svg>
