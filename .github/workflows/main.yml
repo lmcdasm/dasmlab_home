@@ -71,12 +71,12 @@ jobs:
             export BUILDAH_GRAPHROOT="/tmp/buildah-graphroot-${GITHUB_RUN_ID}"
             mkdir -p "${BUILDAH_RUNROOT}" "${BUILDAH_GRAPHROOT}"
             export CONTAINERS_STORAGE_CONF="/tmp/containers-storage-${GITHUB_RUN_ID}.conf"
-            cat > "${CONTAINERS_STORAGE_CONF}" <<EOF
-[storage]
-driver = "vfs"
-runroot = "${BUILDAH_RUNROOT}"
-graphroot = "${BUILDAH_GRAPHROOT}"
-EOF
+            printf '%s\n' \
+              '[storage]' \
+              'driver = "vfs"' \
+              "runroot = \"${BUILDAH_RUNROOT}\"" \
+              "graphroot = \"${BUILDAH_GRAPHROOT}\"" \
+              > "${CONTAINERS_STORAGE_CONF}"
           fi
 
           # Runner-local fallback for token bootstrap (keeps CI moving while secrets are rotated)
