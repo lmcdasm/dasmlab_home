@@ -1,9 +1,11 @@
 <template>
   <div class="news-shell">
     <div class="news-header q-mb-sm">
-      <div class="text-h6 text-left">
-        <q-icon name="newspaper" class="q-mr-sm" />
-        What’s New?
+      <div class="text-h6 text-left news-heading">
+        <span class="news-heading-icon">
+          <q-icon name="newspaper" />
+        </span>
+        <span>What’s New?</span>
       </div>
       <div v-if="normalizedNews.length > 0" class="news-counter text-caption">
         {{ slide + 1 }} / {{ normalizedNews.length }}
@@ -24,7 +26,7 @@
         control-color="primary"
         navigation
         arrows
-        height="176px"
+        height="224px"
         class="news-carousel"
       >
         <q-carousel-slide
@@ -40,7 +42,9 @@
               </q-chip>
               <div class="news-badge">New commit activity</div>
             </div>
-            <div class="news-title">{{ entry.titleSummary }}</div>
+            <div class="news-title-bubble">
+              <div class="news-title">{{ entry.titleSummary }}</div>
+            </div>
             <div class="news-meta">
               <q-icon name="schedule" size="14px" class="q-mr-xs" />
               {{ entry.dateLabel }}
@@ -103,11 +107,31 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.news-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.news-heading-icon {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #3d5f78;
+  background: linear-gradient(155deg, rgba(168, 207, 235, 0.45), rgba(126, 172, 205, 0.25));
+  box-shadow: inset 0 0 0 1px rgba(62, 97, 122, 0.2), 0 4px 12px rgba(18, 43, 61, 0.08);
 }
 
 .news-counter {
   color: #5e7484;
   letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .empty-shell {
@@ -126,13 +150,14 @@ watch(
   border-radius: 12px;
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 254, 0.98));
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  overflow: hidden;
 }
 
 .news-slide {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem 0.3rem 0.95rem;
+  padding: 0.45rem 2.45rem 2.2rem;
 }
 
 .news-card {
@@ -174,27 +199,83 @@ watch(
   color: #687d8c;
 }
 
+.news-title-bubble {
+  border-radius: 10px;
+  border: 1px solid rgba(79, 116, 143, 0.2);
+  background: linear-gradient(150deg, rgba(232, 242, 249, 0.7), rgba(240, 248, 253, 0.92));
+  padding: 0.58rem 0.72rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.76);
+}
+
 .news-title {
   color: #2a3d50;
   font-weight: 600;
-  line-height: 1.35;
-  font-size: 0.98rem;
+  line-height: 1.45;
+  font-size: 0.96rem;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .news-meta {
-  color: #647888;
-  font-size: 0.8rem;
+  color: #5a6f80;
+  font-size: 0.82rem;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
+  margin-top: 0.2rem;
+}
+
+.news-carousel :deep(.q-carousel__prev-arrow),
+.news-carousel :deep(.q-carousel__next-arrow) {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #365871;
+  box-shadow: 0 8px 16px rgba(23, 48, 66, 0.14);
+  top: 47%;
+}
+
+.news-carousel :deep(.q-carousel__prev-arrow) {
+  left: 0.5rem;
+}
+
+.news-carousel :deep(.q-carousel__next-arrow) {
+  right: 0.5rem;
+}
+
+.news-carousel :deep(.q-carousel__navigation) {
+  bottom: 0.42rem;
+}
+
+.news-carousel :deep(.q-carousel__navigation .q-btn) {
+  margin: 0 2px;
+  min-width: 14px;
+  min-height: 14px;
 }
 
 @media (max-width: 700px) {
+  .news-header {
+    align-items: flex-start;
+  }
+
+  .news-counter {
+    margin-top: 0.22rem;
+  }
+
   .news-badge {
     display: none;
+  }
+
+  .news-slide {
+    padding: 0.35rem 1.95rem 2.1rem;
+  }
+
+  .news-heading-icon {
+    width: 1.7rem;
+    height: 1.7rem;
   }
 
   .news-title {
