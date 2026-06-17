@@ -11,44 +11,41 @@
       </div>
     </section>
 
-    <div class="dasm-grid dasm-grid--2">
-      <div class="dasm-panel">
-        <img
-          src="/dasmlab_cdevelop_foundation.png"
-          alt="Foundational Principles"
-          class="infra-img clickable"
-          @click="openModal('/dasmlab_cdevelop_foundation.png')"
-        />
-      </div>
-      <div class="dasm-panel infra-text">
-        <p>
-          DASMLAB projects run in a SecDevOps workflow. Every release is built, tested, and published through GitHub Actions,
-          then promoted by manifest into a GitOps control repository.
-        </p>
-        <p>
-          Argo CD GitOps patterns keep deployments versioned, reproducible, and auditable while remaining easy to inspect.
-        </p>
-      </div>
-    </div>
+    <section class="infra-journey">
+      <article
+        v-for="(item, index) in infraNarratives"
+        :key="item.title"
+        class="infra-rhythm"
+        :class="{ 'infra-rhythm--right': index % 2 === 1 }"
+      >
+        <div class="infra-node" aria-hidden="true">
+          {{ String(index + 1).padStart(2, '0') }}
+        </div>
 
-    <div class="dasm-grid dasm-grid--2">
-      <div class="dasm-panel infra-text">
-        <p>
-          The environment uses K3s with Calico and MetalLB, plus HAProxy/firewall edge controls and Grafana monitoring.
-        </p>
-        <p>
-          A self-hosted GitHub runner and production cluster VMs share a controlled virtual switch, creating a practical sandbox-to-prod path.
-        </p>
-      </div>
-      <div class="dasm-panel">
-        <img
-          src="/dasmlab_cdevelop_pipeline_overview.png"
-          alt="Infrastructure Overview"
-          class="infra-img clickable"
-          @click="openModal('/dasmlab_cdevelop_pipeline_overview.png')"
-        />
-      </div>
-    </div>
+        <div class="infra-media-wrap dasm-panel">
+          <button
+            type="button"
+            class="infra-media-orb"
+            :aria-label="`Open ${item.title} diagram`"
+            @click="openModal(item.image)"
+          >
+            <img
+              :src="item.image"
+              :alt="item.alt"
+              class="infra-img"
+            />
+          </button>
+          <p class="infra-media-caption">{{ item.caption }}</p>
+        </div>
+
+        <div class="infra-copy dasm-panel">
+          <span class="infra-chip">{{ item.tag }}</span>
+          <h3 class="infra-copy-title">{{ item.title }}</h3>
+          <p class="infra-copy-main">{{ item.main }}</p>
+          <p class="infra-copy-sub">{{ item.sub }}</p>
+        </div>
+      </article>
+    </section>
 
     <q-dialog v-model="modalOpen" persistent>
       <div class="infra-modal">
@@ -97,6 +94,27 @@ function openModal(src) {
   modalOpen.value = true
 }
 
+const infraNarratives = [
+  {
+    title: 'Build and release backbone',
+    tag: 'SecDevOps flow',
+    image: '/dasmlab_cdevelop_foundation.png',
+    alt: 'Foundational Principles',
+    caption: 'Commit -> CI checks -> signed artifact -> GitOps manifest handoff',
+    main: 'DASMLAB projects move through a SecDevOps lane where every release is built, tested, and published through GitHub Actions.',
+    sub: 'Versioned manifests are promoted into the GitOps control repository so Argo CD can keep runtime state reproducible and easy to audit.'
+  },
+  {
+    title: 'Runtime and operations fabric',
+    tag: 'Cluster topology',
+    image: '/dasmlab_cdevelop_pipeline_overview.png',
+    alt: 'Infrastructure Overview',
+    caption: 'K3s + network controls + observability + production runner integration',
+    main: 'The environment combines K3s with Calico and MetalLB, edge controls through HAProxy/firewall policy, and Grafana-based monitoring.',
+    sub: 'A self-hosted GitHub runner and production cluster VMs share a controlled virtual switch, creating a practical sandbox-to-prod path.'
+  }
+]
+
 const projects = [
   {
     title: 'Circle-Ci',
@@ -116,24 +134,134 @@ const projects = [
 </script>
 
 <style scoped>
+.infra-journey {
+  position: relative;
+  display: grid;
+  gap: 1.4rem;
+}
+
+.infra-rhythm {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(300px, 0.95fr) minmax(300px, 1.05fr);
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.infra-rhythm:nth-child(odd) .infra-media-wrap {
+  transform: translateY(-6px);
+}
+
+.infra-rhythm:nth-child(even) .infra-copy {
+  transform: translateY(8px);
+}
+
+.infra-rhythm--right .infra-media-wrap {
+  grid-column: 3;
+}
+
+.infra-rhythm--right .infra-copy {
+  grid-column: 2;
+}
+
+.infra-node {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(55, 90, 117, 0.28);
+  background: linear-gradient(150deg, rgba(227, 241, 250, 0.9), rgba(213, 232, 245, 0.68));
+  box-shadow: 0 9px 20px rgba(30, 56, 74, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #33526a;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.infra-media-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.infra-media-orb {
+  width: min(100%, 370px);
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(40, 72, 96, 0.2);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.96), rgba(230, 242, 250, 0.86));
+  box-shadow: 0 16px 30px rgba(24, 45, 62, 0.12);
+  cursor: pointer;
+  padding: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.infra-media-orb:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 18px 36px rgba(34, 74, 106, 0.18);
+}
+
 .infra-img {
   max-width: 100%;
+  max-height: 100%;
   width: 100%;
+  object-fit: contain;
   border-radius: 14px;
-  border: 1px solid rgba(41, 72, 99, 0.16);
-  box-shadow: 0 8px 20px rgba(25, 47, 67, 0.08);
-  cursor: pointer;
-  transition: box-shadow 170ms ease, transform 170ms ease;
 }
 
-.infra-img.clickable:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(63, 122, 107, 0.18);
+.infra-media-caption {
+  margin: 0;
+  text-align: center;
+  color: #607588;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  max-width: 32ch;
 }
 
-.infra-text {
-  color: #4b5d6d;
-  line-height: 1.58;
+.infra-copy {
+  padding: 1.12rem 1.18rem;
+  border: 1px solid rgba(42, 75, 102, 0.15);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.94), rgba(245, 251, 255, 0.9));
+}
+
+.infra-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid rgba(90, 126, 153, 0.3);
+  color: #4f6a7f;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.58rem;
+}
+
+.infra-copy-title {
+  margin: 0 0 0.5rem;
+  color: #263b4e;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  line-height: 1.24;
+}
+
+.infra-copy-main,
+.infra-copy-sub {
+  margin: 0;
+  color: #4c6070;
+  line-height: 1.62;
+  font-size: 0.98rem;
+}
+
+.infra-copy-sub {
+  margin-top: 0.62rem;
+  color: #5f7282;
 }
 
 .infra-modal {
@@ -159,6 +287,50 @@ const projects = [
   right: 12px;
   z-index: 1001;
   background: rgba(0, 0, 0, 0.36);
+}
+
+@media (max-width: 1220px) {
+  .infra-rhythm {
+    grid-template-columns: 44px minmax(270px, 1fr) minmax(270px, 1fr);
+    gap: 0.9rem;
+  }
+
+  .infra-media-orb {
+    width: min(100%, 330px);
+  }
+}
+
+@media (max-width: 980px) {
+  .infra-rhythm,
+  .infra-rhythm--right {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .infra-rhythm:nth-child(odd) .infra-media-wrap,
+  .infra-rhythm:nth-child(even) .infra-copy {
+    transform: none;
+  }
+
+  .infra-rhythm--right .infra-media-wrap,
+  .infra-rhythm--right .infra-copy {
+    grid-column: auto;
+  }
+
+  .infra-node {
+    width: 40px;
+    height: 40px;
+    justify-self: start;
+  }
+
+  .infra-media-wrap {
+    align-items: flex-start;
+  }
+
+  .infra-media-caption {
+    text-align: left;
+    max-width: 48ch;
+  }
 }
 </style>
 
