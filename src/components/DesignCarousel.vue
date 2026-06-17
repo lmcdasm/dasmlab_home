@@ -29,8 +29,8 @@
         </q-carousel>
         <div v-else class="carousel-empty">
           <q-icon name="imagesmode" size="34px" class="q-mb-sm" />
-          <div class="text-subtitle2">Featured experiments are loading</div>
-          <div class="text-caption">Design carousel service not reachable right now.</div>
+          <div class="text-subtitle2">No featured slides published yet</div>
+          <div class="text-caption">Design carousel service is online and ready for new entries.</div>
         </div>
       </div>
     </div>
