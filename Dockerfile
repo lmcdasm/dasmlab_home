@@ -1,4 +1,4 @@
-FROM node:latest AS build
+FROM docker.io/library/node:latest AS build
 # Build-time args (populated by GitHub Actions)
 ARG COUNTER_API_TOKEN
 ARG COUNTER_WORKSPACE
@@ -15,7 +15,7 @@ ENV COUNTER_FULL_PATH=${COUNTER_FULL_PATH}
 ENV APP_VERSION=${APP_VERSION}
 RUN npm install && npm install counterapi && npm run build
 
-FROM nginx:alpine
+FROM docker.io/library/nginx:alpine
 # Propagate envs to runtime container (for future diagnostics or dynamic usage)
 ARG COUNTER_API_TOKEN
 ARG COUNTER_WORKSPACE
