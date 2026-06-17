@@ -64,14 +64,12 @@ jobs:
             source /home/dasm/gh-pat
             GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
           fi
-          
+
           # Verify token is set
           if [ -z "${GHCR_TOKEN}" ]; then
             echo "ERROR: GHCR_TOKEN is not set!"
             exit 1
           fi
-          echo "::add-mask::${GHCR_TOKEN}"
-          echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
           echo "Token length: ${#GHCR_TOKEN} characters"
           
           # Verify Dockerfile exists
@@ -83,7 +81,27 @@ jobs:
 
           if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
             echo "Logging in to GHCR with buildah..."
-            echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
+            if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
+              echo "Primary GHCR token failed, trying runner-local fallback..."
+              if [ -f "/home/dasm/gh-pat" ]; then
+                source /home/dasm/gh-pat
+                FALLBACK_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+                if [ -n "${FALLBACK_TOKEN}" ]; then
+                  GHCR_TOKEN="${FALLBACK_TOKEN}"
+                  echo "Using runner-local token fallback."
+                  echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+                else
+                  echo "ERROR: runner-local token fallback is empty"
+                  exit 1
+                fi
+              else
+                echo "ERROR: no runner-local token file available for fallback"
+                exit 1
+              fi
+            fi
+
+            echo "::add-mask::${GHCR_TOKEN}"
+            echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
 
             buildah build \
               --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
@@ -98,6 +116,8 @@ jobs:
             buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
           else
             echo "Using kaniko to build and push image..."
+            echo "::add-mask::${GHCR_TOKEN}"
+            echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
             SUDO_CMD=""
             if command -v sudo >/dev/null 2>&1; then
               SUDO_CMD="sudo -E"
