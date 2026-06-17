@@ -70,6 +70,8 @@ jobs:
             export BUILDAH_RUNROOT="/tmp/buildah-runroot-${GITHUB_RUN_ID}"
             export BUILDAH_GRAPHROOT="/tmp/buildah-graphroot-${GITHUB_RUN_ID}"
             mkdir -p "${BUILDAH_RUNROOT}" "${BUILDAH_GRAPHROOT}"
+            echo "BUILDAH_RUNROOT=${BUILDAH_RUNROOT}" >> $GITHUB_ENV
+            echo "BUILDAH_GRAPHROOT=${BUILDAH_GRAPHROOT}" >> $GITHUB_ENV
             export CONTAINERS_STORAGE_CONF="/tmp/containers-storage-${GITHUB_RUN_ID}.conf"
             printf '%s\n' \
               '[storage]' \
@@ -100,8 +102,16 @@ jobs:
           fi
 
           if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+            buildah_cmd() {
+              buildah \
+                --storage-driver="${STORAGE_DRIVER}" \
+                --root "${BUILDAH_GRAPHROOT:-$HOME/.local/share/containers/storage}" \
+                --runroot "${BUILDAH_RUNROOT:-/tmp/containers-user-$UID/containers}" \
+                "$@"
+            }
+
             echo "Logging in to GHCR with buildah..."
-            if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
+            if ! echo "${GHCR_TOKEN}" | buildah_cmd login --username lmcdasm --password-stdin ghcr.io; then
               echo "Primary GHCR token failed, trying runner-local fallback..."
               if [ -f "/home/dasm/gh-pat" ]; then
                 source /home/dasm/gh-pat
@@ -109,7 +119,7 @@ jobs:
                 if [ -n "${FALLBACK_TOKEN}" ]; then
                   GHCR_TOKEN="${FALLBACK_TOKEN}"
                   echo "Using runner-local token fallback."
-                  echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+                  echo "${GHCR_TOKEN}" | buildah_cmd login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
                 else
                   echo "ERROR: runner-local token fallback is empty"
                   exit 1
@@ -123,7 +133,7 @@ jobs:
             echo "::add-mask::${GHCR_TOKEN}"
             echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
 
-            buildah build \
+            buildah_cmd build \
               --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
               --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
               --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
@@ -133,7 +143,7 @@ jobs:
               -f Dockerfile \
               .
 
-            buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+            buildah_cmd push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
           else
             echo "Using kaniko to build and push image..."
             echo "::add-mask::${GHCR_TOKEN}"
@@ -244,6 +254,10 @@ jobs:
         if: always()
         run: |
           # Clean up buildah containers and temp files
+          if [ -n "${BUILDAH_GRAPHROOT:-}" ] && [ -n "${BUILDAH_RUNROOT:-}" ]; then
+            buildah --storage-driver=vfs --root "${BUILDAH_GRAPHROOT}" --runroot "${BUILDAH_RUNROOT}" rm -a 2>/dev/null || true
+            rm -rf "${BUILDAH_RUNROOT}" "${BUILDAH_GRAPHROOT}" 2>/dev/null || true
+          fi
           buildah rm -a 2>/dev/null || true
           rm -rf ~/.docker ~/.local/share/containers 2>/dev/null || true
 
