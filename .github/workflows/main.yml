@@ -59,6 +59,10 @@ jobs:
           export BUILDAH_ISOLATION=chroot
           export STORAGE_DRIVER=vfs
 
+          # Reset stale buildah state on long-lived self-hosted runners
+          buildah rm -a 2>/dev/null || true
+          rm -rf ~/.local/share/containers/storage/vfs/dir/* 2>/dev/null || true
+
           # Runner-local fallback for token bootstrap (keeps CI moving while secrets are rotated)
           if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
             source /home/dasm/gh-pat
