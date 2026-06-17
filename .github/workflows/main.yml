@@ -58,10 +58,26 @@ jobs:
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           export BUILDAH_ISOLATION=chroot
           export STORAGE_DRIVER=vfs
+          export XDG_RUNTIME_DIR="/tmp/xdg-runtime-${GITHUB_RUN_ID}"
+          mkdir -p "${XDG_RUNTIME_DIR}"
 
           # Reset stale buildah state on long-lived self-hosted runners
           buildah rm -a 2>/dev/null || true
           rm -rf ~/.local/share/containers/storage/vfs/dir/* 2>/dev/null || true
+
+          # Use per-run container storage to avoid vfs layer collisions on shared runners
+          if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+            export BUILDAH_RUNROOT="/tmp/buildah-runroot-${GITHUB_RUN_ID}"
+            export BUILDAH_GRAPHROOT="/tmp/buildah-graphroot-${GITHUB_RUN_ID}"
+            mkdir -p "${BUILDAH_RUNROOT}" "${BUILDAH_GRAPHROOT}"
+            export CONTAINERS_STORAGE_CONF="/tmp/containers-storage-${GITHUB_RUN_ID}.conf"
+            cat > "${CONTAINERS_STORAGE_CONF}" <<EOF
+[storage]
+driver = "vfs"
+runroot = "${BUILDAH_RUNROOT}"
+graphroot = "${BUILDAH_GRAPHROOT}"
+EOF
+          fi
 
           # Runner-local fallback for token bootstrap (keeps CI moving while secrets are rotated)
           if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
