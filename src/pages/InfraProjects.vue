@@ -26,7 +26,7 @@
           then promoted by manifest into a GitOps control repository.
         </p>
         <p>
-          FluxCD and ArgoCD patterns keep deployments versioned, reproducible, and auditable while remaining easy to inspect.
+          Argo CD GitOps patterns keep deployments versioned, reproducible, and auditable while remaining easy to inspect.
         </p>
       </div>
     </div>
@@ -120,19 +120,19 @@ const projects = [
   max-width: 100%;
   width: 100%;
   border-radius: 14px;
-  border: 1px solid rgba(184, 205, 209, 0.22);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(41, 72, 99, 0.16);
+  box-shadow: 0 8px 20px rgba(25, 47, 67, 0.08);
   cursor: pointer;
   transition: box-shadow 170ms ease, transform 170ms ease;
 }
 
 .infra-img.clickable:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(60, 107, 94, 0.2);
+  box-shadow: 0 10px 24px rgba(63, 122, 107, 0.18);
 }
 
 .infra-text {
-  color: #d2d2d2;
+  color: #4b5d6d;
   line-height: 1.58;
 }
 
@@ -140,7 +140,7 @@ const projects = [
   position: relative;
   max-width: 90vw;
   max-height: 90vh;
-  background: #181818;
+  background: rgba(20, 31, 40, 0.92);
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -150,7 +150,7 @@ const projects = [
 .infra-modal-image {
   max-width: 88vw;
   max-height: 80vh;
-  background: #181818;
+  background: transparent;
 }
 
 .infra-modal-close {
@@ -158,7 +158,7 @@ const projects = [
   top: 12px;
   right: 12px;
   z-index: 1001;
-  background: rgba(0, 0, 0, 0.42);
+  background: rgba(0, 0, 0, 0.36);
 }
 </style>
 

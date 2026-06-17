@@ -122,8 +122,9 @@ onBeforeUnmount(() => {
 .carousel-shell {
   max-width: 760px;
   width: 100%;
-  border: 1px solid rgba(184, 205, 209, 0.24);
-  background: linear-gradient(160deg, #181818, #131313);
+  border: 1px solid rgba(41, 72, 99, 0.15);
+  background: linear-gradient(160deg, #ffffff, #f7fbfe);
+  box-shadow: 0 10px 22px rgba(25, 47, 67, 0.08);
 }
 
 .carousel-shell__inner {
@@ -134,7 +135,7 @@ onBeforeUnmount(() => {
 .carousel-frame {
   border-radius: 16px;
   overflow: hidden;
-  background: #0f0f0f;
+  background: #f4f9fc;
   width: 100%;
   height: 100%;
 }
@@ -152,15 +153,15 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #c2cecb;
-  background: radial-gradient(circle at 50% 35%, rgba(90, 139, 126, 0.25), rgba(15, 15, 15, 0.95));
+  color: #54697c;
+  background: radial-gradient(circle at 50% 35%, rgba(63, 122, 107, 0.16), rgba(246, 250, 254, 0.95));
 }
 
 .carousel-modal {
   position: relative;
   max-width: 90vw;
   max-height: 90vh;
-  background: #222;
+  background: rgba(20, 30, 38, 0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -169,7 +170,7 @@ onBeforeUnmount(() => {
 .carousel-modal__image {
   max-width: 88vw;
   max-height: 80vh;
-  background: #222;
+  background: transparent;
   display: block;
   margin: auto;
 }
@@ -185,17 +186,17 @@ onBeforeUnmount(() => {
 .q-carousel__arrow,
 .q-carousel__arrow .q-icon,
 .q-carousel__arrow .q-icon svg {
-  color: #22746b !important;
-  fill: #22746b !important;
-  stroke: #22746b !important;
+  color: #2c8f7e !important;
+  fill: #2c8f7e !important;
+  stroke: #2c8f7e !important;
   opacity: 1 !important;
 }
 
 .q-carousel__arrow--right,
 .q-carousel__arrow--left {
-  color: #22746b !important;
-  fill: #22746b !important;
-  stroke: #22746b !important;
+  color: #2c8f7e !important;
+  fill: #2c8f7e !important;
+  stroke: #2c8f7e !important;
 }
 </style>
 

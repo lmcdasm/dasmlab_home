@@ -88,17 +88,18 @@ const lifestyleImages = [
   width: 100%;
   max-width: 420px;
   border-radius: 14px;
-  border: 1px solid rgba(184, 205, 209, 0.26);
+  border: 1px solid rgba(41, 72, 99, 0.16);
 }
 
 .about-copy {
-  color: #d0d0d0;
+  color: #4a5d6d;
   line-height: 1.6;
 }
 
 .about-carousel {
   border-radius: 14px;
-  background: #161616;
+  background: linear-gradient(165deg, #ffffff, #f7fbfe);
+  border: 1px solid rgba(41, 72, 99, 0.14);
 }
 
 .about-lifestyle-img {
@@ -112,9 +113,10 @@ const lifestyleImages = [
   margin-top: 0.6rem;
   width: 100%;
   text-align: center;
-  color: #d2d2d2;
+  color: #4a5d6d;
   font-size: 0.85rem;
-  background: rgba(0, 0, 0, 0.56);
+  background: rgba(242, 248, 253, 0.95);
+  border: 1px solid rgba(41, 72, 99, 0.14);
   padding: 0.4rem 0.55rem;
   border-radius: 10px;
 }
