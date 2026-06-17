@@ -14,17 +14,17 @@
 
     <section class="dasm-panel q-pa-lg">
       <div class="text-h6 text-primary">How we can engage</div>
-      <div class="text-body2 q-mt-sm text-grey-4">
+      <div class="text-body2 q-mt-sm">
         Typical discussions include discovery and requirements vetting, architecture and design direction,
         prototype planning, and pragmatic MVP roadmaps.
       </div>
       <div class="q-mt-md q-gutter-sm">
-        <q-chip dense outline color="primary" text-color="white" icon="fact_check" label="Requirements vetting" />
-        <q-chip dense outline color="primary" text-color="white" icon="account_tree" label="Architecture and design" />
-        <q-chip dense outline color="primary" text-color="white" icon="schema" label="Prototype strategy" />
-        <q-chip dense outline color="primary" text-color="white" icon="rocket_launch" label="MVP execution" />
+        <q-chip dense outline color="primary" text-color="primary" icon="fact_check" label="Requirements vetting" />
+        <q-chip dense outline color="primary" text-color="primary" icon="account_tree" label="Architecture and design" />
+        <q-chip dense outline color="primary" text-color="primary" icon="schema" label="Prototype strategy" />
+        <q-chip dense outline color="primary" text-color="primary" icon="rocket_launch" label="MVP execution" />
       </div>
-      <div class="text-body2 q-mt-md text-grey-4">
+      <div class="text-body2 q-mt-md">
         Send a short note with your context, constraints, and timeline, and we can set up a focused conversation.
       </div>
       <q-btn
@@ -35,7 +35,7 @@
         color="primary"
         class="q-mt-md"
       />
-      <div class="text-caption q-mt-sm text-grey-5">lmcdasm@gmail.com</div>
+      <div class="text-caption q-mt-sm text-grey-7">lmcdasm@gmail.com</div>
     </section>
   </q-page>
 </template>

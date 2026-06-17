@@ -49,9 +49,10 @@ const doubledNews = computed(() =>
   height: 108px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(184, 205, 209, 0.22);
+  border: 1px solid rgba(41, 72, 99, 0.16);
   border-radius: 12px;
-  background: linear-gradient(165deg, rgba(23, 23, 23, 0.95), rgba(16, 16, 16, 0.95));
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 254, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
   padding: 0 0.55rem;
 }
 
@@ -67,7 +68,7 @@ const doubledNews = computed(() =>
 
 .entry {
   padding: 0.5em 0;
-  border-bottom: 1px solid rgba(184, 205, 209, 0.2);
+  border-bottom: 1px solid rgba(41, 72, 99, 0.12);
 }
 
 @keyframes scroll-up {

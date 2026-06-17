@@ -16,6 +16,9 @@ on:
 
 jobs:
   cx-pipeline:
+    permissions:
+      contents: read
+      packages: write
     runs-on: [self-hosted]
     steps:
       - name: Checkout Repository
@@ -32,17 +35,20 @@ jobs:
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
           echo "COUNTER_WORKSPACE=${{ vars.WORKSPACE }}" >> $GITHUB_ENV
 
-      - name: Verify Buildah
+      - name: Verify Container Builder
         run: |
-          # Buildah should already be installed in the runner image
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
-          
-          if ! command -v buildah &> /dev/null; then
-            echo "ERROR: buildah command not found!"
+          if command -v buildah &> /dev/null; then
+            echo "BUILDER_RUNTIME=buildah" >> $GITHUB_ENV
+            buildah --version
+          elif [ -x "/kaniko/executor" ]; then
+            echo "BUILDER_RUNTIME=kaniko" >> $GITHUB_ENV
+            /kaniko/executor version
+          else
+            echo "ERROR: No supported container builder found (buildah or kaniko)"
             exit 1
           fi
-          buildah --version
-          echo "Buildah is ready!"
+          echo "Container builder is ready!"
 
       - name: Build Phase
         env:
@@ -50,12 +56,15 @@ jobs:
         run: |
           # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
-          
-          # Verify we can use sudo
-          echo "Current user: $(whoami)"
-          echo "Testing sudo access..."
-          sudo whoami || (echo "ERROR: Cannot use sudo!" && exit 1)
-          
+          export BUILDAH_ISOLATION=chroot
+          export STORAGE_DRIVER=vfs
+
+          # Runner-local fallback for token bootstrap (keeps CI moving while secrets are rotated)
+          if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+            source /home/dasm/gh-pat
+            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+          fi
+
           # Verify token is set
           if [ -z "${GHCR_TOKEN}" ]; then
             echo "ERROR: GHCR_TOKEN is not set!"
@@ -63,32 +72,69 @@ jobs:
           fi
           echo "Token length: ${#GHCR_TOKEN} characters"
           
-          # Login to GHCR first (before build, so it can pull base images if needed)
-          echo "Logging in to GHCR..."
-          echo "${GHCR_TOKEN}" | sudo buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed!" && exit 1)
-          echo "Login successful!"
-          
           # Verify Dockerfile exists
           if [ ! -f Dockerfile ]; then
             echo "ERROR: Dockerfile not found in current directory"
             ls -la
             exit 1
           fi
-          
-          # Build with buildah (daemonless, no Docker needed)
-          # Use sudo since we're running as runner user but container is root
-          sudo buildah build \
-            --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
-            --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
-            --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
-            --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
-            --build-arg APP_VERSION="$VERSION_TAG" \
-            -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
-            -f Dockerfile \
-            .
-          
-          # Push the image
-          sudo buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+
+          if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+            echo "Logging in to GHCR with buildah..."
+            if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
+              echo "Primary GHCR token failed, trying runner-local fallback..."
+              if [ -f "/home/dasm/gh-pat" ]; then
+                source /home/dasm/gh-pat
+                FALLBACK_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+                if [ -n "${FALLBACK_TOKEN}" ]; then
+                  GHCR_TOKEN="${FALLBACK_TOKEN}"
+                  echo "Using runner-local token fallback."
+                  echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+                else
+                  echo "ERROR: runner-local token fallback is empty"
+                  exit 1
+                fi
+              else
+                echo "ERROR: no runner-local token file available for fallback"
+                exit 1
+              fi
+            fi
+
+            echo "::add-mask::${GHCR_TOKEN}"
+            echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+
+            buildah build \
+              --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
+              --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
+              --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
+              --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
+              --build-arg APP_VERSION="$VERSION_TAG" \
+              -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+              -f Dockerfile \
+              .
+
+            buildah push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+          else
+            echo "Using kaniko to build and push image..."
+            echo "::add-mask::${GHCR_TOKEN}"
+            echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+            SUDO_CMD=""
+            if command -v sudo >/dev/null 2>&1; then
+              SUDO_CMD="sudo -E"
+            fi
+            ${SUDO_CMD} mkdir -p /kaniko/.docker
+            AUTH_B64=$(printf "lmcdasm:%s" "${GHCR_TOKEN}" | base64 -w 0)
+            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "${AUTH_B64}" | ${SUDO_CMD} tee /kaniko/.docker/config.json >/dev/null
+            ${SUDO_CMD} /kaniko/executor \
+              --context "${GITHUB_WORKSPACE}" \
+              --dockerfile "${GITHUB_WORKSPACE}/Dockerfile" \
+              --destination "ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}" \
+              --build-arg COUNTER_FULL_PATH="$COUNTER_FULL_PATH" \
+              --build-arg COUNTER_API_TOKEN="$COUNTER_API_TOKEN" \
+              --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
+              --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
+              --build-arg APP_VERSION="$VERSION_TAG"
+          fi
 
       - name: Run Phase (App Container Test)
         run: |
@@ -116,6 +162,16 @@ jobs:
           # Can override via workflow_dispatch input if needed
           CLUSTER_TYPE: ${{ inputs.cluster_type || 'ocp' }}
         run: |
+          DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
+          if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+            source /home/dasm/gh-pat
+            DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+          fi
+          if [ -z "${DEPLOY_TOKEN}" ]; then
+            echo "ERROR: DEPLOY_TOKEN is not set!"
+            exit 1
+          fi
+
           # Determine which manifest to use based on CLUSTER_TYPE (default: ocp)
           # Can be set via workflow_dispatch input or environment variable
           if [ "$CLUSTER_TYPE" = "ocp" ]; then
@@ -128,39 +184,38 @@ jobs:
           
           sed "s|__VERSION__|${VERSION_TAG}|g" "$MANIFEST_SOURCE" > generated.yaml
 
-          git config --global user.name "dasmlab-bot"
-          git config --global user.email "ci@dasmlab.org"
+          git clone "https://x-access-token:${DEPLOY_TOKEN}@github.com/lmcdasm/dasmlab-live-cicd.git"
 
-          git clone https://x-access-token:${{ secrets.DASMLAB_GHCR_PAT }}@github.com/lmcdasm/dasmlab-live-cicd.git
-
-          # Use OCP cluster path for ocp, k3s path for k3s
+          # Use dual-cluster OCP deployment for HA; k3s keeps legacy single target
           if [ "$CLUSTER_TYPE" = "ocp" ]; then
-            CLUSTER_NAME="ocp-ai-sno-2"
+            TARGET_CLUSTERS=("2026-prod-2-1" "2026-prod-1")
           else
-            CLUSTER_NAME="dasmlab-prod-1"
-          fi
-          
-          DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
-          ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
-          mkdir -p "$ARCHIVE_DIR"
-          mkdir -p "$DEPLOY_DIR"
-
-          # Move ALL old versioned manifests into archive BEFORE adding new one
-          # This ensures only one manifest exists in live directory at any time
-          if [ -d "$DEPLOY_DIR" ]; then
-            find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -print0 | while IFS= read -r -d '' file; do
-              if [ -f "$file" ]; then
-                echo "Archiving old manifest: $(basename "$file")"
-                mv "$file" "$ARCHIVE_DIR/"
-              fi
-            done
+            TARGET_CLUSTERS=("dasmlab-prod-1")
           fi
 
-          # Save only new versioned file (Flux/ArgoCD watches this)
-          cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
-          echo "Created new manifest: dasmlab-home-${VERSION_TAG}.yaml"
+          for CLUSTER_NAME in "${TARGET_CLUSTERS[@]}"; do
+            DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
+            ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
+            mkdir -p "$ARCHIVE_DIR"
+            mkdir -p "$DEPLOY_DIR"
+
+            # Keep only one live versioned manifest per cluster (Argo CD syncs via OpenShift GitOps)
+            if [ -d "$DEPLOY_DIR" ]; then
+              find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -print0 | while IFS= read -r -d '' file; do
+                if [ -f "$file" ]; then
+                  echo "Archiving old manifest for ${CLUSTER_NAME}: $(basename "$file")"
+                  mv "$file" "$ARCHIVE_DIR/"
+                fi
+              done
+            fi
+
+            cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
+            echo "Created manifest for ${CLUSTER_NAME}: dasmlab-home-${VERSION_TAG}.yaml"
+          done
 
           cd dasmlab-live-cicd
+          git config user.name "dasmlab-bot"
+          git config user.email "ci@dasmlab.org"
           git add .
           git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} (${CLUSTER_TYPE})"
           git push

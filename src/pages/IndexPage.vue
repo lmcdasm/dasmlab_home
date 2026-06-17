@@ -159,13 +159,13 @@ onMounted(async () => {
 .hero-shell {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(90, 139, 126, 0.35);
+  border: 1px solid rgba(43, 76, 103, 0.16);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 12% 20%, rgba(60, 107, 94, 0.34), transparent 44%),
-    radial-gradient(circle at 82% 30%, rgba(164, 108, 173, 0.25), transparent 48%),
-    linear-gradient(145deg, rgba(18, 18, 18, 0.95), rgba(29, 29, 29, 0.95));
-  box-shadow: 0 20px 38px rgba(0, 0, 0, 0.36);
+    radial-gradient(circle at 12% 20%, rgba(63, 122, 107, 0.14), transparent 46%),
+    radial-gradient(circle at 82% 30%, rgba(158, 115, 178, 0.12), transparent 48%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 255, 0.98));
+  box-shadow: 0 14px 28px rgba(25, 47, 67, 0.08);
 }
 
 .hero-content {
@@ -178,8 +178,8 @@ onMounted(async () => {
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 0.15;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 0.6px, transparent 0.6px);
+  opacity: 0.1;
+  background-image: radial-gradient(rgba(44, 66, 86, 0.25) 0.6px, transparent 0.6px);
   background-size: 4px 4px;
 }
 
@@ -190,18 +190,18 @@ onMounted(async () => {
   height: 180px;
   border-radius: 50%;
   filter: blur(20px);
-  opacity: 0.5;
+  opacity: 0.34;
   animation: float-orb 7s ease-in-out infinite;
 }
 
 .hero-orb-a {
-  background: rgba(60, 107, 94, 0.55);
+  background: rgba(63, 122, 107, 0.35);
   top: -60px;
   right: -40px;
 }
 
 .hero-orb-b {
-  background: rgba(164, 108, 173, 0.45);
+  background: rgba(158, 115, 178, 0.3);
   left: -50px;
   bottom: -70px;
   animation-delay: 1.5s;
@@ -212,7 +212,8 @@ onMounted(async () => {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-size: 0.73rem;
-  color: #b8cdd1;
+  color: #607587;
+  font-weight: 600;
 }
 
 .hero-title {
@@ -220,18 +221,19 @@ onMounted(async () => {
   line-height: 1.08;
   font-size: clamp(1.4rem, 2.7vw, 2.2rem);
   font-weight: 700;
+  color: #1f2f3e;
 }
 
 .accent-word {
   display: block;
-  color: #c090c9;
-  text-shadow: 0 0 14px rgba(164, 108, 173, 0.38);
+  color: #885fa0;
+  text-shadow: 0 0 12px rgba(158, 115, 178, 0.22);
   animation: accent-pulse 3.2s ease-in-out infinite;
 }
 
 .hero-copy {
   max-width: 780px;
-  color: #d7d7d7;
+  color: #445769;
 }
 
 .hero-chips :deep(.q-chip) {
@@ -240,47 +242,37 @@ onMounted(async () => {
 }
 
 .scanline {
-  border: 1px dashed rgba(160, 160, 160, 0.4);
+  border: 1px dashed rgba(90, 117, 139, 0.35);
   border-radius: 10px;
   text-align: center;
-  color: #c4c4c4;
+  color: #607587;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-size: 0.77rem;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .content-frame {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(100, 117, 80, 0.45);
+  border: 1px solid rgba(43, 76, 103, 0.14);
   border-radius: 14px;
-  background: linear-gradient(170deg, rgba(26, 26, 26, 0.96), rgba(21, 21, 21, 0.96));
-  box-shadow: inset 0 0 0 1px rgba(184, 205, 209, 0.08);
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.96), rgba(247, 251, 254, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 8px 20px rgba(25, 47, 67, 0.06);
 }
 
 .content-frame::after {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
-  width: 3px;
-  background: linear-gradient(180deg, rgba(90, 139, 126, 0.8), rgba(164, 108, 173, 0.7));
+  width: 4px;
+  background: linear-gradient(180deg, rgba(63, 122, 107, 0.64), rgba(158, 115, 178, 0.55));
   pointer-events: none;
 }
 
 .content-frame::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.2;
-  background-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(184, 205, 209, 0.22) 49%,
-    transparent 100%
-  );
-  background-size: 100% 6px;
+  display: none;
 }
 
 .frame-label {
@@ -290,21 +282,21 @@ onMounted(async () => {
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(184, 205, 209, 0.85);
+  color: rgba(84, 106, 124, 0.9);
 }
 
 .project-card {
   position: relative;
-  border: 1px solid rgba(90, 139, 126, 0.35) !important;
+  border: 1px solid rgba(43, 76, 103, 0.15) !important;
   border-radius: 14px;
-  background: linear-gradient(160deg, #1a1a1a, #131313);
+  background: linear-gradient(160deg, #ffffff, #f7fbfe);
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .project-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(164, 108, 173, 0.65) !important;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+  border-color: rgba(151, 110, 176, 0.5) !important;
+  box-shadow: 0 12px 24px rgba(25, 47, 67, 0.12);
 }
 
 .card-inner {
@@ -317,22 +309,21 @@ onMounted(async () => {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 30% 25%, rgba(90, 139, 126, 0.42), rgba(18, 18, 18, 0.5));
-  border: 1px solid rgba(90, 139, 126, 0.4);
+  background: radial-gradient(circle at 30% 25%, rgba(63, 122, 107, 0.18), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(63, 122, 107, 0.25);
 }
 
 .card-title {
   font-weight: 600;
-  color: #e5ecea;
+  color: #24384a;
   letter-spacing: 0.01em;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .card-cta {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #a8bca5;
+  color: #607587;
 }
 
 @media (max-width: 900px) {

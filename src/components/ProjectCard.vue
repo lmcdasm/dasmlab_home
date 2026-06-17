@@ -100,15 +100,15 @@ const onTitleClick = () => {
 .project-card {
   border: 1px solid var(--dasm-border-soft);
   border-radius: 14px;
-  background: linear-gradient(165deg, #1d1d1d, #161616);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+  background: linear-gradient(165deg, #ffffff, #f7fbfe);
+  box-shadow: 0 10px 22px rgba(24, 44, 62, 0.08);
   transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
 }
 
 .project-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(164, 108, 173, 0.5);
-  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.32);
+  border-color: rgba(151, 110, 176, 0.42);
+  box-shadow: 0 16px 26px rgba(24, 44, 62, 0.14);
 }
 
 .token-chip {
@@ -129,16 +129,16 @@ const onTitleClick = () => {
 }
 
 .card-description {
-  color: #cecece;
+  color: #4b5d6d;
   line-height: 1.45;
 }
 
 .detail-line {
-  color: #abb1b3;
+  color: #647686;
 }
 
 .detail-label {
-  color: #bec8ca;
+  color: #5c6f80;
   margin-right: 0.3rem;
 }
 
@@ -156,9 +156,9 @@ const onTitleClick = () => {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(90, 139, 126, 0.42);
-  background: radial-gradient(circle at 35% 30%, rgba(90, 139, 126, 0.35), rgba(20, 20, 20, 0.7));
-  color: #9ac2b8;
+  border: 1px solid rgba(63, 122, 107, 0.32);
+  background: radial-gradient(circle at 35% 30%, rgba(63, 122, 107, 0.16), rgba(255, 255, 255, 0.9));
+  color: #4d8f82;
 }
 
 @keyframes fadeInUp {
