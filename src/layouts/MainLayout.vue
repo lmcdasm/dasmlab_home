@@ -73,7 +73,7 @@
               </q-list>
             </q-menu>
           </q-btn>
-          <div class="version-chip">v{{ appVersion }}</div>
+          <div class="version-chip">{{ appVersion }}</div>
         </div>
       </q-toolbar>
     </q-header>
