@@ -13,6 +13,13 @@ export function mediaUrl(path) {
   return `${SURFING_HOST}${path}`
 }
 
+export function mediaDownloadUrl(item) {
+  const url = mediaUrl(item?.url)
+  if (!url) return ''
+  const joiner = url.includes('?') ? '&' : '?'
+  return `${url}${joiner}download=1`
+}
+
 export async function fetchDays() {
   const { data } = await client.get('/days')
   return sortDays(data || [])

@@ -243,10 +243,16 @@ func ServeMedia(c *gin.Context) {
 		return
 	}
 
-	path := mediaFilePath(mediaID, filepath.Ext(filename))
+	ext := filepath.Ext(filename)
+	path := mediaFilePath(mediaID, ext)
 	if _, err := os.Stat(path); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
-		return
+		// Uploaded/imported files may use a different extension case (.jpg vs .JPG).
+		alt := mediaFilePath(mediaID, strings.ToLower(ext))
+		if _, err2 := os.Stat(alt); err2 != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+			return
+		}
+		path = alt
 	}
 
 	contentType := mime.TypeByExtension(filepath.Ext(filename))
@@ -254,6 +260,9 @@ func ServeMedia(c *gin.Context) {
 		contentType = "application/octet-stream"
 	}
 	c.Header("Content-Type", contentType)
+	if c.Query("download") == "1" || c.Query("download") == "true" {
+		c.Header("Content-Disposition", `attachment; filename="`+filename+`"`)
+	}
 	c.File(path)
 }
 

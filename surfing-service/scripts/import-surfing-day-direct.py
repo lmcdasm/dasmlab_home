@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 NS = os.environ.get("SURFING_NAMESPACE", "surfing-service-system")
-KUBECONFIG = os.environ.get("KUBECONFIG", os.path.expanduser("~/.kube/config"))
+KUBECONFIG = os.environ.get("KUBECONFIG") or os.path.expanduser("~/.kube/config")
 OC = ["oc", f"--kubeconfig={KUBECONFIG}", "-n", NS]
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"}
@@ -73,6 +73,7 @@ def main():
     print(f"pod={pod} preload={preload}")
 
     oc("exec", pod, "--", "mkdir", "-p", preload)
+    pod = pod_name()  # refresh in case of restart
     print("rsync source -> preload ...")
     run(["oc", f"--kubeconfig={KUBECONFIG}", "rsync", f"{source}/", f"{NS}/{pod}:{preload}/"])
 
