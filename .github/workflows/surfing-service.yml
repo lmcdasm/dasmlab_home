@@ -32,8 +32,10 @@ jobs:
 
       - name: Setup Build Metadata
         run: |
-          echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "VERSION_TAG=v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          COMMIT_ID="$(git rev-parse --short HEAD)"
+          VERSION_TAG="v$(date +'%Y.%m.%d')-${COMMIT_ID}"
+          echo "COMMIT_ID=${COMMIT_ID}" >> $GITHUB_ENV
+          echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
           echo "CONTAINER_NAME=surfing-instance-${GITHUB_SHA::8}" >> $GITHUB_ENV
           echo "API_PORT=10023" >> $GITHUB_ENV
           echo "METRICS_PORT=9222" >> $GITHUB_ENV
