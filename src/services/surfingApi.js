@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const SURFING_HOST = import.meta.env.VITE_SURFING_API_HOST || 'https://surfing.svc.dasmlab.org'
+const SURFING_HOST = import.meta.env.VITE_SURFING_API_HOST || '/api/surfing'
 
 const client = axios.create({
   baseURL: SURFING_HOST,
