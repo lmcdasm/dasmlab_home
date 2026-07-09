@@ -6,6 +6,7 @@ import CloudProjects from 'pages/CloudProjects.vue'
 import InfraProjects from 'pages/InfraProjects.vue'
 import SecurityProjects from 'pages/SecurityProjects.vue'
 import ContactPage from 'pages/ContactPage.vue'
+import SurfingPage from 'pages/SurfingPage.vue'
 
 const routes = [
   {
@@ -20,7 +21,8 @@ const routes = [
       { path: 'projects/cloud', component: CloudProjects },
       { path: 'projects/infrastructure', component: InfraProjects },
       { path: 'projects/security', component: SecurityProjects },
-      { path: 'contact', component: ContactPage }
+      { path: 'contact', component: ContactPage },
+      { path: 'surfing', component: SurfingPage }
     ]
   },
 

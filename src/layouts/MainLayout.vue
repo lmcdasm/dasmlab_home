@@ -161,6 +161,7 @@ const { approach, approachOptions } = useApproach()
 const topNav = [
   { label: 'Home', icon: 'home', to: '/' },
   { label: 'About DASMLAB', icon: 'school', to: '/about' },
+  { label: 'Surfing', icon: 'sailing', to: '/surfing' },
   { label: 'Contact', icon: 'mail', to: '/contact' },
   { label: 'GitHub', icon: 'code', href: 'https://github.com/lmcdasm' }
 ]
@@ -177,6 +178,7 @@ const projectNav = [
 const routeLabelMap = {
   '/': 'Home',
   '/about': 'About',
+  '/surfing': 'Surfing',
   '/contact': 'Contact',
   '/projects/frontend': 'Frontend',
   '/projects/backend': 'Backend',

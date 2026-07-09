@@ -1,0 +1,170 @@
+name: Surfing Service CX Pipeline (Buildah)
+
+on:
+  push:
+    branches: ["main", "development", "2026-spring-FE-update"]
+    paths:
+      - 'surfing-service/**'
+      - '.github/workflows/surfing-service.yml'
+  workflow_dispatch:
+    inputs:
+      cluster_type:
+        description: 'Cluster type (ocp or k3s)'
+        required: false
+        default: 'ocp'
+        type: choice
+        options:
+          - ocp
+          - k3s
+
+jobs:
+  cx-pipeline:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: [self-hosted, dasmlab]
+    defaults:
+      run:
+        working-directory: surfing-service
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Build Metadata
+        run: |
+          COMMIT_ID="$(git rev-parse --short HEAD)"
+          VERSION_TAG="v$(date +'%Y.%m.%d')-${COMMIT_ID}"
+          echo "COMMIT_ID=${COMMIT_ID}" >> $GITHUB_ENV
+          echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=surfing-instance-${GITHUB_SHA::8}" >> $GITHUB_ENV
+          echo "API_PORT=10023" >> $GITHUB_ENV
+          echo "METRICS_PORT=9222" >> $GITHUB_ENV
+          echo "IMAGE_URI=ghcr.io/lmcdasm/surfing-service:${VERSION_TAG}" >> $GITHUB_ENV
+
+      - name: Verify Container Builder
+        run: |
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+          if command -v buildah &> /dev/null; then
+            echo "BUILDER_RUNTIME=buildah" >> $GITHUB_ENV
+            buildah --version
+          elif [ -x "/kaniko/executor" ]; then
+            echo "BUILDER_RUNTIME=kaniko" >> $GITHUB_ENV
+            /kaniko/executor version
+          else
+            echo "ERROR: No supported container builder found (buildah or kaniko)"
+            exit 1
+          fi
+
+      - name: Build Phase
+        env:
+          GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
+        run: |
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+          if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+            source /home/dasm/gh-pat
+            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+          fi
+          if [ -z "${GHCR_TOKEN}" ]; then
+            echo "ERROR: GHCR token not set"
+            exit 1
+          fi
+          echo "::add-mask::${GHCR_TOKEN}"
+          echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+          echo "Token length: ${#GHCR_TOKEN} characters"
+
+          if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+            if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
+              echo "Primary GHCR token failed, trying runner-local fallback..."
+              if [ -f "/home/dasm/gh-pat" ]; then
+                source /home/dasm/gh-pat
+                GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+                echo "::add-mask::${GHCR_TOKEN}"
+                echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+                echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+              else
+                echo "ERROR: no runner-local token file available for fallback"
+                exit 1
+              fi
+            fi
+
+            buildah bud \
+              --build-arg ARCH=amd64 \
+              --build-arg goproxy=https://proxy.golang.org \
+              -t "${IMAGE_URI}" \
+              -f Dockerfile \
+              .
+          else
+            SUDO_CMD=""
+            if command -v sudo >/dev/null 2>&1; then SUDO_CMD="sudo -E"; fi
+            ${SUDO_CMD} mkdir -p /kaniko/.docker
+            AUTH_B64=$(printf "lmcdasm:%s" "${GHCR_TOKEN}" | base64 -w 0)
+            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "${AUTH_B64}" | ${SUDO_CMD} tee /kaniko/.docker/config.json >/dev/null
+            ${SUDO_CMD} /kaniko/executor \
+              --context "${GITHUB_WORKSPACE}/surfing-service" \
+              --dockerfile "${GITHUB_WORKSPACE}/surfing-service/Dockerfile" \
+              --destination "${IMAGE_URI}" \
+              --build-arg ARCH=amd64 \
+              --build-arg goproxy=https://proxy.golang.org
+          fi
+
+      - name: Publish Phase
+        run: |
+          if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+            buildah push "${IMAGE_URI}"
+            echo "Pushed ${IMAGE_URI}"
+          else
+            echo "Image already pushed by kaniko: ${IMAGE_URI}"
+          fi
+
+      - name: GitOps Sync (Deploy) Phase
+        env:
+          CLUSTER_TYPE: ${{ inputs.cluster_type || 'ocp' }}
+        run: |
+          DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
+          if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+            source /home/dasm/gh-pat
+            DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+          fi
+          if [ -z "${DEPLOY_TOKEN}" ]; then
+            echo "ERROR: DEPLOY_TOKEN is not set!"
+            exit 1
+          fi
+
+          if [ "$CLUSTER_TYPE" = "ocp" ]; then
+            MANIFEST_SOURCE="k8s_envelope/surfing-service_deploy-ocp.yaml"
+            TARGET_CLUSTERS=("2026-prod-2-1" "2026-prod-1")
+          else
+            echo "k3s manifest not yet defined for surfing-service"
+            exit 1
+          fi
+
+          sed "s|__VERSION__|${VERSION_TAG}|g" "$MANIFEST_SOURCE" > generated.yaml
+
+          git clone "https://x-access-token:${DEPLOY_TOKEN}@github.com/lmcdasm/dasmlab-live-cicd.git"
+
+          for CLUSTER_NAME in "${TARGET_CLUSTERS[@]}"; do
+            DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/surfing-service/live"
+            ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/surfing-service/archived"
+            mkdir -p "$ARCHIVE_DIR" "$DEPLOY_DIR"
+            find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'surfing-service-v*.yaml' -exec mv {} "$ARCHIVE_DIR"/ \;
+            cp generated.yaml "$DEPLOY_DIR/surfing-service-${VERSION_TAG}.yaml"
+            echo "Created manifest for ${CLUSTER_NAME}: surfing-service-${VERSION_TAG}.yaml"
+          done
+
+          cd dasmlab-live-cicd
+          git config user.name "dasmlab-bot"
+          git config user.email "ci@dasmlab.org"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No GitOps changes to commit."
+          else
+            git commit -m "Auto-publish surfing-service ${VERSION_TAG} (${CLUSTER_TYPE})"
+            git push
+          fi
+
+      - name: Teardown
+        if: always()
+        run: |
+          podman rm -f "${CONTAINER_NAME}" 2>/dev/null || true
+          buildah rm -a 2>/dev/null || true
+          rm -rf ~/.docker ~/.local/share/containers 2>/dev/null || true

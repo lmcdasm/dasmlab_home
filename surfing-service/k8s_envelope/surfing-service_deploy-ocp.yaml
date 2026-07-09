@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: surfing-service
+  namespace: surfing-service-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: surfing-service
+  template:
+    metadata:
+      labels:
+        app: surfing-service
+    spec:
+      serviceAccountName: surfing-service-sa
+      securityContext:
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+      imagePullSecrets:
+        - name: dasmlab-ghcr-pull
+      containers:
+        - name: surfing-service
+          image: ghcr.io/lmcdasm/surfing-service:__VERSION__
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+          env:
+            - name: SURFING_DATA_DIR
+              value: /data
+            - name: SURFING_API_PORT
+              value: "10023"
+            - name: SURFING_MAX_UPLOAD_MB
+              value: "500"
+          volumeMounts:
+            - name: surfing-data
+              mountPath: /data
+          ports:
+            - name: api
+              containerPort: 10023
+              protocol: TCP
+            - name: metrics
+              containerPort: 9222
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /isalive
+              port: api
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /isalive
+              port: api
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: surfing-data
+          persistentVolumeClaim:
+            claimName: surfing-data
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: surfing-data
+  namespace: surfing-service-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: lvms-vg1
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: surfing-service-sa
+  namespace: surfing-service-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: system:openshift:scc:anyuid
+  namespace: surfing-service-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+  - kind: ServiceAccount
+    name: surfing-service-sa
+    namespace: surfing-service-system
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: surfing-service
+  namespace: surfing-service-system
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9222"
+    prometheus.io/path: "/metrics"
+spec:
+  selector:
+    app: surfing-service
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 10023
+      targetPort: api
+      protocol: TCP
+    - name: metrics
+      port: 9222
+      targetPort: metrics
+      protocol: TCP
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: surfing-service
+  namespace: surfing-service-system
+spec:
+  host: surfing.svc.dasmlab.org
+  to:
+    kind: Service
+    name: surfing-service
+    weight: 100
+  port:
+    targetPort: api
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
