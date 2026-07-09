@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, dasmlab]
     defaults:
       run:
         working-directory: surfing-service
@@ -70,9 +70,23 @@ jobs:
           fi
           echo "::add-mask::${GHCR_TOKEN}"
           echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+          echo "Token length: ${#GHCR_TOKEN} characters"
 
           if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
-            echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io
+            if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
+              echo "Primary GHCR token failed, trying runner-local fallback..."
+              if [ -f "/home/dasm/gh-pat" ]; then
+                source /home/dasm/gh-pat
+                GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+                echo "::add-mask::${GHCR_TOKEN}"
+                echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+                echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+              else
+                echo "ERROR: no runner-local token file available for fallback"
+                exit 1
+              fi
+            fi
+
             buildah bud \
               --build-arg ARCH=amd64 \
               --build-arg goproxy=https://proxy.golang.org \
@@ -97,8 +111,10 @@ jobs:
         run: |
           if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
             buildah push "${IMAGE_URI}"
+            echo "Pushed ${IMAGE_URI}"
+          else
+            echo "Image already pushed by kaniko: ${IMAGE_URI}"
           fi
-          echo "Published ${IMAGE_URI}"
 
       - name: GitOps Sync (Deploy) Phase
         env:
@@ -132,6 +148,7 @@ jobs:
             mkdir -p "$ARCHIVE_DIR" "$DEPLOY_DIR"
             find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'surfing-service-v*.yaml' -exec mv {} "$ARCHIVE_DIR"/ \;
             cp generated.yaml "$DEPLOY_DIR/surfing-service-${VERSION_TAG}.yaml"
+            echo "Created manifest for ${CLUSTER_NAME}: surfing-service-${VERSION_TAG}.yaml"
           done
 
           cd dasmlab-live-cicd
@@ -150,3 +167,4 @@ jobs:
         run: |
           podman rm -f "${CONTAINER_NAME}" 2>/dev/null || true
           buildah rm -a 2>/dev/null || true
+          rm -rf ~/.docker ~/.local/share/containers 2>/dev/null || true
