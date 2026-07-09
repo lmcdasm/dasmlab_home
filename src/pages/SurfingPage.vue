@@ -254,8 +254,7 @@ const newDay = reactive({
 })
 
 function tabLabel(day) {
-  const date = day.date ? formatDate(day.date, true) : 'Day'
-  return day.location ? `${date} · ${day.location}` : `${date} · ${day.title}`
+  return day.title || 'Session'
 }
 
 function formatDate(value, short = false) {
