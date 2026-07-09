@@ -156,14 +156,32 @@
               </div>
               <div class="media-card__footer">
                 <div class="media-card__caption">{{ item.caption || item.filename }}</div>
-                <q-btn
-                  flat
-                  dense
-                  round
-                  icon="close"
-                  size="sm"
-                  @click.stop="removeMedia(day, item)"
-                />
+                <div class="media-card__actions">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="download"
+                    size="sm"
+                    tag="a"
+                    :href="mediaDownloadUrl(item)"
+                    :download="item.filename"
+                    rel="noopener"
+                    @click.stop
+                  >
+                    <q-tooltip>Download</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="close"
+                    size="sm"
+                    @click.stop="removeMedia(day, item)"
+                  >
+                    <q-tooltip>Remove</q-tooltip>
+                  </q-btn>
+                </div>
               </div>
             </div>
           </div>
@@ -230,6 +248,7 @@ import {
   deleteDay,
   deleteMedia,
   fetchDays,
+  mediaDownloadUrl,
   mediaUrl,
   uploadMedia
 } from 'src/services/surfingApi'
@@ -254,8 +273,7 @@ const newDay = reactive({
 })
 
 function tabLabel(day) {
-  const date = day.date ? formatDate(day.date, true) : 'Day'
-  return day.location ? `${date} · ${day.location}` : `${date} · ${day.title}`
+  return day.title || 'Session'
 }
 
 function formatDate(value, short = false) {
@@ -599,6 +617,12 @@ onMounted(() => {
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.55rem 0.65rem;
+}
+
+.media-card__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .media-card__caption {
