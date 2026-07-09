@@ -35,6 +35,8 @@ spec:
               value: "10023"
             - name: SURFING_MAX_UPLOAD_MB
               value: "500"
+            - name: SURFING_PRELOAD_DIR
+              value: /data/preload
           volumeMounts:
             - name: surfing-data
               mountPath: /data

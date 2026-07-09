@@ -105,6 +105,13 @@ func Initialize() error {
 		log.Warnf("Storage: could not load manifest %s: %v", manifestPath, err)
 	}
 
+	preloadDir := envOrDefault("SURFING_PRELOAD_DIR", filepath.Join(dataDir, "preload"))
+	if seeded, err := PreloadDaysFromDir(preloadDir); err != nil {
+		log.Warnf("Storage: preload from %s failed: %v", preloadDir, err)
+	} else if seeded > 0 {
+		log.Infof("Storage: preloaded %d media file(s) from %s", seeded, preloadDir)
+	}
+
 	log.Infof(
 		"Storage: ready data_dir=%s media=%s manifest=%s days=%d",
 		dataDir,
