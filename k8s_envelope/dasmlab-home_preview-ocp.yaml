@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: __PREVIEW_NS__
+  labels:
+    app.kubernetes.io/name: dasmlab-home
+    app.kubernetes.io/component: preview
+    dasmlab-home.dasmlab.org/preview-owner: "__PREVIEW_OWNER__"
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dasmlab-home-sa
+  namespace: __PREVIEW_NS__
+imagePullSecrets:
+  - name: dasmlab-ghcr-pull
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openshift-gitops-argocd-application-controller
+  namespace: __PREVIEW_NS__
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: ServiceAccount
+    name: openshift-gitops-argocd-application-controller
+    namespace: openshift-gitops
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: system:openshift:scc:anyuid
+  namespace: __PREVIEW_NS__
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+  - kind: ServiceAccount
+    name: dasmlab-home-sa
+    namespace: __PREVIEW_NS__
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dasmlab-home
+  namespace: __PREVIEW_NS__
+  labels:
+    app: dasmlab-home
+    dasmlab-home.dasmlab.org/preview-owner: "__PREVIEW_OWNER__"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dasmlab-home
+  template:
+    metadata:
+      labels:
+        app: dasmlab-home
+    spec:
+      serviceAccountName: dasmlab-home-sa
+      imagePullSecrets:
+        - name: dasmlab-ghcr-pull
+      containers:
+        - name: dasmlab-home
+          image: ghcr.io/lmcdasm/dasmlab-home:__VERSION__
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8888
+              protocol: TCP
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dasmlab-home
+  namespace: __PREVIEW_NS__
+spec:
+  selector:
+    app: dasmlab-home
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8888
+      targetPort: http
+      protocol: TCP
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: dasmlab-home
+  namespace: __PREVIEW_NS__
+  labels:
+    app: dasmlab-home
+spec:
+  host: __PREVIEW_HOST__
+  to:
+    kind: Service
+    name: dasmlab-home
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
