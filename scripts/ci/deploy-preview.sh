@@ -24,6 +24,14 @@ sed \
 
 echo "Preview owner=${OWNER} ns=${NS} host=${HOST} version=${VERSION_TAG}"
 
+# Edge TLS on HAProxy (mini-mock / interview-me pattern). Fixes ERR_CERT_COMMON_NAME_INVALID.
+if [[ "${SKIP_PREVIEW_CERT:-}" == "true" ]]; then
+  echo "SKIP_PREVIEW_CERT=true — not updating HAProxy CERT"
+else
+  bash "${ROOT}/scripts/ci/ensure-preview-cert.sh" "${HOST}"
+fi
+
+
 if [[ "${SKIP_PREVIEW_BOOTSTRAP:-}" == "true" ]]; then
   echo "SKIP_PREVIEW_BOOTSTRAP=true — not copying preview secrets"
 elif command -v oc >/dev/null 2>&1; then

@@ -107,3 +107,11 @@ Rolling log of **≥10 improvements/fixes per task** while shipping the preview 
 | Image | `ghcr.io/lmcdasm/dasmlab-home:v2026.08.01-e4d61f6` |
 | NS | `dasmlab-home-dev-lmcdasm` |
 | Argo | `dasmlab-home-previews` Synced/Healthy |
+
+## Hotfix — HAProxy CERT (2026-08-01)
+
+- Missed mini-mock `ensure-prod-cert.sh` pattern on first preview ship → `ERR_CERT_COMMON_NAME_INVALID` / HSTS
+- Added `scripts/ci/ensure-preview-cert.sh` (ssh → 10.20.1.10, append CERTn, `./runme.sh`)
+- Hooked from `deploy-preview.sh` (hands-free on every preview)
+- Applied live: **CERT56**=`dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org`
+- Verified: TLS CN matches FQDN, HTTPS 200 without `-k`

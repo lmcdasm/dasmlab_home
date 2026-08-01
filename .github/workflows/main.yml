@@ -183,6 +183,8 @@ jobs:
         env:
           VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
           PREVIEW_ACTOR: ${{ github.actor }}
+          PREVIEW_PROXY_HOST: "10.20.1.10"
+          PREVIEW_PROXY_USER: "dasm"
           DASMLAB_GHCR_PAT: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
           set -euo pipefail
