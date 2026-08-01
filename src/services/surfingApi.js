@@ -96,6 +96,27 @@ export async function createShare(payload) {
   return data
 }
 
+export async function recordMediaPlay(dayId, mediaId) {
+  const { data } = await client.post(`/days/${dayId}/media/${mediaId}/play`)
+  return data
+}
+
+export async function proposeMediaTag(dayId, mediaId, name) {
+  const { data } = await client.post(`/days/${dayId}/media/${mediaId}/tags`, { name })
+  return data
+}
+
+export async function moderateMediaTag(dayId, mediaId, tagId, action) {
+  const { data } = await client.post(`/days/${dayId}/media/${mediaId}/tags/${tagId}/${action}`)
+  return data
+}
+
+export async function publishDay(dayId, cleanupPvc = false) {
+  const q = cleanupPvc ? '?cleanup_pvc=true' : ''
+  const { data } = await client.post(`/days/${dayId}/publish${q}`, null, { timeout: 300000 })
+  return data
+}
+
 export async function fetchShareMeta(token) {
   const { data } = await client.get(`/shares/${token}`)
   return data

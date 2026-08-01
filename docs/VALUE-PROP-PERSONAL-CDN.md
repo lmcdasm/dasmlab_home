@@ -58,6 +58,19 @@ Detail: `docs/SHARE-TOLLGATE.md`.
 
 ---
 
+## Videos visualization (interview-me pattern)
+
+Album **Videos** use a Discovery-style satellite map (hub = Videos) with a **tight side panel** (not a popup):
+
+- Plays / tags / CDN status  
+- Publish · Share · Play muted  
+- **Name tags** — plain text only, owner-approved; no links, no friend graph  
+- Double-click / Cards → card browser grid  
+
+Same control story: you own visibility; tags are just names on content.
+
+---
+
 ## Surfing as golden client
 
 - Theme: **Windsurfing Trips** (sports motif template; other sports later).  

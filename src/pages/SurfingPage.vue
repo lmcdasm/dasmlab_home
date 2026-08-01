@@ -187,41 +187,59 @@
                 <p class="media-section__blurb">{{ section.blurb }}</p>
               </div>
 
-              <!-- Videos: cinema row, outbound open -->
-              <div v-if="section.key === 'videos'" class="video-rail">
-                <article
-                  v-for="item in section.items"
-                  :key="item.id"
-                  class="video-card"
+              <!-- Videos: Discovery-style map + card browser -->
+              <div v-if="section.key === 'videos'">
+                <VideoAlbumMap
+                  :items="section.items"
+                  :album-title="day.title"
+                  :publishing="publishingDayId === day.id"
+                  :tagging="taggingMedia"
+                  @play="(item) => openViewer(item, day)"
+                  @share="(item) => openShareSheet(day, item)"
+                  @cdn="openOutbound"
+                  @publish="() => publishAlbum(day)"
+                  @propose-tag="(item, name) => proposeTag(day, item, name)"
+                  @approve-tag="(item, tag) => moderateTag(day, item, tag, 'approve')"
+                  @reject-tag="(item, tag) => moderateTag(day, item, tag, 'reject')"
                 >
-                  <button type="button" class="video-card__stage" @click="openViewer(item)">
-                    <video
-                      :src="mediaUrl(item.url)"
-                      muted
-                      playsinline
-                      preload="metadata"
-                      class="video-card__asset"
-                    />
-                    <span class="video-card__play">
-                      <q-icon name="play_arrow" size="36px" />
-                    </span>
-                    <span class="video-card__open">Play muted</span>
-                  </button>
-                  <div class="video-card__body">
-                    <div class="video-card__title">{{ item.caption || item.filename }}</div>
-                    <p v-if="item.notes" class="video-card__notes">{{ item.notes }}</p>
-                    <div class="video-card__actions">
-                      <q-btn flat dense size="sm" icon="ios_share" label="Share" @click="openShareSheet(day, item)" />
-                      <q-btn flat dense size="sm" icon="open_in_new" label="CDN" @click="openOutbound(item)">
-                        <q-tooltip>Open on CDN (new tab)</q-tooltip>
-                      </q-btn>
-                      <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
-                      <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)">
-                        <q-tooltip>Hide</q-tooltip>
-                      </q-btn>
+                  <template #grid>
+                    <div class="video-rail">
+                      <article
+                        v-for="item in section.items"
+                        :key="item.id"
+                        class="video-card"
+                      >
+                        <button type="button" class="video-card__stage" @click="openViewer(item, day)">
+                          <video
+                            :src="mediaUrl(item.url)"
+                            muted
+                            playsinline
+                            preload="metadata"
+                            class="video-card__asset"
+                          />
+                          <span class="video-card__play">
+                            <q-icon name="play_arrow" size="36px" />
+                          </span>
+                          <span class="video-card__open">Play muted</span>
+                        </button>
+                        <div class="video-card__body">
+                          <div class="video-card__title">{{ item.caption || item.filename }}</div>
+                          <div class="video-card__meta text-caption">
+                            {{ item.play_count || 0 }} plays
+                            · {{ (item.tags || []).filter((t) => t.status === 'approved').length }} tags
+                          </div>
+                          <p v-if="item.notes" class="video-card__notes">{{ item.notes }}</p>
+                          <div class="video-card__actions">
+                            <q-btn flat dense size="sm" icon="ios_share" label="Share" @click="openShareSheet(day, item)" />
+                            <q-btn flat dense size="sm" icon="open_in_new" label="CDN" @click="openOutbound(item)" />
+                            <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
+                            <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
+                          </div>
+                        </div>
+                      </article>
                     </div>
-                  </div>
-                </article>
+                  </template>
+                </VideoAlbumMap>
               </div>
 
               <!-- Photos: hot grid -->
@@ -231,7 +249,7 @@
                   :key="item.id"
                   class="photo-card"
                 >
-                  <div class="photo-card__frame" @click="openViewer(item)">
+                  <div class="photo-card__frame" @click="openViewer(item, day)">
                     <img
                       :src="mediaUrl(item.url)"
                       :alt="item.caption || item.filename"
@@ -469,6 +487,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import ShareSheet from 'src/components/ShareSheet.vue'
+import VideoAlbumMap from 'src/components/VideoAlbumMap.vue'
 import {
   addMediaLink,
   createDay,
@@ -480,6 +499,10 @@ import {
   mediaKind,
   mediaOutboundUrl,
   mediaUrl,
+  moderateMediaTag,
+  proposeMediaTag,
+  publishDay,
+  recordMediaPlay,
   updateMedia,
   uploadMedia
 } from 'src/services/surfingApi'
@@ -503,6 +526,8 @@ const shareOpen = ref(false)
 const shareDayId = ref('')
 const shareMediaId = ref('')
 const shareAlbumPage = ref('')
+const publishingDayId = ref('')
+const taggingMedia = ref(false)
 
 const linkOpen = ref(false)
 const savingLink = ref(false)
@@ -584,7 +609,7 @@ function mediaSections(day) {
       key: 'videos',
       title: 'Videos',
       icon: 'movie',
-      blurb: 'Plays muted first (loud/unmastered-safe). Unmute when ready — CDN open still available.',
+      blurb: 'Map = tight clip panel (plays, tags, publish). Double-click or Cards for the browser grid.',
       items: videos
     })
   }
@@ -894,10 +919,55 @@ async function startUpload(queueItem) {
   }
 }
 
-function openViewer(item) {
+function openViewer(item, day) {
   viewerItem.value = item
   viewerMuted.value = item?.media_type === 'video'
   viewerOpen.value = true
+  if (item?.media_type === 'video' && day?.id && item?.id) {
+    recordMediaPlay(day.id, item.id)
+      .then(() => loadDays(day.id))
+      .catch(() => {})
+  }
+}
+
+async function publishAlbum(day) {
+  if (!day?.id) return
+  publishingDayId.value = day.id
+  try {
+    await publishDay(day.id)
+    await loadDays(day.id)
+    $q.notify({ type: 'positive', message: 'Album publish kicked — drafts → CDN' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Publish failed' })
+  } finally {
+    publishingDayId.value = ''
+  }
+}
+
+async function proposeTag(day, item, name) {
+  taggingMedia.value = true
+  try {
+    await proposeMediaTag(day.id, item.id, name)
+    await loadDays(day.id)
+    $q.notify({ type: 'positive', message: 'Name submitted — awaiting your approval' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not tag' })
+  } finally {
+    taggingMedia.value = false
+  }
+}
+
+async function moderateTag(day, item, tag, action) {
+  try {
+    await moderateMediaTag(day.id, item.id, tag.id, action)
+    await loadDays(day.id)
+    $q.notify({
+      type: 'positive',
+      message: action === 'approve' ? `Approved “${tag.name}”` : `Rejected “${tag.name}”`
+    })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not update tag' })
+  }
 }
 
 function onViewerHide() {
@@ -1364,6 +1434,11 @@ onMounted(() => {
 .video-card__title {
   font-weight: 650;
   font-size: 0.92rem;
+}
+
+.video-card__meta {
+  margin-top: 0.2rem;
+  color: rgba(210, 236, 230, 0.75);
 }
 
 .video-card__notes,

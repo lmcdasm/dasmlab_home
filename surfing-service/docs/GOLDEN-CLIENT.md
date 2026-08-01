@@ -51,6 +51,8 @@ written by siblings.
 - `POST /days/:id/theme/generate` — sample photos → AI banner/background on R2
   (`SURFING_AI_*`; OpenAI now, cheapcloud farm later)
 - `POST /shares` + `GET /s/:token` — share tollgate (Copy CDN / social intents / unlock foreshadow)
+- Videos map (interview-me style): plays, owner-approved **name tags** (text only), publish
+- `POST …/media/:id/play` · `POST …/tags` · `POST …/tags/:tagId/approve|reject`
 
 ## Platform successor
 

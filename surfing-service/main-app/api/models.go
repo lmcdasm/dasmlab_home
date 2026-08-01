@@ -33,6 +33,18 @@ type MediaItem struct {
 	// Hidden soft-removes from gallery listings without dropping bytes (hard drop later).
 	// Keeping the row also stops preload from re-seeding the same file on restart.
 	Hidden bool `json:"hidden,omitempty"`
+	// PlayCount is simple click/play metering (tollgate + in-app viewer).
+	PlayCount int64 `json:"play_count,omitempty"`
+	// Tags are people-name associations only (no links). Owner must approve.
+	Tags []MediaTag `json:"tags,omitempty"`
+}
+
+// MediaTag is a plain name on content ("I'm in this"). Not a social graph.
+type MediaTag struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Status    string    `json:"status"` // pending | approved | rejected
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func normalizeMediaKind(item *MediaItem) {
