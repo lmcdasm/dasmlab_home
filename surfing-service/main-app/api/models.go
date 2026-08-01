@@ -34,6 +34,8 @@ type MediaItem struct {
 	Hidden bool `json:"hidden,omitempty"`
 	// PlayCount is simple click/play metering (tollgate + in-app viewer).
 	PlayCount int64 `json:"play_count,omitempty"`
+	// DurationSec is clip length in seconds (from browser metadata or probe). Used to sort longest-first.
+	DurationSec float64 `json:"duration_sec,omitempty"`
 	// Tags are people-name associations only (no links). Owner must approve.
 	Tags []MediaTag `json:"tags,omitempty"`
 	// NotesVisibility: public | private | group (group = signed-up members later).

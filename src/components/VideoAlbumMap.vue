@@ -66,7 +66,8 @@
               <div class="drawer-row__body">
                 <div class="drawer-row__title">{{ row.item.caption || row.item.filename }}</div>
                 <div class="drawer-row__meta">
-                  <span>{{ row.timeLabel }}</span>
+                  <span v-if="row.timeLabel !== '—'">{{ row.timeLabel }}</span>
+                  <span v-if="row.durationLabel">· {{ row.durationLabel }}</span>
                   <span v-if="row.item.play_count">· {{ row.item.play_count }} plays</span>
                   <span>· {{ row.item.published ? 'CDN' : 'Draft' }}</span>
                 </div>
@@ -109,8 +110,8 @@
 
           <div class="stat-row">
             <div class="stat"><span>Plays</span><strong>{{ selected.play_count || 0 }}</strong></div>
+            <div class="stat"><span>Length</span><strong>{{ selectedDuration || '—' }}</strong></div>
             <div class="stat"><span>Tags</span><strong>{{ approvedTags.length }}</strong></div>
-            <div class="stat"><span>Pending</span><strong>{{ pendingTags.length }}</strong></div>
             <div class="stat">
               <span>CDN</span>
               <strong>{{ selected.published ? 'Yes' : 'Draft' }}</strong>
@@ -228,6 +229,7 @@ const props = defineProps({
   items: { type: Array, default: () => [] },
   albumTitle: { type: String, default: 'Session' },
   dayId: { type: String, default: '' },
+  sortMode: { type: String, default: 'longest' },
   publishing: { type: Boolean, default: false },
   tagging: { type: Boolean, default: false }
 })
@@ -244,6 +246,13 @@ const selected = computed(() => props.items.find((i) => i.id === selectedId.valu
 
 const canDownloadSelected = computed(() => canDownloadMedia(selected.value))
 const downloadHref = computed(() => mediaDownloadUrl(selected.value, props.dayId))
+const selectedDuration = computed(() => {
+  const s = Math.round(Number(selected.value?.duration_sec) || 0)
+  if (s <= 0) return ''
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  return `${m}:${String(r).padStart(2, '0')}`
+})
 
 const approvedTags = computed(() => (selected.value?.tags || []).filter((t) => t.status === 'approved'))
 const pendingTags = computed(() => (selected.value?.tags || []).filter((t) => t.status === 'pending'))
@@ -280,16 +289,49 @@ const drawers = computed(() => {
     buckets.get(key).items.push({
       item,
       ts,
-      timeLabel: ts ? formatTime(ts) : '—'
+      timeLabel: ts ? formatTime(ts) : '—',
+      durationLabel: formatDur(item.duration_sec)
     })
   }
   const out = [...buckets.values()].sort((a, b) => b.sort - a.sort)
   for (const d of out) {
-    d.items.sort((a, b) => (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0))
+    d.items.sort((a, b) => compareClips(a, b, props.sortMode))
   }
   return out
 })
 
+function formatDur(sec) {
+  const s = Math.round(Number(sec) || 0)
+  if (s <= 0) return ''
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  return `${m}:${String(r).padStart(2, '0')}`
+}
+
+function compareClips(a, b, mode) {
+  const da = Number(a.item?.duration_sec) || 0
+  const db = Number(b.item?.duration_sec) || 0
+  switch (mode) {
+    case 'shortest':
+      return da - db || (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0)
+    case 'newest':
+      return (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0)
+    case 'name':
+      return String(a.item?.caption || a.item?.filename || '').localeCompare(
+        String(b.item?.caption || b.item?.filename || ''),
+        undefined,
+        { sensitivity: 'base' }
+      )
+    case 'plays':
+      return (b.item?.play_count || 0) - (a.item?.play_count || 0) || db - da
+    case 'longest':
+    default:
+      if (da > 0 && db > 0) return db - da
+      if (da > 0) return -1
+      if (db > 0) return 1
+      return (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0)
+  }
+}
 watch(
   () => props.items,
   (list) => {

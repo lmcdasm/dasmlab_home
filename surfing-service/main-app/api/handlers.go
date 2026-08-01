@@ -279,12 +279,13 @@ func UpdateMedia(c *gin.Context) {
 	mediaID := c.Param("mediaId")
 
 	var req struct {
-		Caption            *string `json:"caption"`
-		Notes              *string `json:"notes"`
-		Kind               *string `json:"kind"`
-		ExternalURL        *string `json:"external_url"`
-		NotesVisibility    *string `json:"notes_visibility"`
-		DownloadVisibility *string `json:"download_visibility"`
+		Caption            *string  `json:"caption"`
+		Notes              *string  `json:"notes"`
+		Kind               *string  `json:"kind"`
+		ExternalURL        *string  `json:"external_url"`
+		NotesVisibility    *string  `json:"notes_visibility"`
+		DownloadVisibility *string  `json:"download_visibility"`
+		DurationSec        *float64 `json:"duration_sec"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON: " + err.Error()})
@@ -346,6 +347,17 @@ func UpdateMedia(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "download_visibility must be public|private|group"})
 			return
 		}
+	}
+	if req.DurationSec != nil {
+		d := *req.DurationSec
+		if d < 0 {
+			d = 0
+		}
+		// Cap absurd values (e.g. bad metadata)
+		if d > 86400*4 {
+			d = 86400 * 4
+		}
+		item.DurationSec = d
 	}
 	normalizeMediaKind(&item)
 	day.Media[found] = item

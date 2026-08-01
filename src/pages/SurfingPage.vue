@@ -226,10 +226,20 @@
 
               <!-- Videos: Discovery-style map + card browser -->
               <div v-if="section.key === 'videos'">
+                <div class="video-sort-bar row items-center q-mb-sm">
+                  <span class="text-caption text-grey-7 q-mr-sm">Sort</span>
+                  <q-btn-toggle
+                    v-model="videoSort"
+                    dense
+                    toggle-color="primary"
+                    :options="videoSortOptions"
+                  />
+                </div>
                 <VideoAlbumMap
                   :items="section.items"
                   :album-title="day.title"
                   :day-id="day.id"
+                  :sort-mode="videoSort"
                   :publishing="publishingDayId === day.id"
                   :tagging="taggingMedia"
                   @play="(item) => openViewer(item, day)"
@@ -255,7 +265,9 @@
                             playsinline
                             preload="metadata"
                             class="video-card__asset"
+                            @loadedmetadata="onVideoMeta(day, item, $event)"
                           />
+                          <span v-if="clipDuration(item)" class="video-card__dur">{{ formatDuration(clipDuration(item)) }}</span>
                           <span class="video-card__play">
                             <q-icon name="play_arrow" size="36px" />
                           </span>
@@ -264,6 +276,7 @@
                         <div class="video-card__body">
                           <div class="video-card__title">{{ item.caption || item.filename }}</div>
                           <div class="video-card__meta text-caption">
+                            <template v-if="clipDuration(item)">{{ formatDuration(clipDuration(item)) }} · </template>
                             {{ item.play_count || 0 }} plays
                             · {{ (item.tags || []).filter((t) => t.status === 'approved').length }} tags
                           </div>
@@ -774,7 +787,10 @@ function tabLabel(day) {
 
 function mediaSections(day) {
   const items = day?.media || []
-  const videos = items.filter((m) => mediaKind(m) === 'video')
+  const videos = sortMediaItems(
+    items.filter((m) => mediaKind(m) === 'video'),
+    videoSort.value
+  )
   const photos = items.filter((m) => mediaKind(m) === 'photo')
   const other = items.filter((m) => mediaKind(m) === 'other')
   const sections = []
@@ -783,7 +799,7 @@ function mediaSections(day) {
       key: 'videos',
       title: 'Videos',
       icon: 'movie',
-      blurb: 'Cards first. Cabinet = day drawers by time + tight panel (preview, tags, publish).',
+      blurb: 'Longest clips first by default — best candidates to chop. Cards / Cabinet for browse.',
       items: videos
     })
   }
@@ -806,6 +822,87 @@ function mediaSections(day) {
     })
   }
   return sections
+}
+
+/** Longest-first default — length is the chop-list signal. */
+const videoSort = ref('longest')
+const videoSortOptions = [
+  { label: 'Longest', value: 'longest' },
+  { label: 'Shortest', value: 'shortest' },
+  { label: 'Newest', value: 'newest' },
+  { label: 'Name', value: 'name' },
+  { label: 'Plays', value: 'plays' }
+]
+
+/** Client-side duration cache until persisted on the server. */
+const durationCache = reactive({})
+
+function clipDuration(item) {
+  if (!item) return 0
+  const cached = durationCache[item.id]
+  if (cached > 0) return cached
+  return Number(item.duration_sec) || 0
+}
+
+function formatDuration(sec) {
+  const s = Math.round(Number(sec) || 0)
+  if (s <= 0) return ''
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  if (m >= 60) {
+    const h = Math.floor(m / 60)
+    const mm = m % 60
+    return `${h}:${String(mm).padStart(2, '0')}:${String(r).padStart(2, '0')}`
+  }
+  return `${m}:${String(r).padStart(2, '0')}`
+}
+
+function sortMediaItems(list, mode) {
+  const items = [...(list || [])]
+  const dur = (i) => clipDuration(i)
+  switch (mode) {
+    case 'shortest':
+      return items.sort((a, b) => dur(a) - dur(b) || (b.created_at || '').localeCompare(a.created_at || ''))
+    case 'newest':
+      return items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    case 'name':
+      return items.sort((a, b) =>
+        String(a.caption || a.filename || '').localeCompare(String(b.caption || b.filename || ''), undefined, {
+          sensitivity: 'base'
+        })
+      )
+    case 'plays':
+      return items.sort((a, b) => (b.play_count || 0) - (a.play_count || 0) || dur(b) - dur(a))
+    case 'longest':
+    default:
+      // Unknown length sinks; known long clips rise — best chop candidates first.
+      return items.sort((a, b) => {
+        const da = dur(a)
+        const db = dur(b)
+        if (da > 0 && db > 0) return db - da
+        if (da > 0) return -1
+        if (db > 0) return 1
+        return (b.created_at || '').localeCompare(a.created_at || '')
+      })
+  }
+}
+
+const durationPersistPending = new Set()
+
+async function onVideoMeta(day, item, ev) {
+  const el = ev?.target
+  const sec = el?.duration
+  if (!item?.id || !Number.isFinite(sec) || sec <= 0) return
+  durationCache[item.id] = sec
+  // Persist once for owner so next load sorts without re-probing every clip.
+  if (!isAdmin.value || item.duration_sec > 0 || durationPersistPending.has(item.id)) return
+  durationPersistPending.add(item.id)
+  try {
+    await updateMedia(day.id, item.id, { duration_sec: Math.round(sec * 10) / 10 })
+    item.duration_sec = Math.round(sec * 10) / 10
+  } catch {
+    durationPersistPending.delete(item.id)
+  }
 }
 
 function otherIcon(item) {
@@ -1688,6 +1785,25 @@ onMounted(() => {
   place-items: center;
   color: #fff;
   background: radial-gradient(circle, rgba(15, 143, 124, 0.35), transparent 60%);
+}
+
+.video-card__dur {
+  position: absolute;
+  left: 0.55rem;
+  top: 0.45rem;
+  z-index: 2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: rgba(6, 24, 32, 0.78);
+  border-radius: 6px;
+  padding: 0.12rem 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.video-sort-bar {
+  gap: 0.35rem;
 }
 
 .video-card__play :deep(.q-icon) {
