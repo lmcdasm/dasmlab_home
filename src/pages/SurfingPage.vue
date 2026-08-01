@@ -880,15 +880,6 @@ async function copyShareLink(day) {
   }
 }
 
-function formatDate(value, short = false) {
-  if (!value) return ''
-  const parsed = new Date(`${value}T12:00:00`)
-  if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleDateString(undefined, short
-    ? { month: 'short', day: 'numeric' }
-    : { year: 'numeric', month: 'long', day: 'numeric' })
-}
-
 /** Public album date label — respects date_precision (hide|year|month|day). */
 function formatAlbumDate(day) {
   if (!day?.date) return ''
