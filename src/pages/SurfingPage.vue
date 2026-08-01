@@ -21,9 +21,9 @@
             unelevated
             color="primary"
             icon="ios_share"
-            label="Copy share link"
+            label="Share"
             class="surfing-cta"
-            @click="copyShareLink"
+            @click="openShareSheet()"
           />
           <q-btn
             outline
@@ -107,8 +107,11 @@
               </div>
             </div>
             <div class="day-header__actions">
+              <q-btn flat dense round icon="ios_share" color="primary" @click="openShareSheet(day)">
+                <q-tooltip>Share album</q-tooltip>
+              </q-btn>
               <q-btn flat dense round icon="link" color="primary" @click="copyShareLink(day)">
-                <q-tooltip>Copy album link</q-tooltip>
+                <q-tooltip>Copy album page link</q-tooltip>
               </q-btn>
               <q-btn flat dense round icon="add_link" color="primary" @click="openAddLink(day)">
                 <q-tooltip>Add activity / share link</q-tooltip>
@@ -208,6 +211,7 @@
                     <div class="video-card__title">{{ item.caption || item.filename }}</div>
                     <p v-if="item.notes" class="video-card__notes">{{ item.notes }}</p>
                     <div class="video-card__actions">
+                      <q-btn flat dense size="sm" icon="ios_share" label="Share" @click="openShareSheet(day, item)" />
                       <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
                       <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)">
                         <q-tooltip>Hide</q-tooltip>
@@ -239,6 +243,9 @@
                     <div class="photo-card__title">{{ item.caption || item.filename }}</div>
                     <p v-if="item.notes" class="photo-card__notes">{{ item.notes }}</p>
                     <div class="photo-card__actions">
+                      <q-btn flat dense round size="sm" icon="ios_share" @click="openShareSheet(day, item)">
+                        <q-tooltip>Share</q-tooltip>
+                      </q-btn>
                       <q-btn flat dense round size="sm" icon="edit_note" @click="openNotesEditor(day, item)">
                         <q-tooltip>Edit notes</q-tooltip>
                       </q-btn>
@@ -281,6 +288,7 @@
                     >Open share</a>
                   </div>
                   <div class="other-card__actions">
+                    <q-btn flat dense round icon="ios_share" @click="openShareSheet(day, item)" />
                     <q-btn flat dense round icon="edit_note" @click="openNotesEditor(day, item)" />
                     <q-btn flat dense round icon="visibility_off" @click="removeMedia(day, item)" />
                   </div>
@@ -298,6 +306,13 @@
         </q-tab-panel>
       </q-tab-panels>
     </section>
+
+    <ShareSheet
+      v-model="shareOpen"
+      :day-id="shareDayId"
+      :media-id="shareMediaId"
+      :album-page="shareAlbumPage"
+    />
 
     <q-dialog v-model="createDayOpen">
       <q-card style="min-width: 320px">
@@ -416,6 +431,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
+import ShareSheet from 'src/components/ShareSheet.vue'
 import {
   addMediaLink,
   createDay,
@@ -444,6 +460,10 @@ const dragOverDayId = ref('')
 const fileInputs = ref({})
 const uploadQueue = ref([])
 const generatingTheme = ref(false)
+const shareOpen = ref(false)
+const shareDayId = ref('')
+const shareMediaId = ref('')
+const shareAlbumPage = ref('')
 
 const linkOpen = ref(false)
 const savingLink = ref(false)
@@ -592,6 +612,20 @@ async function runGenerateTheme() {
   } finally {
     generatingTheme.value = false
   }
+}
+
+function openShareSheet(day, item) {
+  const target = day || activeDay.value
+  if (!target?.id) {
+    $q.notify({ type: 'warning', message: 'Select a session day first' })
+    return
+  }
+  shareDayId.value = target.id
+  shareMediaId.value = item?.id || ''
+  const url = new URL(window.location.href)
+  url.hash = `day=${target.id}`
+  shareAlbumPage.value = url.toString()
+  shareOpen.value = true
 }
 
 async function copyShareLink(day) {

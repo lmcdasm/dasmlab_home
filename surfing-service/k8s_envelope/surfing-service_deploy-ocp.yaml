@@ -91,6 +91,10 @@ spec:
                   name: surfing-ai
                   key: SURFING_AI_API_KEY
                   optional: true
+            # Share tollgate: omit SURFING_SHARE_PUBLIC_BASE to derive from request Host
+            # (preview FE / dasmlab.org /api/surfing). Override when using a dedicated share domain.
+            - name: SURFING_SHARE_PATH_PREFIX
+              value: "/api/surfing"
           volumeMounts:
             - name: surfing-data
               mountPath: /data

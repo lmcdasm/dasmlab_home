@@ -17,5 +17,8 @@ func initializeRoutes(router *gin.Engine) {
 	router.DELETE("/days/:id/media/:mediaId", api.DeleteMedia)
 	router.POST("/days/:id/publish", api.PublishDay)
 	router.POST("/days/:id/theme/generate", api.GenerateTheme)
+	router.POST("/shares", api.CreateShare)
+	router.GET("/shares/:token", api.ShareMeta)
+	router.GET("/s/:token", api.ResolveShare)
 	router.GET("/serve", api.ServeMedia)
 }

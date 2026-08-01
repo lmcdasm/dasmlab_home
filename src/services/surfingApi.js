@@ -91,6 +91,16 @@ export async function generateTheme(dayId, payload = {}) {
   return data
 }
 
+export async function createShare(payload) {
+  const { data } = await client.post('/shares', payload)
+  return data
+}
+
+export async function fetchShareMeta(token) {
+  const { data } = await client.get(`/shares/${token}`)
+  return data
+}
+
 function sortDays(days) {
   return [...days].sort((a, b) => {
     const dateCmp = (b.date || '').localeCompare(a.date || '')

@@ -50,10 +50,11 @@ written by siblings.
 - `POST /days/:id/media/link` — add link-only **More** items (no bytes)
 - `POST /days/:id/theme/generate` — sample photos → AI banner/background on R2
   (`SURFING_AI_*`; OpenAI now, cheapcloud farm later)
+- `POST /shares` + `GET /s/:token` — share tollgate (Copy CDN / social intents / unlock foreshadow)
 
 ## Platform successor
 
 `dasmlab-cdn-mgr` + mock-me **Content Management → Self-Serve Cloud Personal CDN**.
 
-Value prop (share-link vs Meta, keys, premium watermark / NFT registry, AI theme):
-`docs/VALUE-PROP-PERSONAL-CDN.md`.
+Value prop + share tollgate:
+`docs/VALUE-PROP-PERSONAL-CDN.md`, `docs/SHARE-TOLLGATE.md`.

@@ -39,10 +39,21 @@ Two audiences, one stack:
 | Unique watermark on outbound pulls | Tied to account / realm identity |
 | Content provenance timestamp | “Published at …” for later AI-era claim of origin |
 | `dasmlab-block-nft-registry` | Optional on-chain / NFT-style content registry for premium assurance |
+| Unlock codes on shares | Private gallery invite; email/SMS delivery later |
 
 Registry is a **longer-term scaffold**: associate content to cloud provider pass/id/usage as people port from corp → private → other ops styles. Not required for golden Surfing path.
 
 Stub name for future service/repo: **`dasmlab-block-nft-registry`**.
+
+---
+
+## Share tollgate (MVP)
+
+Album/media share buttons mint a **DASMLAB-fronted** link (`GET /s/:token`): allow → meter → redirect to CDN.  
+Social posts carry **metadata text + tollgate URL** (not a source upload).  
+FinOps story: hits feed cheapcloud so storage/CDN use stays positive/neutral.
+
+Detail: `docs/SHARE-TOLLGATE.md`.
 
 ---
 

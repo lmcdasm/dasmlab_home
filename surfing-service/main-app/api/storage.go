@@ -140,6 +140,10 @@ func Initialize() error {
 		log.Warnf("Storage: could not load manifest %s: %v", manifestPath, err)
 	}
 
+	if err := loadShares(); err != nil {
+		log.Warnf("Storage: could not load shares: %v", err)
+	}
+
 	preloadDir := envOrDefault("SURFING_PRELOAD_DIR", filepath.Join(dataDir, "preload"))
 	if seeded, err := PreloadDaysFromDir(preloadDir); err != nil {
 		log.Warnf("Storage: preload from %s failed: %v", preloadDir, err)
