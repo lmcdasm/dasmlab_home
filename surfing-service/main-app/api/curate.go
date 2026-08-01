@@ -31,11 +31,15 @@ func UnhideMedia(c *gin.Context) {
 	c.JSON(http.StatusOK, item)
 }
 
-// PatchDay updates album-level policies (tag_policy).
+// PatchDay updates album-level fields (title, date, location, date_precision, tag_policy).
 func PatchDay(c *gin.Context) {
 	dayID := c.Param("id")
 	var req struct {
-		TagPolicy *string `json:"tag_policy"`
+		Title         *string `json:"title"`
+		Date          *string `json:"date"`
+		Location      *string `json:"location"`
+		DatePrecision *string `json:"date_precision"`
+		TagPolicy     *string `json:"tag_policy"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
@@ -48,6 +52,35 @@ func PatchDay(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "day not found"})
 		return
 	}
+	if req.Title != nil {
+		t := strings.TrimSpace(*req.Title)
+		if t == "" {
+			storeMu.Unlock()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "title cannot be empty"})
+			return
+		}
+		day.Title = t
+	}
+	if req.Date != nil {
+		day.Date = strings.TrimSpace(*req.Date)
+	}
+	if req.Location != nil {
+		day.Location = strings.TrimSpace(*req.Location)
+	}
+	if req.DatePrecision != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.DatePrecision))
+		switch v {
+		case "hide", "year", "month", "day", "":
+			if v == "" {
+				v = "day"
+			}
+			day.DatePrecision = v
+		default:
+			storeMu.Unlock()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "date_precision must be hide|year|month|day"})
+			return
+		}
+	}
 	if req.TagPolicy != nil {
 		v := strings.ToLower(strings.TrimSpace(*req.TagPolicy))
 		switch v {
@@ -58,6 +91,9 @@ func PatchDay(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "tag_policy must be public|group|off"})
 			return
 		}
+	}
+	if day.DatePrecision == "" {
+		day.DatePrecision = "day"
 	}
 	dayStore[dayID] = day
 	storeMu.Unlock()

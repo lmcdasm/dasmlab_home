@@ -92,11 +92,27 @@
         >
           <div class="day-header">
             <div>
-              <h2 class="day-title">{{ day.title }}</h2>
+              <div class="day-title-row">
+                <h2 class="day-title">{{ day.title }}</h2>
+                <q-btn
+                  v-if="isAdmin"
+                  flat
+                  dense
+                  round
+                  size="sm"
+                  icon="edit"
+                  color="primary"
+                  @click="openEditDay(day)"
+                >
+                  <q-tooltip>Edit title &amp; date display</q-tooltip>
+                </q-btn>
+              </div>
               <div class="day-meta">
-                <q-icon name="event" size="16px" class="q-mr-xs" />
-                {{ formatDate(day.date) }}
-                <span v-if="day.location" class="q-ml-md">
+                <template v-if="formatAlbumDate(day)">
+                  <q-icon name="event" size="16px" class="q-mr-xs" />
+                  {{ formatAlbumDate(day) }}
+                </template>
+                <span v-if="day.location" :class="{ 'q-ml-md': !!formatAlbumDate(day) }">
                   <q-icon name="place" size="16px" class="q-mr-xs" />
                   {{ day.location }}
                 </span>
@@ -425,6 +441,34 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="editDayOpen">
+      <q-card style="min-width: min(380px, 92vw)">
+        <q-card-section>
+          <div class="text-h6">Edit album</div>
+          <div class="text-caption text-grey-7">Title and how the date appears on the page</div>
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-input v-model="editDay.title" label="Title" filled dense autofocus />
+          <q-input v-model="editDay.date" label="Date (source)" type="date" filled dense />
+          <q-input v-model="editDay.location" label="Location (optional)" filled dense />
+          <q-select
+            v-model="editDay.date_precision"
+            :options="datePrecisionOptions"
+            label="Date display"
+            filled
+            dense
+            emit-value
+            map-options
+            hint="Hide, year only, year + month, or full date"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" v-close-popup />
+          <q-btn color="primary" label="Save" :loading="savingDay" @click="submitEditDay" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="linkOpen">
       <q-card style="min-width: min(420px, 92vw)">
         <q-card-section>
@@ -597,6 +641,7 @@ import {
   mediaUrl,
   canDownloadMedia,
   moderateMediaTag,
+  patchDay,
   proposeMediaTag,
   publishDay,
   recordMediaPlay,
@@ -613,6 +658,22 @@ const activeDayId = ref('')
 const loadError = ref('')
 const createDayOpen = ref(false)
 const creatingDay = ref(false)
+const editDayOpen = ref(false)
+const savingDay = ref(false)
+const editDayId = ref('')
+const editDay = reactive({
+  title: '',
+  date: '',
+  location: '',
+  date_precision: 'day'
+})
+
+const datePrecisionOptions = [
+  { label: 'Hide date', value: 'hide' },
+  { label: 'Year only', value: 'year' },
+  { label: 'Year and month', value: 'month' },
+  { label: 'Full date (year · month · day)', value: 'day' }
+]
 const viewerOpen = ref(false)
 const viewerItem = ref(null)
 const viewerMuted = ref(true)
@@ -826,6 +887,57 @@ function formatDate(value, short = false) {
   return parsed.toLocaleDateString(undefined, short
     ? { month: 'short', day: 'numeric' }
     : { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+/** Public album date label — respects date_precision (hide|year|month|day). */
+function formatAlbumDate(day) {
+  if (!day?.date) return ''
+  const precision = (day.date_precision || 'day').toLowerCase()
+  if (precision === 'hide') return ''
+  const parsed = new Date(`${day.date}T12:00:00`)
+  if (Number.isNaN(parsed.getTime())) return day.date
+  if (precision === 'year') {
+    return parsed.toLocaleDateString(undefined, { year: 'numeric' })
+  }
+  if (precision === 'month') {
+    return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
+  }
+  return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function openEditDay(day) {
+  editDayId.value = day.id
+  editDay.title = day.title || ''
+  editDay.date = day.date || ''
+  editDay.location = day.location || ''
+  editDay.date_precision = day.date_precision || 'day'
+  editDayOpen.value = true
+}
+
+async function submitEditDay() {
+  if (!editDay.title.trim()) {
+    $q.notify({ type: 'warning', message: 'Title is required' })
+    return
+  }
+  savingDay.value = true
+  try {
+    const updated = await patchDay(editDayId.value, {
+      title: editDay.title.trim(),
+      date: editDay.date,
+      location: editDay.location.trim(),
+      date_precision: editDay.date_precision || 'day'
+    })
+    const idx = days.value.findIndex((d) => d.id === editDayId.value)
+    if (idx >= 0) {
+      days.value[idx] = { ...days.value[idx], ...updated, media: days.value[idx].media }
+    }
+    editDayOpen.value = false
+    $q.notify({ type: 'positive', message: 'Album updated' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || err?.message || 'Could not save' })
+  } finally {
+    savingDay.value = false
+  }
 }
 
 function setFileInput(dayId, el) {

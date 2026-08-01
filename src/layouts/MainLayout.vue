@@ -187,17 +187,6 @@ const scrollProgress = ref(0)
 const appVersion = ref(process.env.APP_VERSION || import.meta.env.APP_VERSION || 'dev')
 const { approach, approachOptions } = useApproach()
 
-onMounted(() => {
-  // Prefer runtime /version.json (same pattern as cheapcloud data-build-tag) so chip matches image tag.
-  fetch(`/version.json?${Date.now()}`, { cache: 'no-store' })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((info) => {
-      const build = info?.build || info?.version
-      if (build) appVersion.value = build
-    })
-    .catch(() => {})
-})
-
 const topNav = [
   { label: 'Home', icon: 'home', to: '/' },
   { label: 'About DASMLAB', icon: 'school', to: '/about' },
@@ -241,6 +230,15 @@ const updateScrollProgress = () => {
 }
 
 onMounted(() => {
+  // Prefer runtime /version.json (same pattern as cheapcloud data-build-tag) so chip matches image tag.
+  fetch(`/version.json?${Date.now()}`, { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((info) => {
+      const build = info?.build || info?.version
+      if (build) appVersion.value = build
+    })
+    .catch(() => {})
+
   updateScrollProgress()
   window.addEventListener('scroll', updateScrollProgress, { passive: true })
 })

@@ -60,6 +60,9 @@ func ListDays(c *gin.Context) {
 				day.Media[i].DownloadPath = "/days/" + day.ID + "/media/" + day.Media[i].ID + "/download"
 			}
 		}
+		if day.DatePrecision == "" {
+			day.DatePrecision = "day"
+		}
 		day.Published = dayPublished(DayEntry{Media: day.Media})
 		days = append(days, day)
 	}

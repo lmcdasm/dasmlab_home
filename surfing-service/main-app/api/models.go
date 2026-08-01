@@ -93,6 +93,9 @@ type DayEntry struct {
 	Theme *DayTheme `json:"theme,omitempty"`
 	// TagPolicy: public | group | off — who may propose plain-name tags.
 	TagPolicy string `json:"tag_policy,omitempty"`
+	// DatePrecision controls how the album date is shown publicly.
+	// hide | year | month | day (default day = full calendar date).
+	DatePrecision string `json:"date_precision,omitempty"`
 }
 
 // DayTheme is a sport/event visual skin for one album (banner + page wash).

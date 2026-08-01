@@ -2,15 +2,17 @@ package api
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -49,8 +51,6 @@ type oidcService struct {
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
 	oauth    oauth2.Config
-	mu       sync.Mutex
-	states   map[string]time.Time
 }
 
 var authSvc *oidcService
@@ -98,7 +98,7 @@ func oidcHTTPClient() *http.Client {
 
 func initAuth() error {
 	cfg := oidcConfigFromEnv()
-	svc := &oidcService{cfg: cfg, states: map[string]time.Time{}}
+	svc := &oidcService{cfg: cfg}
 	if !cfg.Enabled {
 		authSvc = svc
 		log.Info("OIDC: disabled (set KEYCLOAK_URL + OIDC_CLIENT_SECRET + APP_PUBLIC_URL)")
@@ -151,9 +151,12 @@ func AuthLogin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "state"})
 		return
 	}
-	authSvc.putState(state)
-	secure := c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https")
-	c.SetCookie(cookieState, state, int(stateTTL.Seconds()), "/", "", secure, true)
+	token, err := signOAuthState(state, time.Now().Add(stateTTL))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "state sign"})
+		return
+	}
+	setAuthCookie(c, cookieState, token, int(stateTTL.Seconds()))
 	c.Redirect(http.StatusFound, authSvc.oauth.AuthCodeURL(state, oauth2.AccessTypeOffline))
 }
 
@@ -164,8 +167,22 @@ func AuthCallback(c *gin.Context) {
 	}
 	state := c.Query("state")
 	cookie, _ := c.Cookie(cookieState)
-	if state == "" || cookie == "" || state != cookie || !authSvc.takeState(state) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid oauth state"})
+	if state == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid oauth state", "detail": "missing state query"})
+		return
+	}
+	if cookie == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "invalid oauth state",
+			"detail": "missing state cookie — start Sign in again from https://dasmlab.org (not a stale tab)",
+		})
+		return
+	}
+	if !verifyOAuthState(cookie, state) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":  "invalid oauth state",
+			"detail": "state cookie mismatch or expired — try Sign in once more",
+		})
 		return
 	}
 	code := c.Query("code")
@@ -196,9 +213,8 @@ func AuthCallback(c *gin.Context) {
 		"access_token": tok.AccessToken,
 		"expiry":       tok.Expiry.UTC().Format(time.RFC3339),
 	})
-	secure := c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https")
-	c.SetCookie(cookieSession, base64.RawURLEncoding.EncodeToString(payload), int(sessionTTL.Seconds()), "/", "", secure, true)
-	c.SetCookie(cookieState, "", -1, "/", "", secure, true)
+	setAuthCookie(c, cookieSession, base64.RawURLEncoding.EncodeToString(payload), int(sessionTTL.Seconds()))
+	setAuthCookie(c, cookieState, "", -1)
 	dest := authSvc.cfg.AppPublicURL
 	if dest == "" {
 		dest = "/"
@@ -207,8 +223,7 @@ func AuthCallback(c *gin.Context) {
 }
 
 func AuthLogout(c *gin.Context) {
-	secure := c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https")
-	c.SetCookie(cookieSession, "", -1, "/", "", secure, true)
+	setAuthCookie(c, cookieSession, "", -1)
 	dest := "/"
 	if authSvc != nil && authSvc.cfg.AppPublicURL != "" {
 		dest = authSvc.cfg.AppPublicURL + "/#/surfing"
@@ -287,18 +302,66 @@ func strClaim(m map[string]any, k string) string {
 	return ""
 }
 
-func (s *oidcService) putState(state string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.states[state] = time.Now().Add(stateTTL)
+func cookieSecure(c *gin.Context) bool {
+	// Prefer APP_PUBLIC_URL — nginx often forwards X-Forwarded-Proto=http to the pod.
+	if authSvc != nil && strings.HasPrefix(authSvc.cfg.AppPublicURL, "https://") {
+		return true
+	}
+	return c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https")
 }
 
-func (s *oidcService) takeState(state string) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	exp, ok := s.states[state]
-	delete(s.states, state)
-	return ok && time.Now().Before(exp)
+func setAuthCookie(c *gin.Context, name, value string, maxAge int) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   cookieSecure(c),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// signOAuthState builds a cookie that survives Recreate rollouts / multi-replica
+// (no in-memory map). Format: base64url(state|exp|mac).
+func signOAuthState(state string, exp time.Time) (string, error) {
+	if authSvc == nil || authSvc.cfg.ClientSecret == "" {
+		return "", fmt.Errorf("no signing secret")
+	}
+	expStr := strconv.FormatInt(exp.Unix(), 10)
+	payload := state + "|" + expStr
+	mac := hmac.New(sha256.New, []byte(authSvc.cfg.ClientSecret))
+	_, _ = mac.Write([]byte(payload))
+	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + sig)), nil
+}
+
+func verifyOAuthState(cookieVal, stateQuery string) bool {
+	raw, err := base64.RawURLEncoding.DecodeString(cookieVal)
+	if err != nil {
+		// Legacy: plain state cookie from older builds (equality only).
+		return cookieVal == stateQuery
+	}
+	parts := strings.Split(string(raw), "|")
+	if len(parts) != 3 {
+		return cookieVal == stateQuery
+	}
+	state, expStr, sig := parts[0], parts[1], parts[2]
+	if state == "" || state != stateQuery {
+		return false
+	}
+	expUnix, err := strconv.ParseInt(expStr, 10, 64)
+	if err != nil || time.Now().Unix() > expUnix {
+		return false
+	}
+	if authSvc == nil || authSvc.cfg.ClientSecret == "" {
+		return false
+	}
+	payload := state + "|" + expStr
+	mac := hmac.New(sha256.New, []byte(authSvc.cfg.ClientSecret))
+	_, _ = mac.Write([]byte(payload))
+	want := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(want), []byte(sig))
 }
 
 func randomString(n int) (string, error) {
