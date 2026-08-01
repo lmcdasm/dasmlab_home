@@ -38,7 +38,7 @@ func loadAIConfig() aiConfig {
 		BaseURL:    base,
 		APIKey:     strings.TrimSpace(firstNonEmpty(os.Getenv("SURFING_AI_API_KEY"), os.Getenv("OPENAI_API_KEY"))),
 		ChatModel:  firstNonEmpty(os.Getenv("SURFING_AI_CHAT_MODEL"), "gpt-4o-mini"),
-		ImageModel: firstNonEmpty(os.Getenv("SURFING_AI_IMAGE_MODEL"), "dall-e-3"),
+		ImageModel: firstNonEmpty(os.Getenv("SURFING_AI_IMAGE_MODEL"), "gpt-image-1"),
 	}
 }
 
@@ -125,14 +125,21 @@ func GenerateTheme(c *gin.Context) {
 	}
 
 	bannerPrompt := buildBannerPrompt(day, sport, userPrompt, theme.StyleBrief)
-	bannerBytes, bannerCT, err := aiGenerateImage(c.Request.Context(), cfg, bannerPrompt, "1792x1024")
+	bannerBytes, bannerCT, err := aiGenerateImage(c.Request.Context(), cfg, bannerPrompt, imageSizeForModel(cfg.ImageModel))
 	if err != nil {
 		log.Warnf("GenerateTheme: banner image failed: %v", err)
-		applyLocalThemeDefaults(&theme, day, sport)
+		// Tailored fallback: use a sample photo from *this* album as the banner.
+		if len(samples) > 0 && strings.HasPrefix(samples[0].URL, "http") {
+			theme.BannerURL = samples[0].URL
+			theme.BackgroundURL = samples[0].URL
+			theme.StyleBrief += " | AI image unavailable — using album sample as banner"
+		} else {
+			applyLocalThemeDefaults(&theme, day, sport)
+			theme.StyleBrief += " | image gen failed: " + err.Error()
+		}
 		theme.Provider = cfg.Provider
-		theme.StyleBrief += " | image gen failed: " + err.Error()
 		persistDayTheme(dayID, theme)
-		c.JSON(http.StatusOK, gin.H{"theme": theme, "day": getDayCopy(dayID), "warning": "image generation failed — palette theme applied"})
+		c.JSON(http.StatusOK, gin.H{"theme": theme, "day": getDayCopy(dayID), "warning": "image generation failed — sample/palette theme applied"})
 		return
 	}
 
@@ -147,7 +154,7 @@ func GenerateTheme(c *gin.Context) {
 	}
 
 	bgPrompt := buildBackgroundPrompt(day, sport, userPrompt, theme.StyleBrief)
-	bgBytes, bgCT, bgErr := aiGenerateImage(c.Request.Context(), cfg, bgPrompt, "1792x1024")
+	bgBytes, bgCT, bgErr := aiGenerateImage(c.Request.Context(), cfg, bgPrompt, imageSizeForModel(cfg.ImageModel))
 	bgURL := bannerURL
 	if bgErr == nil && len(bgBytes) > 0 {
 		if _, u, err := putThemeObject(dayID, "background", extFromContentType(bgCT), bgCT, bgBytes); err == nil && u != "" {
@@ -362,8 +369,8 @@ func aiGenerateImage(ctx context.Context, cfg aiConfig, prompt, size string) ([]
 		"n":      1,
 		"size":   size,
 	}
-	// dall-e-3: quality only (response_format is rejected on current Images API).
-	if strings.Contains(strings.ToLower(cfg.ImageModel), "dall-e") {
+	model := strings.ToLower(cfg.ImageModel)
+	if strings.Contains(model, "dall-e") {
 		body["quality"] = "standard"
 	}
 
@@ -395,6 +402,17 @@ func aiGenerateImage(ctx context.Context, cfg aiConfig, prompt, size string) ([]
 		return nil, "", fmt.Errorf("no image url/b64")
 	}
 	return downloadBytes(ctx, item.URL)
+}
+
+func imageSizeForModel(model string) string {
+	m := strings.ToLower(model)
+	if strings.Contains(m, "gpt-image") || strings.Contains(m, "chatgpt-image") {
+		return "1536x1024"
+	}
+	if strings.Contains(m, "dall-e-3") {
+		return "1792x1024"
+	}
+	return "1024x1024"
 }
 
 func downloadBytes(ctx context.Context, url string) ([]byte, string, error) {
@@ -434,7 +452,7 @@ func aiPOST(ctx context.Context, cfg aiConfig, path string, payload any) ([]byte
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	client := &http.Client{Timeout: 180 * time.Second}
+	client := &http.Client{Timeout: 300 * time.Second}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
