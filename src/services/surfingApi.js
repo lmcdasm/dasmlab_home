@@ -14,8 +14,10 @@ export function mediaUrl(path) {
 }
 
 export function mediaDownloadUrl(item) {
+  // Absolute CDN URLs: hit the edge directly (no /api proxy, no ?download=1 on R2).
   const url = mediaUrl(item?.url)
   if (!url) return ''
+  if (/^https?:\/\//.test(url)) return url
   const joiner = url.includes('?') ? '&' : '?'
   return `${url}${joiner}download=1`
 }
