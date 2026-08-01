@@ -111,6 +111,8 @@ spec:
                   name: dasmlab-home-oidc
                   key: client-secret
                   optional: true
+            - name: OIDC_INSECURE_SKIP_VERIFY
+              value: "true"
           volumeMounts:
             - name: surfing-data
               mountPath: /data

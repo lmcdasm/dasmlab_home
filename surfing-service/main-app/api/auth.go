@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -79,6 +80,22 @@ func oidcConfigFromEnv() oidcConfig {
 	return cfg
 }
 
+func oidcHTTPClient() *http.Client {
+	// OpenShift ingress uses a cluster-local CA not in public trust stores.
+	skip := strings.EqualFold(os.Getenv("OIDC_INSECURE_SKIP_VERIFY"), "true") ||
+		os.Getenv("OIDC_INSECURE_SKIP_VERIFY") == "1"
+	if !skip {
+		return http.DefaultClient
+	}
+	return &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // lab/cluster ingress CA
+		},
+	}
+}
+
 func initAuth() error {
 	cfg := oidcConfigFromEnv()
 	svc := &oidcService{cfg: cfg, states: map[string]time.Time{}}
@@ -87,7 +104,7 @@ func initAuth() error {
 		log.Info("OIDC: disabled (set KEYCLOAK_URL + OIDC_CLIENT_SECRET + APP_PUBLIC_URL)")
 		return nil
 	}
-	ctx := context.Background()
+	ctx := oidc.ClientContext(context.Background(), oidcHTTPClient())
 	provider, err := oidc.NewProvider(ctx, cfg.Issuer)
 	if err != nil {
 		return fmt.Errorf("oidc provider: %w", err)
@@ -156,7 +173,7 @@ func AuthCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing code"})
 		return
 	}
-	tok, err := authSvc.oauth.Exchange(c.Request.Context(), code)
+	tok, err := authSvc.oauth.Exchange(oidc.ClientContext(c.Request.Context(), oidcHTTPClient()), code)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "token exchange failed"})
 		return
