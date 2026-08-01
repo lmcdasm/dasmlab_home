@@ -278,12 +278,12 @@ function go(route) {
   flex-wrap: wrap;
   justify-content: center;
   align-items: stretch;
-  gap: clamp(0.75rem, 1.5vw, 1.15rem);
+  gap: 0.75rem;
   width: 100%;
 }
 
 .map-stage {
-  border-radius: 18px;
+  border-radius: 14px;
   overflow: hidden;
   border: 2px solid rgba(18, 72, 64, 0.45);
   background:
@@ -291,22 +291,15 @@ function go(route) {
     linear-gradient(165deg, #eef6f3 0%, #dfe8f0 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    0 16px 36px rgba(10, 28, 36, 0.14);
-  /* Keep full constellation visible — no clipped hub/spokes */
-  flex: 0 1 560px;
-  width: min(100%, 560px);
+    0 10px 22px rgba(10, 28, 36, 0.12);
+  flex: 0 0 380px;
+  width: 380px;
+  height: 380px;
+  max-width: min(100%, 380px);
+  max-height: min(42vh, 380px);
   aspect-ratio: 1 / 1;
-  max-height: min(68vh, 560px);
   display: grid;
   place-items: center;
-}
-
-@media (min-width: 1280px) {
-  .map-stage {
-    flex-basis: 600px;
-    width: min(100%, 600px);
-    max-height: min(68vh, 600px);
-  }
 }
 
 .map-svg {
@@ -314,6 +307,38 @@ function go(route) {
   height: 100%;
   display: block;
   min-height: 0;
+}
+
+.detail-panel {
+  border-radius: 14px;
+  border: 1.5px solid rgba(31, 111, 98, 0.22);
+  background: linear-gradient(175deg, #ffffff, #f5f9fb);
+  padding: 0.85rem 0.9rem;
+  flex: 0 1 300px;
+  width: min(100%, 300px);
+  min-height: 220px;
+  max-height: 380px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  box-shadow: 0 10px 22px rgba(18, 40, 52, 0.08);
+}
+
+@media (max-width: 720px) {
+  .detail-panel {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    min-height: 180px;
+  }
+
+  .map-stage {
+    flex: 0 1 auto;
+    width: min(100%, 340px);
+    height: auto;
+    max-height: min(58vw, 340px);
+  }
 }
 
 .link {
@@ -376,37 +401,6 @@ function go(route) {
   font-weight: 700;
   font-family: "Segoe UI", system-ui, sans-serif;
   pointer-events: none;
-}
-
-.detail-panel {
-  border-radius: 18px;
-  border: 1.5px solid rgba(31, 111, 98, 0.22);
-  background: linear-gradient(175deg, #ffffff, #f5f9fb);
-  padding: 1rem 1.05rem;
-  flex: 1 1 300px;
-  width: min(100%, 380px);
-  min-height: 280px;
-  max-height: min(68vh, 600px);
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  box-shadow: 0 12px 28px rgba(18, 40, 52, 0.08);
-}
-
-@media (max-width: 720px) {
-  .detail-panel {
-    width: 100%;
-    max-width: none;
-    max-height: none;
-    min-height: 200px;
-  }
-
-  .map-stage {
-    flex-basis: 100%;
-    width: min(100%, 520px);
-    max-height: min(72vw, 520px);
-  }
 }
 
 .detail-panel.empty {
