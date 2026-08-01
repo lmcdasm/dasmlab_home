@@ -54,6 +54,28 @@
           </q-btn-dropdown>
         </div>
         <div class="right-controls">
+          <q-btn
+            v-if="oidcEnabled && !authenticated"
+            flat
+            dense
+            no-caps
+            class="header-link-btn"
+            icon="login"
+            label="Sign in"
+            @click="login"
+          />
+          <q-btn
+            v-else-if="oidcEnabled && authenticated"
+            flat
+            dense
+            no-caps
+            class="header-link-btn"
+            icon="logout"
+            :label="user?.preferred_username || 'Sign out'"
+            @click="logout"
+          >
+            <q-tooltip>{{ isAdmin ? 'Admin (owner)' : 'Signed in' }}</q-tooltip>
+          </q-btn>
           <q-btn flat dense round icon="tune" class="top-icon-btn">
             <q-menu class="approach-menu">
               <q-list dense style="min-width: 180px;">
@@ -148,6 +170,9 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useAuth } from 'src/composables/useAuth'
+
+const { oidcEnabled, authenticated, isAdmin, user, login, logout } = useAuth()
 import { useRoute } from 'vue-router'
 import VisitCounter from 'src/components/VisitCounter.vue'
 import { useApproach } from 'src/composables/useApproach'

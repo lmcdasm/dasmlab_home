@@ -58,7 +58,10 @@ Detail: `docs/SHARE-TOLLGATE.md`.
 
 ---
 
-## Videos visualization (interview-me pattern)
+## Compression (cdn-mgr foreshadow)
+
+`.MOV` and other camera originals should get **on-the-fly / job compression** into CDN derivatives (`…/derived/…`) while originals stay in draft. Surfing exposes `POST …/transcode` (accepted stub) and **Curate & publish** can flag `compress: true` for the future adapter.
+
 
 Album **Videos** use a Discovery-style satellite map (hub = Videos) with a **tight side panel** (not a popup):
 

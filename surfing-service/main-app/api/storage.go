@@ -144,6 +144,10 @@ func Initialize() error {
 		log.Warnf("Storage: could not load shares: %v", err)
 	}
 
+	if err := initAuth(); err != nil {
+		return err
+	}
+
 	preloadDir := envOrDefault("SURFING_PRELOAD_DIR", filepath.Join(dataDir, "preload"))
 	if seeded, err := PreloadDaysFromDir(preloadDir); err != nil {
 		log.Warnf("Storage: preload from %s failed: %v", preloadDir, err)

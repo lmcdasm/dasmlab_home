@@ -11,7 +11,7 @@ import (
 	"surfing-service/logutil"
 )
 
-const version = "0.1.0"
+const version = "1.0.0"
 
 var (
 	componentName = "surfing-main"
@@ -27,7 +27,12 @@ func main() {
 	}
 
 	mainRouter := gin.Default()
-	mainRouter.Use(cors.Default())
+	mainRouter.Use(cors.New(cors.Config{
+		AllowOriginFunc: func(origin string) bool { return true },
+		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	metricsRouter := gin.Default()
 	p := ginprom.New(

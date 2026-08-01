@@ -97,6 +97,27 @@ func ProposeMediaTag(c *gin.Context) {
 		return
 	}
 
+	storeMu.RLock()
+	dayPeek, okPeek := dayStore[dayID]
+	storeMu.RUnlock()
+	if !okPeek {
+		c.JSON(http.StatusNotFound, gin.H{"error": "day not found"})
+		return
+	}
+	policy := strings.ToLower(strings.TrimSpace(dayPeek.TagPolicy))
+	if policy == "" {
+		policy = "public"
+	}
+	if policy == "off" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "tagging is disabled for this album"})
+		return
+	}
+	if policy == "group" && !isOwner(c) {
+		// Group members later; for now only owner can propose when policy=group.
+		c.JSON(http.StatusForbidden, gin.H{"error": "group tagging requires a signed-in group member (coming soon)"})
+		return
+	}
+
 	storeMu.Lock()
 	day, idx, ok := findMediaLocked(dayID, mediaID)
 	if !ok || idx < 0 {

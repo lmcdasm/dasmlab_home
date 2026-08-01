@@ -40,12 +40,17 @@ func ListDays(c *gin.Context) {
 		log.Warnf("ListDays: reload manifest failed: %v", err)
 	}
 
+	owner := isOwner(c)
+
 	storeMu.RLock()
 	defer storeMu.RUnlock()
 
 	days := make([]DayEntry, 0, len(dayStore))
 	for _, day := range dayStore {
-		day.Media = visibleMedia(day.Media)
+		if day.TagPolicy == "" {
+			day.TagPolicy = "public"
+		}
+		day.Media = projectMedia(day.Media, owner)
 		day.Published = dayPublished(DayEntry{Media: day.Media})
 		days = append(days, day)
 	}
@@ -262,10 +267,11 @@ func UpdateMedia(c *gin.Context) {
 	mediaID := c.Param("mediaId")
 
 	var req struct {
-		Caption     *string `json:"caption"`
-		Notes       *string `json:"notes"`
-		Kind        *string `json:"kind"`
-		ExternalURL *string `json:"external_url"`
+		Caption         *string `json:"caption"`
+		Notes           *string `json:"notes"`
+		Kind            *string `json:"kind"`
+		ExternalURL     *string `json:"external_url"`
+		NotesVisibility *string `json:"notes_visibility"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON: " + err.Error()})
@@ -305,6 +311,17 @@ func UpdateMedia(c *gin.Context) {
 	}
 	if req.ExternalURL != nil {
 		item.ExternalURL = strings.TrimSpace(*req.ExternalURL)
+	}
+	if req.NotesVisibility != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.NotesVisibility))
+		switch v {
+		case "public", "private", "group":
+			item.NotesVisibility = v
+		default:
+			storeMu.Unlock()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "notes_visibility must be public|private|group"})
+			return
+		}
 	}
 	normalizeMediaKind(&item)
 	day.Media[found] = item

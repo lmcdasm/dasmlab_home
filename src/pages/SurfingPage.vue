@@ -107,6 +107,27 @@
               </div>
             </div>
             <div class="day-header__actions">
+              <q-btn
+                v-if="isAdmin"
+                unelevated
+                dense
+                color="primary"
+                icon="publish"
+                label="Curate & publish"
+                :loading="publishingDayId === day.id"
+                @click="curateAndPublish(day)"
+              >
+                <q-tooltip>Publish album to CDN (+ optional compress later)</q-tooltip>
+              </q-btn>
+              <q-btn
+                v-if="isAdmin"
+                outline
+                dense
+                color="primary"
+                icon="auto_awesome"
+                label="AI Curate"
+                @click="runAICurate(day)"
+              />
               <q-btn flat dense round icon="ios_share" color="primary" @click="openShareSheet(day)">
                 <q-tooltip>Share album</q-tooltip>
               </q-btn>
@@ -208,6 +229,7 @@
                         v-for="item in section.items"
                         :key="item.id"
                         class="video-card"
+                        :class="{ 'media-card--hidden': item.hidden }"
                       >
                         <button type="button" class="video-card__stage" @click="openViewer(item, day)">
                           <video
@@ -248,6 +270,7 @@
                   v-for="item in section.items"
                   :key="item.id"
                   class="photo-card"
+                  :class="{ 'media-card--hidden': item.hidden }"
                 >
                   <div class="photo-card__frame" @click="openViewer(item, day)">
                     <img
@@ -282,6 +305,18 @@
                         rel="noopener"
                       />
                       <q-btn flat dense round size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
+                      <q-btn
+                        v-if="isAdmin && item.hidden"
+                        flat
+                        dense
+                        round
+                        size="sm"
+                        icon="visibility"
+                        color="primary"
+                        @click="restoreMedia(day, item)"
+                      >
+                        <q-tooltip>Show again (unhide)</q-tooltip>
+                      </q-btn>
                     </div>
                   </div>
                 </article>
@@ -396,6 +431,16 @@
             emit-value
             map-options
           />
+          <q-select
+            v-model="notesDraft.notes_visibility"
+            :options="notesVisibilityOptions"
+            label="Notes visibility"
+            filled
+            dense
+            emit-value
+            map-options
+            hint="Public / private (you) / group (signed-up members later)"
+          />
           <q-input
             v-model="notesDraft.external_url"
             label="Outbound link (optional)"
@@ -488,9 +533,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import ShareSheet from 'src/components/ShareSheet.vue'
 import VideoAlbumMap from 'src/components/VideoAlbumMap.vue'
+import { useAuth } from 'src/composables/useAuth'
 import {
   addMediaLink,
+  aiCurate,
   createDay,
+  curatePublish,
   deleteDay,
   deleteMedia,
   fetchDays,
@@ -503,11 +551,13 @@ import {
   proposeMediaTag,
   publishDay,
   recordMediaPlay,
+  unhideMedia,
   updateMedia,
   uploadMedia
 } from 'src/services/surfingApi'
 
 const $q = useQuasar()
+const { isAdmin, authenticated, oidcEnabled, login } = useAuth()
 
 const days = ref([])
 const activeDayId = ref('')
@@ -548,13 +598,20 @@ const notesDraft = reactive({
   caption: '',
   notes: '',
   kind: 'photo',
-  external_url: ''
+  external_url: '',
+  notes_visibility: 'public'
 })
 
 const kindOptions = [
   { label: 'Photos', value: 'photo' },
   { label: 'Videos', value: 'video' },
   { label: 'More (shares / other)', value: 'other' }
+]
+
+const notesVisibilityOptions = [
+  { label: 'Public', value: 'public' },
+  { label: 'Private (only you)', value: 'private' },
+  { label: 'Group (signed-up members)', value: 'group' }
 ]
 
 const newDay = reactive({
@@ -835,6 +892,7 @@ function openNotesEditor(day, item) {
   notesDraft.notes = item.notes || ''
   notesDraft.kind = mediaKind(item)
   notesDraft.external_url = item.external_url || ''
+  notesDraft.notes_visibility = item.notes_visibility || 'public'
   notesOpen.value = true
 }
 
@@ -845,7 +903,8 @@ async function saveNotes() {
       caption: notesDraft.caption,
       notes: notesDraft.notes,
       kind: notesDraft.kind,
-      external_url: notesDraft.external_url
+      external_url: notesDraft.external_url,
+      notes_visibility: notesDraft.notes_visibility
     })
     notesOpen.value = false
     await loadDays(notesDayId.value)
@@ -932,6 +991,11 @@ function openViewer(item, day) {
 
 async function publishAlbum(day) {
   if (!day?.id) return
+  if (oidcEnabled.value && !isAdmin.value) {
+    $q.notify({ type: 'warning', message: 'Sign in as owner to publish' })
+    login()
+    return
+  }
   publishingDayId.value = day.id
   try {
     await publishDay(day.id)
@@ -941,6 +1005,49 @@ async function publishAlbum(day) {
     $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Publish failed' })
   } finally {
     publishingDayId.value = ''
+  }
+}
+
+async function curateAndPublish(day) {
+  if (!day?.id) return
+  publishingDayId.value = day.id
+  try {
+    await curatePublish(day.id, { compress: true, notes_public: false })
+    await loadDays(day.id)
+    $q.notify({
+      type: 'positive',
+      message: 'Curated publish started — CDN link is yours; compress adapter queues later'
+    })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Curate publish failed' })
+  } finally {
+    publishingDayId.value = ''
+  }
+}
+
+async function runAICurate(day) {
+  try {
+    const data = await aiCurate(day.id, {
+      prompt: `Curate highlights for ${day.title}${day.location ? ' in ' + day.location : ''}`,
+      action: 'save'
+    })
+    $q.notify({
+      type: data?.warning ? 'warning' : 'positive',
+      message: data?.curation?.brief || data?.message || 'AI curate accepted',
+      timeout: 5000
+    })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'AI curate failed' })
+  }
+}
+
+async function restoreMedia(day, item) {
+  try {
+    await unhideMedia(day.id, item.id)
+    await loadDays(day.id)
+    $q.notify({ type: 'positive', message: 'Visible again in public gallery' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not unhide' })
   }
 }
 
@@ -1429,6 +1536,22 @@ onMounted(() => {
 
 .video-card__body {
   padding: 0.75rem 0.85rem 0.55rem;
+}
+
+.media-card--hidden {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+  outline: 1px dashed rgba(90, 112, 128, 0.45);
+}
+
+.media-card--hidden::after {
+  content: 'Hidden from public';
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6a8090;
+  padding: 0.25rem 0.65rem 0.55rem;
 }
 
 .video-card__title {

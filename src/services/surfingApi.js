@@ -4,7 +4,8 @@ const SURFING_HOST = import.meta.env.VITE_SURFING_API_HOST || '/api/surfing'
 
 const client = axios.create({
   baseURL: SURFING_HOST,
-  timeout: 120000
+  timeout: 120000,
+  withCredentials: true
 })
 
 export function mediaUrl(path) {
@@ -114,6 +115,26 @@ export async function moderateMediaTag(dayId, mediaId, tagId, action) {
 export async function publishDay(dayId, cleanupPvc = false) {
   const q = cleanupPvc ? '?cleanup_pvc=true' : ''
   const { data } = await client.post(`/days/${dayId}/publish${q}`, null, { timeout: 300000 })
+  return data
+}
+
+export async function curatePublish(dayId, payload = {}) {
+  const { data } = await client.post(`/days/${dayId}/curate/publish`, payload, { timeout: 300000 })
+  return data
+}
+
+export async function aiCurate(dayId, payload = {}) {
+  const { data } = await client.post(`/days/${dayId}/ai/curate`, payload, { timeout: 180000 })
+  return data
+}
+
+export async function unhideMedia(dayId, mediaId) {
+  const { data } = await client.post(`/days/${dayId}/media/${mediaId}/unhide`)
+  return data
+}
+
+export async function patchDay(dayId, payload) {
+  const { data } = await client.patch(`/days/${dayId}`, payload)
   return data
 }
 

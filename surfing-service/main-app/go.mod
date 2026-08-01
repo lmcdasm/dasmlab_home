@@ -1,17 +1,19 @@
 module surfing-service
 
-go 1.24.3
+go 1.25.0
 
 require (
 	github.com/Depado/ginprom v1.8.1
 	github.com/aws/aws-sdk-go-v2 v1.38.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.1
+	github.com/coreos/go-oidc/v3 v3.20.0
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
+	golang.org/x/oauth2 v0.36.0
 )
 
 require (
@@ -30,6 +32,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
