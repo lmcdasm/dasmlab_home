@@ -114,6 +114,8 @@
 <style scoped>
 .arch {
   width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
   border: 1.5px solid rgba(29, 43, 54, 0.22);
   border-radius: 16px;
   background: #fff;

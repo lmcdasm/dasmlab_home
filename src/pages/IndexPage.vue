@@ -1,20 +1,21 @@
 <template>
-  <q-page padding class="q-gutter-md home-page">
+  <q-page class="home-page">
+    <div class="home-shell">
 
     <!-- Approach: Nav TL;DR — compact summary at top, then explore -->
     <template v-if="isNavTldr">
-      <div class="hero-shell q-mb-lg rise" style="--rise-delay: 0ms">
+      <div class="hero-shell rise" style="--rise-delay: 0ms">
         <div class="hero-noise" />
         <div class="hero-orb hero-orb-a" />
         <div class="hero-orb hero-orb-b" />
         <div class="hero-content">
           <div class="caps-label">TL;DR</div>
-          <h1 class="hero-title q-mt-sm q-mb-sm">
+          <h1 class="hero-title">
             Living lab.
             <span class="accent-word">Real builds.</span>
             Shared craft.
           </h1>
-          <p class="hero-copy q-mb-md">
+          <p class="hero-copy">
             DASMLAB is where ideas get poked, prodded, and brought to life.
             Build notes, experiments, and production lessons in one place.
           </p>
@@ -25,7 +26,7 @@
           </div>
         </div>
       </div>
-      <div class="scanline q-pa-sm q-mb-md">
+      <div class="scanline">
         <q-icon name="south" class="q-mr-xs" />
         Pick a project lane below
       </div>
@@ -33,17 +34,17 @@
 
     <!-- Approach: Hero + lab map + architecture -->
     <template v-else>
-      <div class="hero-shell q-mb-lg rise" style="--rise-delay: 0ms">
+      <div class="hero-shell rise" style="--rise-delay: 0ms">
         <div class="hero-noise" />
         <div class="hero-orb hero-orb-a" />
         <div class="hero-orb hero-orb-b" />
         <div class="hero-content">
           <div class="caps-label">DASMLAB</div>
-          <h1 class="hero-title q-mt-sm q-mb-sm">
+          <h1 class="hero-title">
             Craft over templates.
             <span class="accent-word">Systems with personality.</span>
           </h1>
-          <p class="hero-copy q-mb-md">
+          <p class="hero-copy">
             Portfolio plus workshop: production projects, field notes, and practical demos from across the stack.
           </p>
           <div class="hero-cta-row">
@@ -63,6 +64,25 @@
       </section>
 
       <section class="section-block rise" style="--rise-delay: 140ms">
+        <div class="section-head section-head--center">
+          <div class="caps-label">Project lanes</div>
+          <h2 class="section-title">Dive by category.</h2>
+        </div>
+        <div class="lane-row">
+          <button
+            v-for="card in cards"
+            :key="card.title"
+            type="button"
+            class="lane-chip"
+            @click="goTo(card.route)"
+          >
+            <q-icon :name="card.icon" size="20px" />
+            <span>{{ card.title }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section-block rise" style="--rise-delay: 180ms">
         <div class="section-head">
           <div class="caps-label">How the lab is wired</div>
           <h2 class="section-title">Edge → OCP → GitOps → media off basement disk.</h2>
@@ -70,7 +90,7 @@
         <LabArchitecture />
       </section>
 
-      <section class="section-block rise" style="--rise-delay: 200ms">
+      <section class="section-block rise" style="--rise-delay: 220ms">
         <div class="section-head">
           <div class="caps-label">Featured experiments</div>
           <h2 class="section-title">Live carousel feed.</h2>
@@ -81,9 +101,9 @@
       </section>
     </template>
 
-    <!-- Project lane chips (shared) — lighter than card soup -->
-    <section class="section-block rise" style="--rise-delay: 240ms">
-      <div class="section-head">
+    <!-- TL;DR approach: lanes still available below -->
+    <section v-if="isNavTldr" class="section-block rise" style="--rise-delay: 120ms">
+      <div class="section-head section-head--center">
         <div class="caps-label">Project lanes</div>
         <h2 class="section-title">Dive by category.</h2>
       </div>
@@ -101,6 +121,7 @@
       </div>
     </section>
 
+    </div>
   </q-page>
 </template>
 
@@ -151,6 +172,22 @@ onMounted(async () => {
 .home-page {
   position: relative;
   overflow-x: hidden;
+  padding: clamp(0.85rem, 1.8vw, 1.5rem) clamp(0.75rem, 2.2vw, 1.75rem) 2rem;
+}
+
+.home-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+@media (min-width: 1500px) {
+  .home-shell {
+    max-width: 1320px;
+  }
 }
 
 .rise {
@@ -161,6 +198,7 @@ onMounted(async () => {
 .hero-shell {
   position: relative;
   overflow: hidden;
+  width: 100%;
   border: 1.5px solid rgba(31, 111, 98, 0.32);
   border-radius: 20px;
   background:
@@ -175,7 +213,14 @@ onMounted(async () => {
 .hero-content {
   position: relative;
   z-index: 2;
-  padding: 1.45rem 1.3rem 1.35rem;
+  padding: clamp(1.35rem, 3vw, 2.25rem) clamp(1.2rem, 3vw, 2.5rem);
+  max-width: 46rem;
+}
+
+@media (min-width: 960px) {
+  .hero-content {
+    max-width: min(52rem, 72%);
+  }
 }
 
 .hero-noise {
@@ -218,12 +263,13 @@ onMounted(async () => {
   font-size: 0.72rem;
   color: #4d6575;
   font-weight: 700;
+  margin-bottom: 0.35rem;
 }
 
 .hero-title {
-  max-width: 720px;
+  margin: 0 0 0.65rem;
   line-height: 1.06;
-  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  font-size: clamp(1.55rem, 2.8vw, 2.45rem);
   font-weight: 800;
   color: #12202c;
   letter-spacing: -0.01em;
@@ -237,9 +283,10 @@ onMounted(async () => {
 }
 
 .hero-copy {
-  max-width: 780px;
+  margin: 0 0 1rem;
+  max-width: 40rem;
   color: #3d5263;
-  font-size: 1.02rem;
+  font-size: clamp(0.95rem, 1.3vw, 1.05rem);
   line-height: 1.55;
 }
 
@@ -284,14 +331,19 @@ onMounted(async () => {
   text-transform: uppercase;
   font-size: 0.77rem;
   background: rgba(255, 255, 255, 0.85);
+  padding: 0.55rem 0.75rem;
 }
 
 .section-block {
-  margin-top: 0.35rem;
+  width: 100%;
 }
 
 .section-head {
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.7rem;
+}
+
+.section-head--center {
+  text-align: center;
 }
 
 .section-title {
@@ -316,7 +368,10 @@ onMounted(async () => {
 .lane-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.35rem 0 0.15rem;
 }
 
 .lane-chip {
@@ -325,7 +380,7 @@ onMounted(async () => {
   gap: 0.45rem;
   border: 1.5px solid rgba(31, 111, 98, 0.28);
   border-radius: 999px;
-  padding: 0.55rem 0.95rem;
+  padding: 0.58rem 1.05rem;
   background: linear-gradient(160deg, #ffffff, #f3f8f6);
   color: #12202c;
   font-weight: 650;

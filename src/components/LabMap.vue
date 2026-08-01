@@ -274,16 +274,12 @@ function go(route) {
 }
 
 .map-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: stretch;
-}
-
-@media (max-width: 900px) {
-  .map-layout {
-    grid-template-columns: 1fr;
-  }
+  gap: clamp(0.75rem, 1.5vw, 1.15rem);
+  width: 100%;
 }
 
 .map-stage {
@@ -296,13 +292,28 @@ function go(route) {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     0 16px 36px rgba(10, 28, 36, 0.14);
+  /* Keep full constellation visible — no clipped hub/spokes */
+  flex: 0 1 560px;
+  width: min(100%, 560px);
+  aspect-ratio: 1 / 1;
+  max-height: min(68vh, 560px);
+  display: grid;
+  place-items: center;
+}
+
+@media (min-width: 1280px) {
+  .map-stage {
+    flex-basis: 600px;
+    width: min(100%, 600px);
+    max-height: min(68vh, 600px);
+  }
 }
 
 .map-svg {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  min-height: 400px;
+  min-height: 0;
 }
 
 .link {
@@ -372,11 +383,30 @@ function go(route) {
   border: 1.5px solid rgba(31, 111, 98, 0.22);
   background: linear-gradient(175deg, #ffffff, #f5f9fb);
   padding: 1rem 1.05rem;
-  min-height: 400px;
+  flex: 1 1 300px;
+  width: min(100%, 380px);
+  min-height: 280px;
+  max-height: min(68vh, 600px);
+  overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   box-shadow: 0 12px 28px rgba(18, 40, 52, 0.08);
+}
+
+@media (max-width: 720px) {
+  .detail-panel {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    min-height: 200px;
+  }
+
+  .map-stage {
+    flex-basis: 100%;
+    width: min(100%, 520px);
+    max-height: min(72vw, 520px);
+  }
 }
 
 .detail-panel.empty {
