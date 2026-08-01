@@ -40,6 +40,7 @@ Two audiences, one stack:
 | Content provenance timestamp | “Published at …” for later AI-era claim of origin |
 | `dasmlab-block-nft-registry` | Optional on-chain / NFT-style content registry for premium assurance |
 | Unlock codes on shares | Private gallery invite; email/SMS delivery later |
+| AI audio clean / overlay | Level loud/unmastered clips; starts muted in gallery today |
 
 Registry is a **longer-term scaffold**: associate content to cloud provider pass/id/usage as people port from corp → private → other ops styles. Not required for golden Surfing path.
 

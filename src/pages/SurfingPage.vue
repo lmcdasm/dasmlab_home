@@ -194,7 +194,7 @@
                   :key="item.id"
                   class="video-card"
                 >
-                  <button type="button" class="video-card__stage" @click="openOutbound(item)">
+                  <button type="button" class="video-card__stage" @click="openViewer(item)">
                     <video
                       :src="mediaUrl(item.url)"
                       muted
@@ -205,13 +205,16 @@
                     <span class="video-card__play">
                       <q-icon name="play_arrow" size="36px" />
                     </span>
-                    <span class="video-card__open">Open out</span>
+                    <span class="video-card__open">Play muted</span>
                   </button>
                   <div class="video-card__body">
                     <div class="video-card__title">{{ item.caption || item.filename }}</div>
                     <p v-if="item.notes" class="video-card__notes">{{ item.notes }}</p>
                     <div class="video-card__actions">
                       <q-btn flat dense size="sm" icon="ios_share" label="Share" @click="openShareSheet(day, item)" />
+                      <q-btn flat dense size="sm" icon="open_in_new" label="CDN" @click="openOutbound(item)">
+                        <q-tooltip>Open on CDN (new tab)</q-tooltip>
+                      </q-btn>
                       <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
                       <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)">
                         <q-tooltip>Hide</q-tooltip>
@@ -391,11 +394,31 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="viewerOpen" maximized>
+    <q-dialog v-model="viewerOpen" maximized @hide="onViewerHide">
       <q-card class="viewer-card">
         <q-bar class="viewer-bar">
           <div>{{ viewerItem?.caption || viewerItem?.filename }}</div>
           <q-space />
+          <q-btn
+            v-if="viewerItem?.media_type === 'video'"
+            dense
+            flat
+            :icon="viewerMuted ? 'volume_off' : 'volume_up'"
+            @click="toggleViewerMute"
+          >
+            <q-tooltip>
+              {{ viewerMuted ? 'Unmute (starts muted — loud/unmastered clips)' : 'Mute' }}
+            </q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="viewerItem?.media_type === 'video'"
+            dense
+            flat
+            icon="auto_fix"
+            @click="audioCleanupTeaser"
+          >
+            <q-tooltip>Premium foreshadow: AI clean / overlay audio — you keep adapter control</q-tooltip>
+          </q-btn>
           <q-btn
             v-if="viewerItem"
             dense
@@ -406,13 +429,27 @@
           <q-btn dense flat icon="close" v-close-popup />
         </q-bar>
         <q-card-section class="viewer-body">
-          <video
-            v-if="viewerItem?.media_type === 'video'"
-            :src="mediaUrl(viewerItem.url)"
-            controls
-            autoplay
-            class="viewer-asset"
-          />
+          <div v-if="viewerItem?.media_type === 'video'" class="viewer-video-wrap">
+            <video
+              ref="viewerVideoEl"
+              :src="mediaUrl(viewerItem.url)"
+              controls
+              autoplay
+              playsinline
+              :muted="viewerMuted"
+              class="viewer-asset"
+              @volumechange="onViewerVolumeChange"
+            />
+            <button
+              v-if="viewerMuted"
+              type="button"
+              class="viewer-unmute"
+              @click="toggleViewerMute"
+            >
+              <q-icon name="volume_off" size="22px" />
+              Sound off — tap to unmute
+            </button>
+          </div>
           <img
             v-else-if="viewerItem"
             :src="mediaUrl(viewerItem.url)"
@@ -456,6 +493,8 @@ const createDayOpen = ref(false)
 const creatingDay = ref(false)
 const viewerOpen = ref(false)
 const viewerItem = ref(null)
+const viewerMuted = ref(true)
+const viewerVideoEl = ref(null)
 const dragOverDayId = ref('')
 const fileInputs = ref({})
 const uploadQueue = ref([])
@@ -545,7 +584,7 @@ function mediaSections(day) {
       key: 'videos',
       title: 'Videos',
       icon: 'movie',
-      blurb: 'Tap to open out on the CDN — full playback off this page.',
+      blurb: 'Plays muted first (loud/unmastered-safe). Unmute when ready — CDN open still available.',
       items: videos
     })
   }
@@ -857,7 +896,44 @@ async function startUpload(queueItem) {
 
 function openViewer(item) {
   viewerItem.value = item
+  viewerMuted.value = item?.media_type === 'video'
   viewerOpen.value = true
+}
+
+function onViewerHide() {
+  viewerMuted.value = true
+  const el = viewerVideoEl.value
+  if (el) {
+    el.pause()
+  }
+}
+
+function toggleViewerMute() {
+  viewerMuted.value = !viewerMuted.value
+  const el = viewerVideoEl.value
+  if (el) {
+    el.muted = viewerMuted.value
+    if (!viewerMuted.value) {
+      el.volume = el.volume || 1
+    }
+  }
+}
+
+function onViewerVolumeChange(event) {
+  const el = event?.target
+  if (!el) return
+  // Native controls unmute should clear our overlay state.
+  if (!el.muted && viewerMuted.value) {
+    viewerMuted.value = false
+  }
+}
+
+function audioCleanupTeaser() {
+  $q.notify({
+    type: 'info',
+    timeout: 5500,
+    message: 'Premium later: AI clean / level / overlay audio — you keep the adapters and who can hear it. Close the share, Meta loses the tollgate.'
+  })
 }
 
 async function removeMedia(day, item) {
@@ -1461,6 +1537,39 @@ onMounted(() => {
   justify-content: center;
   min-height: calc(100vh - 120px);
   background: #071018;
+}
+
+.viewer-video-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.viewer-unmute {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  background: rgba(6, 24, 32, 0.82);
+  color: #e8fcf7;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
+
+.viewer-unmute:hover {
+  background: rgba(15, 143, 124, 0.85);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .viewer-asset {
