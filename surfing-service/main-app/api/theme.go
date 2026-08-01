@@ -362,9 +362,8 @@ func aiGenerateImage(ctx context.Context, cfg aiConfig, prompt, size string) ([]
 		"n":      1,
 		"size":   size,
 	}
-	// dall-e-3 supports quality; gpt-image models often return b64
+	// dall-e-3: quality only (response_format is rejected on current Images API).
 	if strings.Contains(strings.ToLower(cfg.ImageModel), "dall-e") {
-		body["response_format"] = "url"
 		body["quality"] = "standard"
 	}
 
