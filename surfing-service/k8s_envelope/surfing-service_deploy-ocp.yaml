@@ -113,6 +113,9 @@ spec:
                   optional: true
             - name: OIDC_INSECURE_SKIP_VERIFY
               value: "true"
+            # preferred_username values treated as album owners when client-role mapper is incomplete
+            - name: OIDC_OWNER_USERNAMES
+              value: "dasm"
           volumeMounts:
             - name: surfing-data
               mountPath: /data

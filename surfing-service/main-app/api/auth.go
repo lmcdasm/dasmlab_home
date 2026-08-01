@@ -208,6 +208,11 @@ func AuthCallback(c *gin.Context) {
 	var claims map[string]any
 	_ = idTok.Claims(&claims)
 	user := userFromClaims(claims, authSvc.cfg.ClientID)
+	// Access token often carries client roles when the ID token mapper is incomplete.
+	if accessClaims := jwtPayloadUnverified(tok.AccessToken); accessClaims != nil {
+		mergeRolesIntoUser(&user, accessClaims, authSvc.cfg.ClientID)
+	}
+	applyOwnerUsernames(&user)
 	payload, _ := json.Marshal(map[string]any{
 		"user":         user,
 		"access_token": tok.AccessToken,
@@ -263,6 +268,9 @@ func currentUser(c *gin.Context) (AuthUser, bool) {
 	if wrap.User.Sub == "" {
 		return AuthUser{}, false
 	}
+	// Owner usernames apply on every request so old sessions pick up OIDC_OWNER_USERNAMES
+	// without forcing a re-login (roles in the cookie may still be empty).
+	applyOwnerUsernames(&wrap.User)
 	return wrap.User, true
 }
 
@@ -278,21 +286,99 @@ func userFromClaims(claims map[string]any, clientID string) AuthUser {
 		Email:             strClaim(claims, "email"),
 		Name:              strClaim(claims, "name"),
 	}
+	mergeRolesIntoUser(&u, claims, clientID)
+	return u
+}
+
+func mergeRolesIntoUser(u *AuthUser, claims map[string]any, clientID string) {
+	if u == nil || claims == nil {
+		return
+	}
+	seen := map[string]bool{}
+	for _, r := range u.Roles {
+		seen[strings.ToLower(r)] = true
+	}
+	add := func(s string) {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return
+		}
+		key := strings.ToLower(s)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		u.Roles = append(u.Roles, s)
+		if key == roleAdmin {
+			u.IsAdmin = true
+		}
+	}
 	if ra, ok := claims["resource_access"].(map[string]any); ok {
 		if client, ok := ra[clientID].(map[string]any); ok {
 			if roles, ok := client["roles"].([]any); ok {
 				for _, r := range roles {
 					if s, ok := r.(string); ok {
-						u.Roles = append(u.Roles, s)
-						if s == roleAdmin {
-							u.IsAdmin = true
-						}
+						add(s)
 					}
 				}
 			}
 		}
 	}
-	return u
+	if realm, ok := claims["realm_access"].(map[string]any); ok {
+		if roles, ok := realm["roles"].([]any); ok {
+			for _, r := range roles {
+				if s, ok := r.(string); ok {
+					add(s)
+				}
+			}
+		}
+	}
+}
+
+// applyOwnerUsernames marks configured usernames as album owners (admin).
+// Env OIDC_OWNER_USERNAMES=dasm,alice — comma-separated preferred_username values.
+func applyOwnerUsernames(u *AuthUser) {
+	if u == nil {
+		return
+	}
+	raw := strings.TrimSpace(os.Getenv("OIDC_OWNER_USERNAMES"))
+	if raw == "" {
+		raw = "dasm" // golden-path default for dasmlab.org
+	}
+	uname := strings.ToLower(strings.TrimSpace(u.PreferredUsername))
+	if uname == "" {
+		return
+	}
+	for _, part := range strings.Split(raw, ",") {
+		if strings.ToLower(strings.TrimSpace(part)) == uname {
+			u.IsAdmin = true
+			return
+		}
+	}
+}
+
+// jwtPayloadUnverified decodes a JWT payload without verifying the signature.
+// Only used after oauth2.Exchange already validated the token with Keycloak.
+func jwtPayloadUnverified(raw string) map[string]any {
+	parts := strings.Split(raw, ".")
+	if len(parts) < 2 {
+		return nil
+	}
+	payload := parts[1]
+	// JWT uses base64url without padding.
+	b, err := base64.RawURLEncoding.DecodeString(payload)
+	if err != nil {
+		// try with padding
+		b, err = base64.URLEncoding.DecodeString(payload)
+		if err != nil {
+			return nil
+		}
+	}
+	var claims map[string]any
+	if err := json.Unmarshal(b, &claims); err != nil {
+		return nil
+	}
+	return claims
 }
 
 func strClaim(m map[string]any, k string) string {

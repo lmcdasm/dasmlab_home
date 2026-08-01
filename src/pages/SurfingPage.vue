@@ -1057,6 +1057,13 @@ function openNotesEditor(day, item) {
 }
 
 async function saveNotes() {
+  if (oidcEnabled.value && !isAdmin.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Signed in, but owner role missing — sign out/in, or ask Keycloak admin for dasmlab-home/admin'
+    })
+    return
+  }
   savingNotes.value = true
   try {
     await updateMedia(notesDayId.value, notesMediaId.value, {
@@ -1075,7 +1082,9 @@ async function saveNotes() {
     }
     $q.notify({ type: 'positive', message: 'Notes saved' })
   } catch (err) {
-    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not save notes' })
+    const msg = err?.response?.data?.error || 'Could not save notes'
+    const detail = err?.response?.data?.detail
+    $q.notify({ type: 'negative', message: detail ? `${msg}: ${detail}` : msg })
   } finally {
     savingNotes.value = false
   }
@@ -1469,6 +1478,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.15rem;
+}
+
+.day-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .day-title {

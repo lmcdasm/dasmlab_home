@@ -22,6 +22,12 @@
 6. Client role **`admin`** → assign to your user (Filter by clients → dasmlab-home)
 7. Optional client role **`group`** (or `member`) → test “group can download”
 8. Ensure **roles** client scope / User Client Role mapper so `resource_access["dasmlab-home"].roles` includes `admin` (and `group` when testing)
+9. **Add to ID token** AND **Add to access token** must both be ON for that mapper
+10. After role changes: **Sign out + Sign in** (roles are snapshotted into `surf_session` at login)
+
+If the ID-token mapper is incomplete, surfing-service still grants owner when:
+- `admin` appears on the **access** token or **realm_access**, or
+- `preferred_username` is listed in env `OIDC_OWNER_USERNAMES` (default / prod: `dasm`)
 
 ## Behaviour
 
