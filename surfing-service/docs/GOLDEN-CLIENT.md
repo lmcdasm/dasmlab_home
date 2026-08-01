@@ -27,6 +27,33 @@ through `/api/surfing/serve` or the basement PVC.
   once `dasmlab.org` is on CF.
 - PVC remains staging for drafts; published gallery should never stream via OCP.
 
+## Soft-hide (not hard drop)
+
+`DELETE /days/:id/media/:mediaId` sets `hidden: true` on the manifest row and
+**does not** delete PVC or R2 bytes. `GET /days` filters hidden items.
+Keeping the row also stops `/data/preload` from re-importing the same file on
+pod restart. Hard drop lands later in `dasmlab-cdn-mgr`.
+
+`ListDays` reloads the manifest from disk so multi-replica pods see hides
+written by siblings.
+
+## Notes + kinds
+
+| Field | Role |
+|-------|------|
+| `caption` | Short title on the card |
+| `notes` | Longer session story |
+| `kind` | `photo` \| `video` \| `other` (gallery section) |
+| `external_url` | Open-out link (videos, Garmin, iPhone shares) |
+
+- `PATCH /days/:id/media/:mediaId` — update notes/caption/kind/link  
+- `POST /days/:id/media/link` — add link-only **More** items (no bytes)
+- `POST /days/:id/theme/generate` — sample photos → AI banner/background on R2
+  (`SURFING_AI_*`; OpenAI now, cheapcloud farm later)
+
 ## Platform successor
 
 `dasmlab-cdn-mgr` + mock-me **Content Management → Self-Serve Cloud Personal CDN**.
+
+Value prop (share-link vs Meta, keys, premium watermark / NFT registry, AI theme):
+`docs/VALUE-PROP-PERSONAL-CDN.md`.

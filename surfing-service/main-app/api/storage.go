@@ -64,6 +64,39 @@ func loadManifest() error {
 	return nil
 }
 
+// reloadManifestFromDisk replaces in-memory state from PVC so multi-replica
+// ListDays sees soft-hides / creates written by another pod.
+func reloadManifestFromDisk() error {
+	raw, err := os.ReadFile(manifestPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	var days []DayEntry
+	if err := json.Unmarshal(raw, &days); err != nil {
+		return err
+	}
+
+	next := make(map[string]DayEntry, len(days))
+	for _, day := range days {
+		if day.ID == "" {
+			continue
+		}
+		if day.Media == nil {
+			day.Media = []MediaItem{}
+		}
+		next[day.ID] = day
+	}
+
+	storeMu.Lock()
+	dayStore = next
+	storeMu.Unlock()
+	return nil
+}
+
 func persistManifest() error {
 	storeMu.RLock()
 	days := make([]DayEntry, 0, len(dayStore))
@@ -96,6 +129,8 @@ func Initialize() error {
 	dataDir = envOrDefault("SURFING_DATA_DIR", defaultDataDir)
 	mediaBasePath = filepath.Join(dataDir, mediaSubdirName)
 	manifestPath = filepath.Join(dataDir, manifestFileName)
+
+	initObjectStore()
 
 	if err := ensureStorageDirs(); err != nil {
 		return err

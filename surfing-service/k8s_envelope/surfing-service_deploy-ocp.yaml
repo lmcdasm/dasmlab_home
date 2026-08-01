@@ -5,6 +5,8 @@ metadata:
   namespace: surfing-service-system
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: surfing-service
@@ -37,6 +39,58 @@ spec:
               value: "500"
             - name: SURFING_PRELOAD_DIR
               value: /data/preload
+            - name: SURFING_OBJECT_STORE
+              value: "r2"
+            # Draft-first: uploads stay on PVC until POST /days/:id/publish.
+            # Set "true" to dual-write R2 on every upload.
+            - name: SURFING_AUTO_PUBLISH
+              value: "false"
+            - name: R2_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_ACCOUNT_ID
+            - name: R2_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_ACCESS_KEY_ID
+            - name: R2_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_SECRET_ACCESS_KEY
+            - name: R2_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_BUCKET
+            - name: R2_PUBLIC_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_PUBLIC_BASE_URL
+            - name: R2_S3_URL
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_S3_URL
+                  optional: true
+            # Theme MVP: OpenAI now; later point BASE_URL at cheapcloud AI farm (vLLM spots).
+            - name: SURFING_AI_PROVIDER
+              value: "openai"
+            - name: SURFING_AI_BASE_URL
+              value: "https://api.openai.com/v1"
+            - name: SURFING_AI_CHAT_MODEL
+              value: "gpt-4o-mini"
+            - name: SURFING_AI_IMAGE_MODEL
+              value: "dall-e-3"
+            - name: SURFING_AI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-ai
+                  key: SURFING_AI_API_KEY
+                  optional: true
           volumeMounts:
             - name: surfing-data
               mountPath: /data

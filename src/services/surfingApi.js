@@ -13,6 +13,11 @@ export function mediaUrl(path) {
   return `${SURFING_HOST}${path}`
 }
 
+export function mediaOutboundUrl(item) {
+  if (item?.external_url) return item.external_url
+  return mediaUrl(item?.url)
+}
+
 export function mediaDownloadUrl(item) {
   // Absolute CDN URLs: hit the edge directly (no /api proxy, no ?download=1 on R2).
   const url = mediaUrl(item?.url)
@@ -20,6 +25,14 @@ export function mediaDownloadUrl(item) {
   if (/^https?:\/\//.test(url)) return url
   const joiner = url.includes('?') ? '&' : '?'
   return `${url}${joiner}download=1`
+}
+
+export function mediaKind(item) {
+  const kind = (item?.kind || '').toLowerCase()
+  if (kind === 'photo' || kind === 'video' || kind === 'other') return kind
+  if (item?.media_type === 'video') return 'video'
+  if (item?.media_type === 'other' || item?.external_url) return 'other'
+  return 'photo'
 }
 
 export async function fetchDays() {
@@ -36,10 +49,16 @@ export async function deleteDay(dayId) {
   await client.delete(`/days/${dayId}`)
 }
 
-export async function uploadMedia(dayId, file, caption = '', onProgress) {
+export async function uploadMedia(dayId, file, meta = {}, onProgress) {
   const form = new FormData()
   form.append('file', file)
-  if (caption) form.append('caption', caption)
+  if (typeof meta === 'string') {
+    if (meta) form.append('caption', meta)
+  } else {
+    if (meta.caption) form.append('caption', meta.caption)
+    if (meta.notes) form.append('notes', meta.notes)
+    if (meta.kind) form.append('kind', meta.kind)
+  }
 
   const { data } = await client.post(`/days/${dayId}/media`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -51,8 +70,25 @@ export async function uploadMedia(dayId, file, caption = '', onProgress) {
   return data
 }
 
+export async function addMediaLink(dayId, payload) {
+  const { data } = await client.post(`/days/${dayId}/media/link`, payload)
+  return data
+}
+
+export async function updateMedia(dayId, mediaId, patch) {
+  const { data } = await client.patch(`/days/${dayId}/media/${mediaId}`, patch)
+  return data
+}
+
 export async function deleteMedia(dayId, mediaId) {
   await client.delete(`/days/${dayId}/media/${mediaId}`)
+}
+
+export async function generateTheme(dayId, payload = {}) {
+  const { data } = await client.post(`/days/${dayId}/theme/generate`, payload, {
+    timeout: 180000
+  })
+  return data
 }
 
 function sortDays(days) {

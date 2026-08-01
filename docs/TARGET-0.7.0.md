@@ -7,6 +7,23 @@
 
 ---
 
+## Product constellation (CDN / Surfing platform)
+
+```text
+dasmlab_home          → show-and-tell site; Surfing = golden CDN-backed UX (keep alive)
+dasmlab-cdn-mgr       → NEW platform: realms, BYO backends, index, publish, migrate
+cheapcloud             → spend envelopes, free-tier burn, region/provider recommend
+mock-me (mini-mock)   → mock & orchestrate “whatever needs a CDN”
+```
+
+**Commercial sketch:** ~$1 figurative service fee for *index + orderly catalog + site-CDN + move*;
+cloud storage/egress is **pass-through** on the user’s account (they hold encryption/access keys).
+Premium IP-locked RAG is later.
+
+Blueprint: `/home/dasm/dasmlab-cdn-mgr/docs/TARGET.md`
+
+---
+
 ## Why now
 
 | Pain | Fix |
@@ -164,16 +181,17 @@ Phase 3  If traffic grows: Bunny Stream for HLS; keep R2/Hetzner as archive
 
 ### D. cheapcloud updates (as we go)
 
-**Current:** `ghcr.io/dasmlab/cheapcloud` on both 2026 clusters, `CHEAPCLOUD_DRY_RUN=1`, Azure secrets mount, 2Gi PVC, Route on apps domain. **No local source tree** under `/home/dasm` — only GitOps.
+**Current:** Source at `/home/dasm/cheapcloud`. Live still `CHEAPCLOUD_DRY_RUN=1` until new image ships. **MediaBroker** + **ProductFootprint** assets + R2 free-tier watcher landed locally (`pkg/mediabroker`, `pkg/types/product_footprint.go`, `/api/v1/assets`, `/api/v1/media/*`).
 
 **Proposed evolution (Surfing-aligned):**
 
-1. **Find/check out source** (`dasmlab/cheapcloud` or equivalent) into workspace  
-2. Add provider interface: `Put` / `GetURL` / `Delete` / `Migrate`  
-3. Config YAML: active provider + region + cost caps  
-4. Surfing-service calls cheapcloud (or embeds the same Go package) instead of local `storage.go` filesystem  
-5. Flip `CHEAPCLOUD_DRY_RUN=0` once R2 (or Hetzner) credentials are in `cheapcloud-secrets`  
-6. Diagnostic sidecar (`cheapdiag`) reports latency / $ estimate per provider
+1. ~~Find/check out source~~ → `/home/dasm/cheapcloud`  
+2. Add provider interface: `Put` / `GetURL` / `Delete` / `Migrate` → **sketched** in `pkg/mediabroker`  
+3. Config YAML: active provider + region + cost caps → **`configs/media.example.yaml`** (`$20/mo`)  
+4. Surfing-service talks **R2 directly** today; Phase 2 can route via MediaBroker  
+5. Live cost assets: apps **push** footprints (`PUT /api/v1/assets/...`); cheapcloud **scrapes** R2 free-tier burn  
+6. Flip media watch live once new cheapcloud image + `R2_*` secrets on the pod  
+7. Diagnostic sidecar (`cheapdiag`) reports latency / $ estimate per provider
 
 Cheap+dirty ops we explicitly want:
 - Spin provider for a demo week, migrate off, delete bucket  
@@ -211,13 +229,45 @@ New pieces:
 
 ---
 
+## Three products, one CDN loop (not a monorepo)
+
+Keep **mini-mock**, **dasmlab_home Surfing**, and **cheapcloud** separate — they form a loop:
+
+```text
+mini-mock (Content Delivery genre)
+  Mock: Bound DC SourceHouse → OriginApp (Surfing) → EdgeCDN (CF) → optional ObjectStore (R2) + DAM
+        │
+        ▼ profile / recommend
+cheapcloud (MediaBroker + $20 storage/CDN envelope)
+  Rank providers, burn alerts, fail-closed, later auto-migrate
+        │
+        ▼ production twin of the mock
+dasmlab_home / surfing-service
+  Live gallery bytes on R2 + CF CDN; PVC kept as write-through / fallback
+```
+
+| Product | Job |
+|---------|-----|
+| **mini-mock** (`/home/dasm/mini-acm`, genre `content-delivery`) | Design / mock the CDN network pattern |
+| **Surfing** (`dasmlab_home/surfing-service`) | Ship the mocked pattern to production visitors |
+| **cheapcloud** (`/home/dasm/cheapcloud`) | Budget wall, profiles, recommendations, alerts |
+
+**Budget (locked):** Cloud **Storage + CDN** envelope **`$20/mo`** (`surfing-cdn-storage`), prefer **CDN free-tier / R2 zero-egress** until we pop. Azure compute budget stays **`$5/mo`** (separate wall).
+
 ## Decisions locked
 
 1. **Phase 1 origin:** Cloudflare **R2** + CF CDN (confirmed 2026-08-01).  
 2. **WhatsNew cluster teardown:** PR to `dasmlab-live-cicd` empties live + archives manifests so Argo prune runs on next sync.  
 3. **Homepage visual scope:** Lab map **and** architecture wiring ship **in parallel** for 0.7.0.  
 4. **“Constellation”** was only the first sketch name — keep raising the bar (edges, contrast, motion) against interview-me / mini-acm / thao-rip as those repos keep moving. Prefer snappy labels in UI: **Lab map**, **How the lab is wired**.
+5. **Media URLs:** **Public** CDN/R2 URLs for Surfing gallery (not signed) — travel media is meant to be shared; `/serve` redirects to CDN when URL is absolute.
+6. **Storage+CDN budget:** **`$20/mo`** fail-closed envelope in cheapcloud MediaBroker (`configs/media.example.yaml`); compute Azure wall remains `$5`.
+7. **CI runners:** `dasmlab_home` is under **user** `lmcdasm` (cannot use `dasmlab` org `bld-249-runner`). Use repo runner `dev-2022-dasmlab-home` on `dev-2022` with labels `self-hosted,Linux,X64` — same shape as org runners.
+8. **Value prop:** share **links**, not source uploads to Meta/Google; user-held keys; soft-hide before hard drop. Narrative: `docs/VALUE-PROP-PERSONAL-CDN.md`. Premium foreshadow: watermark + `dasmlab-block-nft-registry`.
+9. **Surfing remove-media:** soft-hide (`hidden` in manifest) + ListDays disk reload; do not drop R2/PVC yet.
 
 ## Still open
 
-1. **Public vs signed media URLs** for Surfing on R2?
+1. **Fresh R2 API token + dedicated bucket** (`dasmlab-surfing`) — existing `/home/dasm/r2_creds` returns **403** against sailgp bucket (2026-08-01).  
+2. **Custom domain** `media.surfing.dasmlab.org` vs `*.r2.dev` public base for Phase 1.
+3. **Deploy** soft-hide surfing-service image + themed FE to prod/preview.

@@ -90,13 +90,25 @@ Rolling log of **≥10 improvements/fixes per task** while shipping the preview 
 | 3 | Mobile map stack CSS (900px) | Already in LabMap |
 | 4 | Merge WhatsNew prune PR | Attempted / pending |
 | 5 | preview-cleanup workflow | Added |
-| 6 | R2 Phase 1 next (TARGET locked) | Documented |
-| 7 | cheapcloud MediaBroker next | Documented |
+| 6 | R2 Phase 1 next (TARGET locked) | Surfing R2 live + album publish |
+| 7 | cheapcloud MediaBroker next | Interface + `$20` media.example.yaml |
 | 8 | Promote checklist on PR | In PR body |
 | 9 | TARGET checkboxes | Update after merge |
 | 10 | Steal next: mini-mock + running-translate preview patterns | Noted (appeared on live-cicd main) |
 
 ---
+
+## CDN loop kickoff (2026-08-01)
+
+| Item | Status |
+|------|--------|
+| Three-product loop locked in TARGET | mini-mock mock → cheapcloud profile → Surfing prod |
+| Storage+CDN budget | **`$20/mo`** fail-closed (`surfing-cdn-storage`) |
+| Surfing R2 backend | Live `v2026.08.01-48d8ec7-pub` |
+| Lifecycle | Draft=PVC → `POST /days/:id/publish` → R2 albums |
+| Bonaire migrate | **178/178 published** to `surfing/albums/{dayId}/original/…` |
+| D2 diagrams | `surfing-service/diagrams/*.d2` + `.svg` |
+| CI runner | `dev-2022-dasmlab-home` **online** |
 
 ## Working release coordinates
 
@@ -104,9 +116,11 @@ Rolling log of **≥10 improvements/fixes per task** while shipping the preview 
 |------|-------|
 | Preview URL | https://dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org/ |
 | Home PR | https://github.com/lmcdasm/dasmlab_home/pull/10 |
-| Image | `ghcr.io/lmcdasm/dasmlab-home:v2026.08.01-e4d61f6` |
-| NS | `dasmlab-home-dev-lmcdasm` |
-| Argo | `dasmlab-home-previews` Synced/Healthy |
+| Home Image | `ghcr.io/lmcdasm/dasmlab-home:v2026.08.01-48d8ec7` |
+| Surfing Image | `ghcr.io/lmcdasm/surfing-service:v2026.08.01-48d8ec7-pub` |
+| Surfing CDN sample | `https://pub-973dadf41dd44837be5bcdd8913067a7.r2.dev/surfing/albums/…` |
+| NS | `dasmlab-home-dev-lmcdasm` / `surfing-service-system` |
+| Argo | `dasmlab-home-previews` + surfing-service live |
 
 ## Hotfix — HAProxy CERT (2026-08-01)
 
@@ -115,3 +129,25 @@ Rolling log of **≥10 improvements/fixes per task** while shipping the preview 
 - Hooked from `deploy-preview.sh` (hands-free on every preview)
 - Applied live: **CERT56**=`dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org`
 - Verified: TLS CN matches FQDN, HTTPS 200 without `-k`
+
+## Soft-hide + Windsurfing theme (2026-08-01)
+
+| # | Change | Why |
+|---|--------|-----|
+| 1 | `MediaItem.Hidden` + DeleteMedia soft-hide | User asked: never hard-drop yet; UI remove must survive refresh |
+| 2 | ListDays filters hidden + reloads manifest from disk | Multi-replica + preload reseed were likely refresh ghosts |
+| 3 | Publish skips hidden | Don’t push hidden rows to CDN again |
+| 4 | Surfing FE: Photos/Clips sections, share link, ocean theme | Sports motif + value-prop CTA |
+| 5 | `docs/VALUE-PROP-PERSONAL-CDN.md` | Share-link vs Meta; premium NFT registry foreshadow |
+| 6 | GOLDEN-CLIENT + TARGET decisions 8–9 | Lock the narrative |
+
+## Theme MVP + ship (2026-08-01)
+
+| # | Change | Why |
+|---|--------|-----|
+| 1 | `POST /days/:id/theme/generate` | Sample CDN photos → banner/bg + palette |
+| 2 | OpenAI-compatible AI client | Dev=OpenAI; later=cheapcloud vLLM farm via BASE_URL |
+| 3 | Theme art on R2 `…/theme/` | Same CDN as album media |
+| 4 | FE applies banner/wash | See the imagined sport theme live |
+| 5 | Secret `surfing-ai` + deploy env | Wire key without baking into image |
+| 6 | Notes/kinds/Videos-Photos-More UI | Hot gallery MVP |

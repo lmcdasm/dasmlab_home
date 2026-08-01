@@ -1,12 +1,43 @@
 <template>
   <q-page padding class="surfing-page q-gutter-md">
-    <section class="dasm-shell">
-      <div class="dasm-shell__content">
-        <div class="dasm-caps">Windsurfing</div>
-        <h1 class="dasm-title">Sessions around the world</h1>
+    <section
+      class="dasm-shell surfing-hero"
+      :class="{ 'surfing-hero--themed': !!activeTheme?.banner_url }"
+      :style="heroThemeStyle"
+    >
+      <div class="surfing-hero__wash" aria-hidden="true" />
+      <div class="surfing-hero__glow" aria-hidden="true" />
+      <div class="dasm-shell__content surfing-hero__content">
+        <div class="dasm-caps surfing-caps">{{ activeTheme?.label || 'Windsurfing Trips' }}</div>
+        <h1 class="dasm-title surfing-hero__title">Sessions around the world</h1>
         <p class="dasm-subtitle">
-          Photo and video log from lakes, rivers, and ocean spots. Organize by day, drag files into the queue, and they land on cluster storage.
+          Your curated box — photos, videos, and activity shares on storage you control.
+          Publish to the edge CDN, add notes, share a link. Friends open your gallery;
+          Meta never gets the source.
         </p>
+        <p v-if="activeTheme?.style_brief" class="surfing-hero__brief">{{ activeTheme.style_brief }}</p>
+        <div class="surfing-hero__actions">
+          <q-btn
+            unelevated
+            color="primary"
+            icon="ios_share"
+            label="Copy share link"
+            class="surfing-cta"
+            @click="copyShareLink"
+          />
+          <q-btn
+            outline
+            color="primary"
+            icon="auto_awesome"
+            label="Generate theme"
+            class="surfing-cta surfing-cta--ghost"
+            :loading="generatingTheme"
+            @click="runGenerateTheme"
+          >
+            <q-tooltip>Sample album photos → AI banner + palette (OpenAI now; cheapcloud farm later)</q-tooltip>
+          </q-btn>
+          <span class="surfing-hero__hint">Videos · Photos · More — one publishable album</span>
+        </div>
       </div>
     </section>
 
@@ -16,7 +47,11 @@
       <div class="text-caption">{{ loadError }}</div>
     </div>
 
-    <section v-else class="dasm-panel surfing-workspace">
+    <section
+      v-else
+      class="dasm-panel surfing-workspace"
+      :style="workspaceThemeStyle"
+    >
       <div class="surfing-toolbar">
         <q-tabs
           v-model="activeDayId"
@@ -53,7 +88,7 @@
           v-for="day in days"
           :key="day.id"
           :name="day.id"
-          class="q-pa-md"
+          class="q-pa-md surfing-day-panel"
         >
           <div class="day-header">
             <div>
@@ -65,18 +100,23 @@
                   <q-icon name="place" size="16px" class="q-mr-xs" />
                   {{ day.location }}
                 </span>
+                <span v-if="day.published" class="day-pill q-ml-md">
+                  <q-icon name="cloud_done" size="14px" class="q-mr-xs" />
+                  On CDN
+                </span>
               </div>
             </div>
-            <q-btn
-              flat
-              dense
-              round
-              icon="delete_outline"
-              color="negative"
-              @click="confirmDeleteDay(day)"
-            >
-              <q-tooltip>Delete day</q-tooltip>
-            </q-btn>
+            <div class="day-header__actions">
+              <q-btn flat dense round icon="link" color="primary" @click="copyShareLink(day)">
+                <q-tooltip>Copy album link</q-tooltip>
+              </q-btn>
+              <q-btn flat dense round icon="add_link" color="primary" @click="openAddLink(day)">
+                <q-tooltip>Add activity / share link</q-tooltip>
+              </q-btn>
+              <q-btn flat dense round icon="delete_outline" color="negative" @click="confirmDeleteDay(day)">
+                <q-tooltip>Delete day</q-tooltip>
+              </q-btn>
+            </div>
           </div>
 
           <div
@@ -88,9 +128,9 @@
             @drop.prevent="onDrop(day.id, $event)"
             @click="openFilePicker(day.id)"
           >
-            <q-icon name="add_photo_alternate" size="36px" class="q-mb-sm" />
-            <div class="text-subtitle2">Drop photos or videos here</div>
-            <div class="text-caption">or click to browse</div>
+            <q-icon name="waves" size="40px" class="q-mb-sm drop-zone__icon" />
+            <div class="text-subtitle2">Drop photos or videos into this session</div>
+            <div class="text-caption">or click to browse · activity shares via + link</div>
             <input
               :ref="(el) => setFileInput(day.id, el)"
               type="file"
@@ -124,73 +164,136 @@
           </div>
 
           <div v-if="!day.media?.length" class="empty-gallery q-mt-lg">
-            <q-icon name="surfing" size="42px" class="q-mb-sm" />
-            <div>No media yet for this day.</div>
+            <q-icon name="surfing" size="48px" class="q-mb-sm" />
+            <div>No media yet — drop files or add a Garmin / iPhone share.</div>
           </div>
 
-          <div v-else class="media-grid q-mt-lg">
+          <template v-else>
             <div
-              v-for="item in day.media"
-              :key="item.id"
-              class="media-card"
+              v-for="section in mediaSections(day)"
+              :key="section.key"
+              class="media-section"
+              :class="`media-section--${section.key}`"
             >
-              <div class="media-card__frame" @click="openViewer(item)">
-                <video
-                  v-if="item.media_type === 'video'"
-                  :src="mediaUrl(item.url)"
-                  muted
-                  playsinline
-                  preload="metadata"
-                  class="media-card__asset"
-                />
-                <img
-                  v-else
-                  :src="mediaUrl(item.url)"
-                  :alt="item.caption || item.filename"
-                  class="media-card__asset"
-                  loading="lazy"
-                />
-                <div class="media-card__badge">
-                  <q-icon :name="item.media_type === 'video' ? 'play_circle' : 'photo'" size="18px" />
+              <div class="media-section__head">
+                <div class="media-section__label">
+                  <q-icon :name="section.icon" size="20px" />
+                  <h3 class="media-section__title">{{ section.title }}</h3>
+                  <span class="media-section__count">{{ section.items.length }}</span>
                 </div>
+                <p class="media-section__blurb">{{ section.blurb }}</p>
               </div>
-              <div class="media-card__footer">
-                <div class="media-card__caption">{{ item.caption || item.filename }}</div>
-                <div class="media-card__actions">
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    icon="download"
-                    size="sm"
-                    tag="a"
-                    :href="mediaDownloadUrl(item)"
-                    :download="item.filename"
-                    rel="noopener"
-                    @click.stop
-                  >
-                    <q-tooltip>Download</q-tooltip>
-                  </q-btn>
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    icon="close"
-                    size="sm"
-                    @click.stop="removeMedia(day, item)"
-                  >
-                    <q-tooltip>Remove</q-tooltip>
-                  </q-btn>
-                </div>
+
+              <!-- Videos: cinema row, outbound open -->
+              <div v-if="section.key === 'videos'" class="video-rail">
+                <article
+                  v-for="item in section.items"
+                  :key="item.id"
+                  class="video-card"
+                >
+                  <button type="button" class="video-card__stage" @click="openOutbound(item)">
+                    <video
+                      :src="mediaUrl(item.url)"
+                      muted
+                      playsinline
+                      preload="metadata"
+                      class="video-card__asset"
+                    />
+                    <span class="video-card__play">
+                      <q-icon name="play_arrow" size="36px" />
+                    </span>
+                    <span class="video-card__open">Open out</span>
+                  </button>
+                  <div class="video-card__body">
+                    <div class="video-card__title">{{ item.caption || item.filename }}</div>
+                    <p v-if="item.notes" class="video-card__notes">{{ item.notes }}</p>
+                    <div class="video-card__actions">
+                      <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
+                      <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)">
+                        <q-tooltip>Hide</q-tooltip>
+                      </q-btn>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <!-- Photos: hot grid -->
+              <div v-else-if="section.key === 'photos'" class="photo-grid">
+                <article
+                  v-for="item in section.items"
+                  :key="item.id"
+                  class="photo-card"
+                >
+                  <div class="photo-card__frame" @click="openViewer(item)">
+                    <img
+                      :src="mediaUrl(item.url)"
+                      :alt="item.caption || item.filename"
+                      class="photo-card__asset"
+                      loading="lazy"
+                    />
+                    <div class="photo-card__veil">
+                      <q-icon name="zoom_in" size="22px" />
+                    </div>
+                  </div>
+                  <div class="photo-card__body">
+                    <div class="photo-card__title">{{ item.caption || item.filename }}</div>
+                    <p v-if="item.notes" class="photo-card__notes">{{ item.notes }}</p>
+                    <div class="photo-card__actions">
+                      <q-btn flat dense round size="sm" icon="edit_note" @click="openNotesEditor(day, item)">
+                        <q-tooltip>Edit notes</q-tooltip>
+                      </q-btn>
+                      <q-btn
+                        flat
+                        dense
+                        round
+                        size="sm"
+                        icon="download"
+                        tag="a"
+                        :href="mediaDownloadUrl(item)"
+                        :download="item.filename"
+                        rel="noopener"
+                      />
+                      <q-btn flat dense round size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <!-- Other: Garmin / iPhone / shares -->
+              <div v-else class="other-list">
+                <article
+                  v-for="item in section.items"
+                  :key="item.id"
+                  class="other-card"
+                >
+                  <div class="other-card__icon">
+                    <q-icon :name="otherIcon(item)" size="28px" />
+                  </div>
+                  <div class="other-card__body">
+                    <div class="other-card__title">{{ item.caption || item.filename }}</div>
+                    <p v-if="item.notes" class="other-card__notes">{{ item.notes }}</p>
+                    <a
+                      v-if="mediaOutboundUrl(item)"
+                      class="other-card__link"
+                      :href="mediaOutboundUrl(item)"
+                      target="_blank"
+                      rel="noopener"
+                    >Open share</a>
+                  </div>
+                  <div class="other-card__actions">
+                    <q-btn flat dense round icon="edit_note" @click="openNotesEditor(day, item)" />
+                    <q-btn flat dense round icon="visibility_off" @click="removeMedia(day, item)" />
+                  </div>
+                </article>
               </div>
             </div>
-          </div>
+          </template>
         </q-tab-panel>
 
         <q-tab-panel v-if="!days.length" name="" class="q-pa-lg text-center">
           <q-icon name="sailing" size="48px" class="q-mb-md" />
           <div class="text-h6 q-mb-sm">No sessions yet</div>
-          <div class="text-body2 q-mb-md">Create your first day, then drop photos and clips into it.</div>
+          <div class="text-body2 q-mb-md">Create your first day, then drop photos, clips, or activity links into it.</div>
           <q-btn color="primary" icon="add" label="Create first day" @click="openCreateDay" />
         </q-tab-panel>
       </q-tab-panels>
@@ -213,11 +316,78 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="linkOpen">
+      <q-card style="min-width: min(420px, 92vw)">
+        <q-card-section>
+          <div class="text-h6">Add activity / share</div>
+          <div class="text-caption text-grey-7">Garmin Connect, iPhone share sheets, Strava, drive links…</div>
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-input v-model="newLink.title" label="Title" filled dense autofocus />
+          <q-input v-model="newLink.url" label="URL" filled dense type="url" hint="https://…" />
+          <q-input v-model="newLink.source_label" label="Source label (optional)" filled dense placeholder="Garmin · iPhone · Drive" />
+          <q-input v-model="newLink.notes" label="Notes" filled dense type="textarea" autogrow />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" v-close-popup />
+          <q-btn color="primary" label="Add" :loading="savingLink" @click="submitAddLink" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="notesOpen">
+      <q-card style="min-width: min(440px, 92vw)">
+        <q-card-section>
+          <div class="text-h6">Notes</div>
+          <div class="text-caption text-grey-7">{{ notesDraft.filename }}</div>
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-input v-model="notesDraft.caption" label="Caption" filled dense />
+          <q-input
+            v-model="notesDraft.notes"
+            label="Notes"
+            filled
+            type="textarea"
+            autogrow
+            hint="Session feel, wind, who was there…"
+          />
+          <q-select
+            v-model="notesDraft.kind"
+            :options="kindOptions"
+            label="Section"
+            filled
+            dense
+            emit-value
+            map-options
+          />
+          <q-input
+            v-model="notesDraft.external_url"
+            label="Outbound link (optional)"
+            filled
+            dense
+            type="url"
+            hint="Videos & shares can open out to this URL"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" v-close-popup />
+          <q-btn color="primary" label="Save" :loading="savingNotes" @click="saveNotes" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="viewerOpen" maximized>
       <q-card class="viewer-card">
         <q-bar class="viewer-bar">
           <div>{{ viewerItem?.caption || viewerItem?.filename }}</div>
           <q-space />
+          <q-btn
+            v-if="viewerItem"
+            dense
+            flat
+            icon="edit_note"
+            @click="openNotesEditor(activeDay, viewerItem)"
+          />
           <q-btn dense flat icon="close" v-close-popup />
         </q-bar>
         <q-card-section class="viewer-body">
@@ -235,21 +405,29 @@
             class="viewer-asset"
           />
         </q-card-section>
+        <q-card-section v-if="viewerItem?.notes" class="viewer-notes">
+          {{ viewerItem.notes }}
+        </q-card-section>
       </q-card>
     </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import {
+  addMediaLink,
   createDay,
   deleteDay,
   deleteMedia,
   fetchDays,
+  generateTheme,
   mediaDownloadUrl,
+  mediaKind,
+  mediaOutboundUrl,
   mediaUrl,
+  updateMedia,
   uploadMedia
 } from 'src/services/surfingApi'
 
@@ -265,6 +443,35 @@ const viewerItem = ref(null)
 const dragOverDayId = ref('')
 const fileInputs = ref({})
 const uploadQueue = ref([])
+const generatingTheme = ref(false)
+
+const linkOpen = ref(false)
+const savingLink = ref(false)
+const linkDayId = ref('')
+const newLink = reactive({
+  title: '',
+  url: '',
+  notes: '',
+  source_label: ''
+})
+
+const notesOpen = ref(false)
+const savingNotes = ref(false)
+const notesDayId = ref('')
+const notesMediaId = ref('')
+const notesDraft = reactive({
+  filename: '',
+  caption: '',
+  notes: '',
+  kind: 'photo',
+  external_url: ''
+})
+
+const kindOptions = [
+  { label: 'Photos', value: 'photo' },
+  { label: 'Videos', value: 'video' },
+  { label: 'More (shares / other)', value: 'other' }
+]
 
 const newDay = reactive({
   title: '',
@@ -272,8 +479,133 @@ const newDay = reactive({
   location: ''
 })
 
+const activeDay = computed(() => days.value.find((d) => d.id === activeDayId.value) || null)
+const activeTheme = computed(() => activeDay.value?.theme || null)
+
+const heroThemeStyle = computed(() => {
+  const t = activeTheme.value
+  if (!t) return {}
+  const style = {}
+  if (t.primary) style['--surf-teal'] = t.primary
+  if (t.secondary) style['--surf-deep'] = t.secondary
+  if (t.accent) style['--surf-horizon'] = t.accent
+  if (t.banner_url) {
+    style.backgroundImage = `linear-gradient(125deg, rgba(6, 47, 56, 0.72), rgba(10, 92, 88, 0.55) 48%, rgba(20, 122, 108, 0.45)), url(${mediaUrl(t.banner_url)})`
+    style.backgroundSize = 'cover'
+    style.backgroundPosition = 'center'
+  }
+  return style
+})
+
+const workspaceThemeStyle = computed(() => {
+  const t = activeTheme.value
+  if (!t?.background_url && !t?.primary) return {}
+  const style = {}
+  if (t.background_url) {
+    style.backgroundImage = `linear-gradient(180deg, rgba(255,255,255,0.92), rgba(240,250,247,0.88)), url(${mediaUrl(t.background_url)})`
+    style.backgroundSize = 'cover'
+    style.backgroundPosition = 'center'
+  }
+  if (t.primary) style.borderColor = `${t.primary}55`
+  return style
+})
+
 function tabLabel(day) {
   return day.title || 'Session'
+}
+
+function mediaSections(day) {
+  const items = day?.media || []
+  const videos = items.filter((m) => mediaKind(m) === 'video')
+  const photos = items.filter((m) => mediaKind(m) === 'photo')
+  const other = items.filter((m) => mediaKind(m) === 'other')
+  const sections = []
+  if (videos.length) {
+    sections.push({
+      key: 'videos',
+      title: 'Videos',
+      icon: 'movie',
+      blurb: 'Tap to open out on the CDN — full playback off this page.',
+      items: videos
+    })
+  }
+  if (photos.length) {
+    sections.push({
+      key: 'photos',
+      title: 'Photos',
+      icon: 'photo_camera',
+      blurb: 'Session stills — add notes so the story travels with the frame.',
+      items: photos
+    })
+  }
+  if (other.length) {
+    sections.push({
+      key: 'other',
+      title: 'More',
+      icon: 'hub',
+      blurb: 'Garmin activities, iPhone shares, and other publishable data.',
+      items: other
+    })
+  }
+  return sections
+}
+
+function otherIcon(item) {
+  const hay = `${item.caption || ''} ${item.filename || ''} ${item.notes || ''}`.toLowerCase()
+  if (hay.includes('garmin')) return 'directions_bike'
+  if (hay.includes('iphone') || hay.includes('apple')) return 'phone_iphone'
+  if (hay.includes('strava')) return 'directions_run'
+  return 'link'
+}
+
+function openOutbound(item) {
+  const url = mediaOutboundUrl(item)
+  if (!url) return
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+async function runGenerateTheme() {
+  const day = activeDay.value
+  if (!day) {
+    $q.notify({ type: 'warning', message: 'Create or select a session day first' })
+    return
+  }
+  generatingTheme.value = true
+  try {
+    const data = await generateTheme(day.id, {
+      sport: 'Windsurfing Trips',
+      prompt: `${day.title}${day.location ? ` in ${day.location}` : ''} — ocean sessions, trade winds, travel log`,
+      sample_count: 3
+    })
+    await loadDays(day.id)
+    const warning = data?.warning
+    if (warning) {
+      $q.notify({ type: 'warning', message: warning, timeout: 5000 })
+    } else {
+      $q.notify({ type: 'positive', message: 'Theme generated from your album samples' })
+    }
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: err?.response?.data?.error || err?.message || 'Theme generation failed'
+    })
+  } finally {
+    generatingTheme.value = false
+  }
+}
+
+async function copyShareLink(day) {
+  const targetId = day?.id || activeDayId.value
+  const url = new URL(window.location.href)
+  if (targetId) {
+    url.hash = `day=${targetId}`
+  }
+  try {
+    await navigator.clipboard.writeText(url.toString())
+    $q.notify({ type: 'positive', message: 'Share link copied — your box, their invite' })
+  } catch {
+    $q.notify({ type: 'negative', message: 'Could not copy link' })
+  }
 }
 
 function formatDate(value, short = false) {
@@ -306,8 +638,10 @@ async function loadDays(selectId) {
       activeDayId.value = ''
       return
     }
-    if (selectId && data.some((day) => day.id === selectId)) {
-      activeDayId.value = selectId
+    const hashDay = (window.location.hash.match(/day=([^&]+)/) || [])[1]
+    const preferred = selectId || hashDay
+    if (preferred && data.some((day) => day.id === preferred)) {
+      activeDayId.value = preferred
     } else if (!activeDayId.value || !data.some((day) => day.id === activeDayId.value)) {
       activeDayId.value = data[0].id
     }
@@ -362,6 +696,73 @@ function confirmDeleteDay(day) {
   })
 }
 
+function openAddLink(day) {
+  linkDayId.value = day.id
+  newLink.title = ''
+  newLink.url = ''
+  newLink.notes = ''
+  newLink.source_label = ''
+  linkOpen.value = true
+}
+
+async function submitAddLink() {
+  if (!newLink.url.trim()) {
+    $q.notify({ type: 'warning', message: 'URL is required' })
+    return
+  }
+  savingLink.value = true
+  try {
+    await addMediaLink(linkDayId.value, {
+      title: newLink.title.trim(),
+      url: newLink.url.trim(),
+      notes: newLink.notes.trim(),
+      source_label: newLink.source_label.trim()
+    })
+    linkOpen.value = false
+    await loadDays(linkDayId.value)
+    $q.notify({ type: 'positive', message: 'Share added under More' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not add link' })
+  } finally {
+    savingLink.value = false
+  }
+}
+
+function openNotesEditor(day, item) {
+  if (!day || !item) return
+  notesDayId.value = day.id
+  notesMediaId.value = item.id
+  notesDraft.filename = item.filename || ''
+  notesDraft.caption = item.caption || ''
+  notesDraft.notes = item.notes || ''
+  notesDraft.kind = mediaKind(item)
+  notesDraft.external_url = item.external_url || ''
+  notesOpen.value = true
+}
+
+async function saveNotes() {
+  savingNotes.value = true
+  try {
+    await updateMedia(notesDayId.value, notesMediaId.value, {
+      caption: notesDraft.caption,
+      notes: notesDraft.notes,
+      kind: notesDraft.kind,
+      external_url: notesDraft.external_url
+    })
+    notesOpen.value = false
+    await loadDays(notesDayId.value)
+    if (viewerItem.value?.id === notesMediaId.value) {
+      const day = days.value.find((d) => d.id === notesDayId.value)
+      viewerItem.value = day?.media?.find((m) => m.id === notesMediaId.value) || viewerItem.value
+    }
+    $q.notify({ type: 'positive', message: 'Notes saved' })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not save notes' })
+  } finally {
+    savingNotes.value = false
+  }
+}
+
 function onDragEnter(dayId) {
   dragOverDayId.value = dayId
 }
@@ -388,7 +789,7 @@ function onFileInput(dayId, event) {
 function enqueueFiles(dayId, files) {
   const accepted = files.filter((file) => file.type.startsWith('image/') || file.type.startsWith('video/'))
   if (!accepted.length) {
-    $q.notify({ type: 'warning', message: 'Only photos and videos are supported' })
+    $q.notify({ type: 'warning', message: 'Only photos and videos here — use + link for Garmin / shares' })
     return
   }
   accepted.forEach((file) => {
@@ -408,15 +809,12 @@ function enqueueFiles(dayId, files) {
 async function startUpload(queueItem) {
   queueItem.status = 'uploading'
   try {
-    await uploadMedia(queueItem.dayId, queueItem.file, '', (progress) => {
+    await uploadMedia(queueItem.dayId, queueItem.file, {}, (progress) => {
       queueItem.progress = progress
     })
     queueItem.status = 'done'
     queueItem.progress = 100
     await loadDays(queueItem.dayId)
-    setTimeout(() => {
-      uploadQueue.value = uploadQueue.value.filter((item) => item.id !== queueItem.id)
-    }, 1800)
   } catch (err) {
     queueItem.status = 'error'
     queueItem.error = err?.response?.data?.error || 'Upload failed'
@@ -430,15 +828,16 @@ function openViewer(item) {
 
 async function removeMedia(day, item) {
   $q.dialog({
-    title: 'Remove media?',
-    message: item.caption || item.filename,
-    cancel: true
+    title: 'Hide from album?',
+    message: `${item.caption || item.filename} stays on your storage — it just leaves this gallery view.`,
+    cancel: true,
+    ok: { label: 'Hide', color: 'primary' }
   }).onOk(async () => {
     try {
       await deleteMedia(day.id, item.id)
       await loadDays(day.id)
     } catch (err) {
-      $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not delete media' })
+      $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Could not hide media' })
     }
   })
 }
@@ -450,8 +849,131 @@ onMounted(() => {
 
 <style scoped>
 .surfing-page {
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
+  --surf-deep: #063642;
+  --surf-teal: #0f8f7c;
+  --surf-foam: #dff7f1;
+  --surf-horizon: #5eb4c8;
+  --surf-ink: #102833;
+  --surf-sand: #f4fbf9;
+}
+
+.surfing-hero {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(15, 143, 124, 0.5);
+  background:
+    linear-gradient(125deg, #062f38 0%, #0a5c58 42%, #147a6c 68%, #1a9a86 100%);
+  color: #f2fffb;
+  box-shadow: 0 22px 48px rgba(6, 54, 66, 0.28);
+  animation: hero-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.surfing-hero :deep(.dasm-title),
+.surfing-hero :deep(.dasm-subtitle),
+.surfing-hero :deep(.dasm-caps) {
+  color: inherit;
+}
+
+.surfing-hero :deep(.dasm-subtitle) {
+  color: rgba(232, 252, 247, 0.88);
+  max-width: 720px;
+}
+
+.surfing-hero__wash,
+.surfing-hero__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.surfing-hero__wash {
+  background:
+    radial-gradient(ellipse 70% 80% at 8% 120%, rgba(94, 180, 200, 0.45), transparent 55%),
+    radial-gradient(ellipse 45% 50% at 95% -20%, rgba(255, 255, 255, 0.18), transparent 50%),
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 22px,
+      rgba(255, 255, 255, 0.04) 22px,
+      rgba(255, 255, 255, 0.04) 23px
+    );
+  animation: surf-wash 12s ease-in-out infinite alternate;
+}
+
+.surfing-hero__glow {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  animation: surf-sheen 7s ease-in-out infinite;
+}
+
+.surfing-hero__content {
+  position: relative;
+  z-index: 2;
+}
+
+.surfing-caps {
+  color: #9feedd !important;
+  letter-spacing: 0.22em;
+}
+
+.surfing-hero__title {
+  color: #fff !important;
+  text-shadow: 0 8px 28px rgba(0, 20, 28, 0.35);
+}
+
+.surfing-hero--themed {
+  background-color: #062f38;
+}
+
+.surfing-hero__brief {
+  margin: 0.75rem 0 0;
+  max-width: 640px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(220, 245, 238, 0.9);
+  border-left: 3px solid rgba(159, 238, 221, 0.7);
+  padding-left: 0.75rem;
+}
+
+.surfing-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1.15rem;
+}
+
+.surfing-cta {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.surfing-cta--ghost {
+  color: #e8fcf7 !important;
+  border-color: rgba(232, 252, 247, 0.45) !important;
+}
+
+.surfing-hero__hint {
+  font-size: 0.82rem;
+  color: rgba(220, 245, 238, 0.78);
+}
+
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes surf-wash {
+  from { opacity: 0.75; transform: translateY(0) scale(1); }
+  to { opacity: 1; transform: translateY(-6px) scale(1.02); }
+}
+
+@keyframes surf-sheen {
+  0%, 40% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  50% { opacity: 0.55; }
+  70%, 100% { transform: translateX(140%) skewX(-18deg); opacity: 0; }
 }
 
 .surfing-alert {
@@ -461,6 +983,9 @@ onMounted(() => {
 
 .surfing-workspace {
   overflow: hidden;
+  border-color: rgba(15, 143, 124, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 250, 247, 0.94));
 }
 
 .surfing-toolbar {
@@ -492,10 +1017,17 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
+.day-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
 .day-title {
   margin: 0;
-  font-size: 1.35rem;
-  color: #1f3344;
+  font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+  color: var(--surf-ink);
+  letter-spacing: -0.02em;
 }
 
 .day-meta {
@@ -507,22 +1039,40 @@ onMounted(() => {
   margin-top: 0.35rem;
 }
 
+.day-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--surf-teal);
+  background: rgba(15, 143, 124, 0.1);
+  border: 1px solid rgba(15, 143, 124, 0.25);
+  border-radius: 6px;
+  padding: 0.12rem 0.45rem;
+}
+
 .drop-zone {
-  border: 2px dashed rgba(63, 122, 107, 0.35);
-  border-radius: 16px;
-  padding: 1.5rem;
+  border: 2px dashed rgba(15, 143, 124, 0.42);
+  border-radius: 18px;
+  padding: 1.65rem;
   text-align: center;
-  color: #4f6879;
-  background: linear-gradient(160deg, rgba(63, 122, 107, 0.06), rgba(158, 115, 178, 0.05));
+  color: #3f5a69;
+  background:
+    linear-gradient(160deg, rgba(15, 143, 124, 0.1), rgba(94, 180, 200, 0.12));
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.drop-zone__icon {
+  color: var(--surf-teal);
 }
 
 .drop-zone:hover,
 .drop-zone--active {
-  border-color: rgba(63, 122, 107, 0.8);
-  background: linear-gradient(160deg, rgba(63, 122, 107, 0.12), rgba(158, 115, 178, 0.08));
-  transform: translateY(-1px);
+  border-color: rgba(15, 143, 124, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(6, 54, 66, 0.12);
 }
 
 .hidden-input {
@@ -570,71 +1120,300 @@ onMounted(() => {
 .empty-gallery {
   text-align: center;
   color: #6d8292;
-  padding: 2rem 1rem;
+  padding: 2.4rem 1rem;
 }
 
-.media-grid {
+.media-section {
+  margin-top: 1.75rem;
+  animation: section-in 520ms ease both;
+}
+
+.media-section--videos { animation-delay: 40ms; }
+.media-section--photos { animation-delay: 90ms; }
+.media-section--other { animation-delay: 140ms; }
+
+@keyframes section-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.media-section__head {
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 2px solid rgba(15, 143, 124, 0.18);
+}
+
+.media-section__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--surf-deep);
+}
+
+.media-section__title {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.media-section__count {
+  font-size: 0.75rem;
+  color: #6a8090;
+  background: rgba(15, 143, 124, 0.1);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.media-section__blurb {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  color: #5d7484;
+}
+
+.video-rail {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.1rem;
 }
 
-.media-card {
-  border: 1px solid rgba(36, 61, 81, 0.12);
-  border-radius: 14px;
+.video-card {
+  border-radius: 16px;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(24, 43, 60, 0.06);
+  background: #061820;
+  color: #e8f7f3;
+  box-shadow: 0 16px 36px rgba(6, 40, 52, 0.28);
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
-.media-card__frame {
+.video-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 22px 44px rgba(6, 40, 52, 0.38);
+}
+
+.video-card__stage {
   position: relative;
-  aspect-ratio: 4 / 3;
-  background: #edf3f8;
-  cursor: zoom-in;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: #0a2430;
+  overflow: hidden;
 }
 
-.media-card__asset {
+.video-card__asset {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0.92;
+  transition: transform 360ms ease, opacity 220ms ease;
 }
 
-.media-card__badge {
+.video-card:hover .video-card__asset {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.video-card__play {
   position: absolute;
-  right: 0.55rem;
-  bottom: 0.55rem;
-  background: rgba(20, 30, 38, 0.62);
+  inset: 0;
+  display: grid;
+  place-items: center;
   color: #fff;
+  background: radial-gradient(circle, rgba(15, 143, 124, 0.35), transparent 60%);
+}
+
+.video-card__play :deep(.q-icon) {
+  background: rgba(6, 24, 32, 0.72);
   border-radius: 999px;
-  padding: 0.2rem 0.45rem;
+  padding: 0.35rem;
+  border: 2px solid rgba(255, 255, 255, 0.55);
 }
 
-.media-card__footer {
+.video-card__open {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(15, 143, 124, 0.9);
+  color: #fff;
+}
+
+.video-card__body {
+  padding: 0.75rem 0.85rem 0.55rem;
+}
+
+.video-card__title {
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+
+.video-card__notes,
+.photo-card__notes,
+.other-card__notes {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(210, 236, 230, 0.82);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.photo-card__notes,
+.other-card__notes {
+  color: #5a7080;
+}
+
+.video-card__actions,
+.photo-card__actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.55rem 0.65rem;
+  gap: 0.15rem;
+  margin-top: 0.35rem;
 }
 
-.media-card__actions {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1rem;
 }
 
-.media-card__caption {
-  font-size: 0.82rem;
-  color: #4d6273;
+.photo-card {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(15, 143, 124, 0.14);
+  box-shadow: 0 10px 24px rgba(18, 50, 62, 0.08);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.photo-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(6, 54, 66, 0.14);
+}
+
+.photo-card__frame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: #d7ebe6;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.photo-card__asset {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 420ms ease;
+}
+
+.photo-card:hover .photo-card__asset {
+  transform: scale(1.06);
+}
+
+.photo-card__veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(180deg, transparent 45%, rgba(6, 40, 48, 0.45));
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.photo-card:hover .photo-card__veil {
+  opacity: 1;
+}
+
+.photo-card__body {
+  padding: 0.65rem 0.7rem 0.45rem;
+}
+
+.photo-card__title {
+  font-size: 0.84rem;
+  color: #2b4452;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.other-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.other-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(15, 143, 124, 0.08), rgba(255, 255, 255, 0.95));
+  border: 1px solid rgba(15, 143, 124, 0.18);
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.other-card:hover {
+  transform: translateX(3px);
+  border-color: rgba(15, 143, 124, 0.4);
+}
+
+.other-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 54, 66, 0.9);
+  color: #9feedd;
+  flex-shrink: 0;
+}
+
+.other-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.other-card__title {
+  font-weight: 650;
+  color: var(--surf-ink);
+}
+
+.other-card__link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--surf-teal);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.other-card__link:hover {
+  text-decoration: underline;
+}
+
+.other-card__actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
 .viewer-card {
-  background: #101820;
+  background: #0a141a;
   color: #fff;
 }
 
@@ -646,19 +1425,31 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 48px);
-  background: #0d141a;
+  min-height: calc(100vh - 120px);
+  background: #071018;
 }
 
 .viewer-asset {
   max-width: 100%;
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 140px);
   object-fit: contain;
 }
 
+.viewer-notes {
+  max-width: 720px;
+  margin: 0 auto;
+  color: rgba(220, 240, 235, 0.88);
+  line-height: 1.5;
+}
+
 @media (max-width: 760px) {
-  .media-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  .photo-grid,
+  .video-rail {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .photo-card__frame {
+    aspect-ratio: 1;
   }
 }
 </style>
