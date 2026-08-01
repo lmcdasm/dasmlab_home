@@ -156,10 +156,15 @@ func sharePublicBase(c *gin.Context) string {
 	if host == "" {
 		host = c.Request.Host
 	}
-	// Prefer site proxy path when Host is the home FE.
+	// FE nginx proxies /api/surfing/ → service /. Direct service hosts (surfing.svc.*)
+	// must mint /s/:token without that prefix.
 	basePath := strings.TrimSpace(os.Getenv("SURFING_SHARE_PATH_PREFIX"))
 	if basePath == "" {
 		basePath = "/api/surfing"
+	}
+	h := strings.ToLower(host)
+	if strings.Contains(h, "surfing.svc.") || strings.HasPrefix(h, "surfing.") {
+		basePath = ""
 	}
 	return fmt.Sprintf("%s://%s%s", proto, host, strings.TrimRight(basePath, "/"))
 }
