@@ -38,6 +38,13 @@ type MediaItem struct {
 	Tags []MediaTag `json:"tags,omitempty"`
 	// NotesVisibility: public | private | group (group = signed-up members later).
 	NotesVisibility string `json:"notes_visibility,omitempty"`
+	// DownloadVisibility: who may use the Download control / download API.
+	// public = anyone; private = owner; group = Keycloak group role (+ owner).
+	DownloadVisibility string `json:"download_visibility,omitempty"`
+	// CanDownload is projected per-request (not persisted). Always serialized (false must not omit).
+	CanDownload bool `json:"can_download"`
+	// DownloadPath is the DASMLAB-gated path (obfuscated day/media ids — not a bare CDN guess).
+	DownloadPath string `json:"download_path,omitempty"`
 }
 
 // MediaTag is a plain name on content ("I'm in this"). Not a social graph.
@@ -123,6 +130,10 @@ func visibleMedia(items []MediaItem) []MediaItem {
 
 // projectMedia applies public vs owner visibility for gallery listings.
 func projectMedia(items []MediaItem, owner bool) []MediaItem {
+	return projectMediaFor(items, owner, false)
+}
+
+func projectMediaFor(items []MediaItem, owner bool, groupMember bool) []MediaItem {
 	out := make([]MediaItem, 0, len(items))
 	for _, m := range items {
 		normalizeMediaKind(&m)
@@ -131,6 +142,9 @@ func projectMedia(items []MediaItem, owner bool) []MediaItem {
 		}
 		if m.NotesVisibility == "" {
 			m.NotesVisibility = "public"
+		}
+		if m.DownloadVisibility == "" {
+			m.DownloadVisibility = "public"
 		}
 		if !owner {
 			switch strings.ToLower(m.NotesVisibility) {
@@ -145,7 +159,36 @@ func projectMedia(items []MediaItem, owner bool) []MediaItem {
 			}
 			m.Tags = approved
 		}
+		m.CanDownload = downloadAllowed(m.DownloadVisibility, owner, groupMember)
+		m.DownloadPath = ""
+		m.ObjectKey = "" // never leak storage keys to clients
 		out = append(out, m)
 	}
 	return out
+}
+
+func downloadAllowed(vis string, owner, groupMember bool) bool {
+	switch strings.ToLower(strings.TrimSpace(vis)) {
+	case "", "public":
+		return true
+	case "private":
+		return owner
+	case "group":
+		return owner || groupMember
+	default:
+		return owner
+	}
+}
+
+func hasGroupRole(u AuthUser) bool {
+	if u.IsAdmin {
+		return true
+	}
+	for _, r := range u.Roles {
+		switch strings.ToLower(r) {
+		case "group", "member", "album-group", "cdn-group":
+			return true
+		}
+	}
+	return false
 }

@@ -24,6 +24,7 @@ func initializeRoutes(router *gin.Engine) {
 	router.PATCH("/days/:id/media/:mediaId", api.RequireOwner(), api.UpdateMedia)
 	router.DELETE("/days/:id/media/:mediaId", api.RequireOwner(), api.DeleteMedia)
 	router.POST("/days/:id/media/:mediaId/unhide", api.RequireOwner(), api.UnhideMedia)
+	router.GET("/days/:id/media/:mediaId/download", api.DownloadMedia)
 	router.POST("/days/:id/media/:mediaId/play", api.RecordMediaPlay)
 	router.POST("/days/:id/media/:mediaId/tags", api.ProposeMediaTag)
 	router.POST("/days/:id/media/:mediaId/tags/:tagId/:action", api.RequireOwner(), api.ModerateMediaTag)

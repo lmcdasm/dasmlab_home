@@ -19,13 +19,29 @@ export function mediaOutboundUrl(item) {
   return mediaUrl(item?.url)
 }
 
-export function mediaDownloadUrl(item) {
-  // Absolute CDN URLs: hit the edge directly (no /api proxy, no ?download=1 on R2).
+export function mediaDownloadUrl(item, dayId) {
+  // Prefer DASMLAB-gated download path (auth + visibility). Falls back to legacy CDN.
+  if (item?.download_path) {
+    return `${SURFING_HOST}${item.download_path}`
+  }
+  if (dayId && item?.id) {
+    return `${SURFING_HOST}/days/${dayId}/media/${item.id}/download`
+  }
+  if (item?.can_download === false) {
+    return ''
+  }
   const url = mediaUrl(item?.url)
   if (!url) return ''
   if (/^https?:\/\//.test(url)) return url
   const joiner = url.includes('?') ? '&' : '?'
   return `${url}${joiner}download=1`
+}
+
+export function canDownloadMedia(item) {
+  if (!item) return false
+  if (typeof item.can_download === 'boolean') return item.can_download
+  const vis = (item.download_visibility || 'public').toLowerCase()
+  return vis === 'public' || vis === ''
 }
 
 export function mediaKind(item) {

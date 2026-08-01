@@ -38,7 +38,10 @@ jobs:
       - id: meta
         run: |
           set -euo pipefail
-          TAG="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
+          PKG_VER=$(node -p "require('./package.json').version")
+          SHA=$(git rev-parse --short HEAD)
+          # Match live image convention: v1.0.0-<sha> (semver + commit), not date-only.
+          TAG="v${PKG_VER}-${SHA}"
           IS_PROD=false
           if [ "${{ github.ref }}" = "refs/heads/main" ] && [ "${{ inputs.force_preview || false }}" != "true" ]; then
             IS_PROD=true

@@ -20,14 +20,26 @@
 4. Web origins: matching prod + preview
 5. Copy client secret → K8s secret `surfing-service-system/dasmlab-home-oidc` key `client-secret`
 6. Client role **`admin`** → assign to your user (Filter by clients → dasmlab-home)
-7. Ensure **roles** client scope / User Client Role mapper so `resource_access["dasmlab-home"].roles` includes `admin`
+7. Optional client role **`group`** (or `member`) → test “group can download”
+8. Ensure **roles** client scope / User Client Role mapper so `resource_access["dasmlab-home"].roles` includes `admin` (and `group` when testing)
 
 ## Behaviour
 
 | Actor | Sees |
 |-------|------|
-| Public (not signed in) | Non-hidden media only; public notes; approved tags |
-| Owner (`admin` role) | Hidden items **grayed**; private notes; approve tags; publish / curate / AI curate |
+| Public (not signed in) | Non-hidden media only; public notes; approved tags; **public** downloads |
+| Owner (`admin` role) | Hidden items **grayed**; private notes; all download levels; approve tags; publish / curate / AI curate |
+| Group (`group` / `member` role) | Same as public + **group** downloads |
+
+### Download access
+
+| `download_visibility` | Who gets Download |
+|-----------------------|-------------------|
+| `public` | Anyone via gated `GET /days/:id/media/:mediaId/download` |
+| `private` | Owner (`admin`) only |
+| `group` | Owner + users with client role `group` / `member` |
+
+Raw `object_key` is stripped from list responses. Playback CDN sniffing is acknowledged until signed URLs / bucket+infra encrypt (cdn-mgr + cheapcloud).
 
 Mutating APIs require owner when OIDC is enabled. Without OIDC secret, service stays open for bootstrap (dev).
 

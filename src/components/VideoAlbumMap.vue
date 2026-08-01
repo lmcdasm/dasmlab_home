@@ -2,77 +2,84 @@
   <div class="video-map">
     <div class="video-map__toolbar row items-center q-mb-sm">
       <div class="col text-caption text-grey-7">
-        Click a clip for the tight panel · double-click to open the card browser
+        {{ modeHint }}
       </div>
       <q-btn-toggle
         v-model="mode"
         dense
         toggle-color="primary"
         :options="[
-          { label: 'Map', value: 'map', icon: 'hub' },
-          { label: 'Cards', value: 'grid', icon: 'grid_view' }
+          { label: 'Cards', value: 'grid', icon: 'grid_view' },
+          { label: 'Cabinet', value: 'cabinet', icon: 'folder_open' }
         ]"
       />
     </div>
 
-    <div v-if="mode === 'map'" class="video-map__layout">
-      <div class="video-map__stage">
-        <svg class="video-map__svg" :viewBox="`0 0 ${vbW} ${vbH}`" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <pattern id="surfVidGrid" width="28" height="28" patternUnits="userSpaceOnUse">
-              <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(6,54,66,0.07)" stroke-width="1" />
-            </pattern>
-            <filter id="surfVidShadow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#063642" flood-opacity="0.18" />
-            </filter>
-            <linearGradient id="surfVidHub" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#063642" />
-              <stop offset="100%" stop-color="#0f8f7c" />
-            </linearGradient>
-          </defs>
+    <!-- Cards = default browser grid (slot from parent) -->
+    <div v-if="mode === 'grid'" class="video-map__grid-slot">
+      <slot name="grid" />
+    </div>
 
-          <rect width="100%" height="100%" fill="url(#surfVidGrid)" />
+    <!-- Cabinet = chronological filing list + tight panel (Immich-style timeline, not radial hub) -->
+    <div v-else class="video-map__layout">
+      <div class="video-map__cabinet">
+        <div class="cabinet-head row items-center q-mb-sm">
+          <q-icon name="schedule" size="18px" color="primary" class="q-mr-xs" />
+          <span class="text-caption text-weight-medium">By capture / upload time</span>
+          <q-space />
+          <span class="text-caption text-grey-6">{{ items.length }} clips</span>
+        </div>
 
-          <path
-            v-for="n in nodes"
-            :key="'link-' + n.item.id"
-            :d="spoke(hub.x, hub.y, n.x, n.y)"
-            class="video-map__link"
-            :class="{ active: selectedId === n.item.id }"
-            :stroke="n.color"
-            fill="none"
-          />
+        <div v-if="!drawers.length" class="cabinet-empty text-caption text-grey-6">
+          No videos in this album yet.
+        </div>
 
-          <g class="video-map__hub" filter="url(#surfVidShadow)">
-            <circle :cx="hub.x" :cy="hub.y" r="58" fill="url(#surfVidHub)" class="hub-pulse" />
-            <circle :cx="hub.x" :cy="hub.y" r="50" fill="url(#surfVidHub)" />
-            <text :x="hub.x" :y="hub.y - 6" text-anchor="middle" class="hub-title">Videos</text>
-            <text :x="hub.x" :y="hub.y + 14" text-anchor="middle" class="hub-sub">{{ items.length }}</text>
-          </g>
+        <section
+          v-for="drawer in drawers"
+          :key="drawer.key"
+          class="cabinet-drawer"
+        >
+          <button type="button" class="drawer-tab" @click="toggleDrawer(drawer.key)">
+            <q-icon :name="collapsed[drawer.key] ? 'chevron_right' : 'expand_more'" size="18px" />
+            <span class="drawer-tab__date">{{ drawer.label }}</span>
+            <span class="drawer-tab__count">{{ drawer.items.length }}</span>
+          </button>
 
-          <g
-            v-for="n in nodes"
-            :key="'node-' + n.item.id"
-            class="video-map__node"
-            :class="{ active: selectedId === n.item.id }"
-            filter="url(#surfVidShadow)"
-            @click="select(n.item.id)"
-            @dblclick.stop="openBrowser(n.item.id)"
-            tabindex="0"
-            @keydown.enter="select(n.item.id)"
-          >
-            <rect
-              :x="n.x - n.w / 2"
-              :y="n.y - 18"
-              :width="n.w"
-              height="36"
-              rx="9"
-              class="node-rect"
-              :stroke="n.color"
-            />
-            <text :x="n.x" :y="n.y + 5" text-anchor="middle" class="node-text">{{ n.label }}</text>
-          </g>
-        </svg>
+          <ul v-show="!collapsed[drawer.key]" class="drawer-list">
+            <li
+              v-for="row in drawer.items"
+              :key="row.item.id"
+              class="drawer-row"
+              :class="{ active: selectedId === row.item.id }"
+              @click="select(row.item.id)"
+              @dblclick="openBrowser(row.item.id)"
+            >
+              <div class="drawer-row__thumb">
+                <video
+                  :src="mediaUrl(row.item.url)"
+                  muted
+                  playsinline
+                  preload="metadata"
+                  class="drawer-row__video"
+                />
+              </div>
+              <div class="drawer-row__body">
+                <div class="drawer-row__title">{{ row.item.caption || row.item.filename }}</div>
+                <div class="drawer-row__meta">
+                  <span>{{ row.timeLabel }}</span>
+                  <span v-if="row.item.play_count">· {{ row.item.play_count }} plays</span>
+                  <span>· {{ row.item.published ? 'CDN' : 'Draft' }}</span>
+                </div>
+              </div>
+              <q-icon
+                v-if="selectedId === row.item.id"
+                name="chevron_right"
+                color="primary"
+                size="20px"
+              />
+            </li>
+          </ul>
+        </section>
       </div>
 
       <aside class="video-map__panel" :class="{ empty: !selected }">
@@ -84,6 +91,21 @@
             </div>
             <q-btn flat dense round icon="close" @click="selectedId = null" />
           </div>
+
+          <!-- Small preview box — click plays muted in viewer -->
+          <button type="button" class="panel-preview" @click="emitPlay(selected)">
+            <video
+              :src="mediaUrl(selected.url)"
+              muted
+              playsinline
+              preload="metadata"
+              class="panel-preview__video"
+            />
+            <span class="panel-preview__play">
+              <q-icon name="play_arrow" size="28px" />
+            </span>
+            <span class="panel-preview__hint">Play muted</span>
+          </button>
 
           <div class="stat-row">
             <div class="stat"><span>Plays</span><strong>{{ selected.play_count || 0 }}</strong></div>
@@ -98,6 +120,29 @@
           <div class="panel-actions q-gutter-xs q-mb-md">
             <q-btn unelevated color="primary" dense icon="play_arrow" label="Play muted" @click="emitPlay(selected)" />
             <q-btn outline color="primary" dense icon="ios_share" label="Share" @click="$emit('share', selected)" />
+            <q-btn
+              v-if="canDownloadSelected"
+              outline
+              color="primary"
+              dense
+              icon="download"
+              label="Download"
+              tag="a"
+              :href="downloadHref"
+              :download="selected.filename"
+              rel="noopener"
+            />
+            <q-btn
+              v-else
+              outline
+              color="primary"
+              dense
+              icon="download"
+              label="Download"
+              disable
+            >
+              <q-tooltip>Restricted ({{ selected.download_visibility || 'private' }})</q-tooltip>
+            </q-btn>
             <q-btn
               outline
               color="primary"
@@ -156,11 +201,12 @@
           </div>
 
           <p v-if="selected.notes" class="panel-notes">{{ selected.notes }}</p>
+          <p v-if="selectedTimeLabel" class="panel-notes panel-notes--meta">{{ selectedTimeLabel }}</p>
         </template>
         <template v-else>
           <div class="text-subtitle2">Album videos</div>
           <div class="text-caption text-grey-7 q-mb-md">
-            Select a satellite clip. Summary stays here — no popup chrome.
+            Pick a clip from the cabinet — preview and actions stay here.
           </div>
           <div class="stat-row">
             <div class="stat"><span>Clips</span><strong>{{ items.length }}</strong></div>
@@ -171,35 +217,33 @@
         </template>
       </aside>
     </div>
-
-    <div v-else class="video-map__grid-slot">
-      <slot name="grid" />
-    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { canDownloadMedia, mediaDownloadUrl, mediaUrl } from 'src/services/surfingApi'
 
 const props = defineProps({
   items: { type: Array, default: () => [] },
   albumTitle: { type: String, default: 'Session' },
+  dayId: { type: String, default: '' },
   publishing: { type: Boolean, default: false },
   tagging: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['play', 'share', 'cdn', 'publish', 'propose-tag', 'approve-tag', 'reject-tag', 'browse'])
 
-const mode = ref('map')
+/** Cards first — radial hub was dense at 40+ clips; cabinet is the exploratory view. */
+const mode = ref('grid')
 const selectedId = ref(null)
 const tagDraft = ref('')
-const vbW = 720
-const vbH = 420
-const hub = { x: 360, y: 210 }
-
-const palette = ['#0f8f7c', '#1a7a6d', '#0aa3a0', '#5eb4c8', '#2f6f8f', '#063642', '#3d8b7a', '#148f9c']
+const collapsed = reactive({})
 
 const selected = computed(() => props.items.find((i) => i.id === selectedId.value) || null)
+
+const canDownloadSelected = computed(() => canDownloadMedia(selected.value))
+const downloadHref = computed(() => mediaDownloadUrl(selected.value, props.dayId))
 
 const approvedTags = computed(() => (selected.value?.tags || []).filter((t) => t.status === 'approved'))
 const pendingTags = computed(() => (selected.value?.tags || []).filter((t) => t.status === 'pending'))
@@ -210,23 +254,40 @@ const totalApprovedTags = computed(() =>
   props.items.reduce((n, i) => n + (i.tags || []).filter((t) => t.status === 'approved').length, 0)
 )
 
-const nodes = computed(() => {
-  const list = props.items || []
-  const n = list.length || 1
-  const radius = Math.min(155, 70 + n * 6)
-  return list.map((item, i) => {
-    const angle = (Math.PI * 2 * i) / n - Math.PI / 2
-    const label = shortLabel(item)
-    const w = Math.min(132, 28 + label.length * 7.2)
-    return {
-      item,
-      label,
-      color: palette[i % palette.length],
-      x: hub.x + Math.cos(angle) * radius,
-      y: hub.y + Math.sin(angle) * radius,
-      w
+const modeHint = computed(() =>
+  mode.value === 'grid'
+    ? 'Card browser — open a clip for full viewer. Switch to Cabinet for timeline + panel.'
+    : 'Cabinet = day drawers by time · click a row for the tight panel · double-click → Cards'
+)
+
+const selectedTimeLabel = computed(() => {
+  if (!selected.value) return ''
+  const ts = resolveTimestamp(selected.value)
+  if (!ts) return ''
+  return formatLong(ts)
+})
+
+/** Group clips into day drawers (newest day first). Uses created_at; filename date as hint. */
+const drawers = computed(() => {
+  const buckets = new Map()
+  for (const item of props.items || []) {
+    const ts = resolveTimestamp(item)
+    const key = ts ? dateKey(ts) : 'undated'
+    const label = ts ? formatDay(ts) : 'Undated'
+    if (!buckets.has(key)) {
+      buckets.set(key, { key, label, sort: ts ? ts.getTime() : 0, items: [] })
     }
-  })
+    buckets.get(key).items.push({
+      item,
+      ts,
+      timeLabel: ts ? formatTime(ts) : '—'
+    })
+  }
+  const out = [...buckets.values()].sort((a, b) => b.sort - a.sort)
+  for (const d of out) {
+    d.items.sort((a, b) => (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0))
+  }
+  return out
 })
 
 watch(
@@ -238,15 +299,68 @@ watch(
   }
 )
 
-function shortLabel(item) {
-  const raw = (item.caption || item.filename || 'clip').replace(/\.[^.]+$/, '')
-  return raw.length > 14 ? raw.slice(0, 12) + '…' : raw
+watch(
+  drawers,
+  (list) => {
+    // Keep first drawer open; collapse none by default for small albums
+    for (const d of list) {
+      if (collapsed[d.key] === undefined) {
+        collapsed[d.key] = false
+      }
+    }
+  },
+  { immediate: true }
+)
+
+function resolveTimestamp(item) {
+  // Camera filenames often keep capture day better than bulk-upload created_at.
+  const fromName = parseCameraFilename(item)
+  if (fromName) return fromName
+  if (item?.created_at) {
+    const d = new Date(item.created_at)
+    if (!Number.isNaN(d.getTime())) return d
+  }
+  return null
 }
 
-function spoke(x1, y1, x2, y2) {
-  const mx = (x1 + x2) / 2
-  const my = (y1 + y2) / 2
-  return `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`
+/** Olympus/Panasonic-ish: P7070149 → Jul 7, P7080025 → Jul 8 (month + day + seq). */
+function parseCameraFilename(item) {
+  const name = (item?.filename || item?.caption || '').replace(/\.[^.]+$/, '')
+  const m = name.match(/^P(1[0-2]|[1-9])(\d{2})\d+/i)
+  if (!m) return null
+  const month = Number(m[1])
+  const day = Number(m[2])
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+  const yearHint = item?.created_at ? new Date(item.created_at).getFullYear() : new Date().getFullYear()
+  const year = Number.isFinite(yearHint) ? yearHint : new Date().getFullYear()
+  return new Date(year, month - 1, day, 12, 0, 0)
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function formatDay(d) {
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatLong(d) {
+  return d.toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function toggleDrawer(key) {
+  collapsed[key] = !collapsed[key]
 }
 
 function select(id) {
@@ -280,75 +394,127 @@ defineExpose({ mode, selectedId, select, openBrowser })
 <style scoped>
 .video-map__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.95fr);
   gap: 0.85rem;
   min-height: 420px;
 }
 
-.video-map__stage {
+.video-map__cabinet {
   border: 1px solid rgba(15, 143, 124, 0.18);
   border-radius: 14px;
   background: linear-gradient(165deg, #f7fbfa, #eef6f4);
-  overflow: hidden;
+  padding: 0.65rem 0.7rem 0.85rem;
+  max-height: 520px;
+  overflow: auto;
 }
 
-.video-map__svg {
+.cabinet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, #f7fbfa 70%, transparent);
+  padding-bottom: 0.25rem;
+}
+
+.cabinet-drawer + .cabinet-drawer {
+  margin-top: 0.45rem;
+}
+
+.drawer-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   width: 100%;
-  height: 420px;
+  border: none;
+  background: rgba(6, 54, 66, 0.06);
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  text-align: left;
+  color: #102833;
+  font: inherit;
+}
+
+.drawer-tab:hover {
+  background: rgba(15, 143, 124, 0.12);
+}
+
+.drawer-tab__date {
+  font-size: 0.82rem;
+  font-weight: 650;
+  flex: 1;
+}
+
+.drawer-tab__count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0f8f7c;
+  background: rgba(15, 143, 124, 0.12);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.drawer-list {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+}
+
+.drawer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.drawer-row:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.drawer-row.active {
+  background: #fff;
+  border-color: rgba(15, 143, 124, 0.45);
+  box-shadow: 0 4px 12px rgba(6, 54, 66, 0.06);
+}
+
+.drawer-row__thumb {
+  width: 56px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #063642;
+  flex-shrink: 0;
+}
+
+.drawer-row__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
-.video-map__link {
-  stroke-width: 2.2;
-  opacity: 0.45;
-  transition: opacity 160ms ease, stroke-width 160ms ease;
+.drawer-row__body {
+  min-width: 0;
+  flex: 1;
 }
 
-.video-map__link.active {
-  opacity: 1;
-  stroke-width: 3.4;
-}
-
-.hub-title {
-  fill: #fff;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.hub-sub {
-  fill: rgba(232, 252, 247, 0.9);
-  font-size: 13px;
-}
-
-.hub-pulse {
-  opacity: 0.35;
-  animation: hubPulse 2.8s ease-in-out infinite;
-}
-
-@keyframes hubPulse {
-  0%, 100% { opacity: 0.28; }
-  50% { opacity: 0.45; }
-}
-
-.video-map__node {
-  cursor: pointer;
-}
-
-.node-rect {
-  fill: #fff;
-  stroke-width: 2.2;
-}
-
-.video-map__node.active .node-rect {
-  fill: #e7f7f3;
-  stroke-width: 3;
-}
-
-.node-text {
-  fill: #102833;
-  font-size: 12px;
+.drawer-row__title {
+  font-size: 0.84rem;
   font-weight: 650;
-  pointer-events: none;
+  color: #102833;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-row__meta {
+  font-size: 0.72rem;
+  color: #6a8090;
+  margin-top: 0.1rem;
 }
 
 .video-map__panel {
@@ -357,10 +523,60 @@ defineExpose({ mode, selectedId, select, openBrowser })
   background: #fff;
   padding: 0.9rem 1rem;
   box-shadow: 0 10px 24px rgba(6, 54, 66, 0.06);
+  max-height: 520px;
+  overflow: auto;
 }
 
 .video-map__panel.empty {
   background: linear-gradient(165deg, #fff, #f4faf8);
+}
+
+.panel-preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  max-height: 160px;
+  margin: 0.65rem 0 0.25rem;
+  border: none;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #063642;
+  cursor: pointer;
+}
+
+.panel-preview__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.92;
+}
+
+.panel-preview__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(6, 54, 66, 0.28);
+  transition: background 160ms ease;
+}
+
+.panel-preview:hover .panel-preview__play {
+  background: rgba(6, 54, 66, 0.4);
+}
+
+.panel-preview__hint {
+  position: absolute;
+  left: 0.55rem;
+  bottom: 0.45rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 650;
 }
 
 .stat-row {
@@ -446,13 +662,19 @@ defineExpose({ mode, selectedId, select, openBrowser })
   line-height: 1.45;
 }
 
+.panel-notes--meta {
+  font-size: 0.75rem;
+  color: #8a9aaa;
+}
+
 @media (max-width: 900px) {
   .video-map__layout {
     grid-template-columns: 1fr;
   }
 
-  .video-map__svg {
-    height: 340px;
+  .video-map__cabinet,
+  .video-map__panel {
+    max-height: none;
   }
 }
 </style>

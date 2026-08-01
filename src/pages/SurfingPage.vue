@@ -213,6 +213,7 @@
                 <VideoAlbumMap
                   :items="section.items"
                   :album-title="day.title"
+                  :day-id="day.id"
                   :publishing="publishingDayId === day.id"
                   :tagging="taggingMedia"
                   @play="(item) => openViewer(item, day)"
@@ -253,6 +254,18 @@
                           <p v-if="item.notes" class="video-card__notes">{{ item.notes }}</p>
                           <div class="video-card__actions">
                             <q-btn flat dense size="sm" icon="ios_share" label="Share" @click="openShareSheet(day, item)" />
+                            <q-btn
+                              v-if="canDownloadMedia(item)"
+                              flat
+                              dense
+                              size="sm"
+                              icon="download"
+                              label="Download"
+                              tag="a"
+                              :href="mediaDownloadUrl(item, day.id)"
+                              :download="item.filename"
+                              rel="noopener"
+                            />
                             <q-btn flat dense size="sm" icon="open_in_new" label="CDN" @click="openOutbound(item)" />
                             <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
                             <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
@@ -294,16 +307,30 @@
                         <q-tooltip>Edit notes</q-tooltip>
                       </q-btn>
                       <q-btn
+                        v-if="canDownloadMedia(item)"
                         flat
                         dense
                         round
                         size="sm"
                         icon="download"
                         tag="a"
-                        :href="mediaDownloadUrl(item)"
+                        :href="mediaDownloadUrl(item, day.id)"
                         :download="item.filename"
                         rel="noopener"
-                      />
+                      >
+                        <q-tooltip>Download ({{ item.download_visibility || 'public' }})</q-tooltip>
+                      </q-btn>
+                      <q-btn
+                        v-else
+                        flat
+                        dense
+                        round
+                        size="sm"
+                        icon="download"
+                        disable
+                      >
+                        <q-tooltip>Download restricted ({{ item.download_visibility || 'private' }})</q-tooltip>
+                      </q-btn>
                       <q-btn flat dense round size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
                       <q-btn
                         v-if="isAdmin && item.hidden"
@@ -345,6 +372,17 @@
                   </div>
                   <div class="other-card__actions">
                     <q-btn flat dense round icon="ios_share" @click="openShareSheet(day, item)" />
+                    <q-btn
+                      v-if="canDownloadMedia(item)"
+                      flat
+                      dense
+                      round
+                      icon="download"
+                      tag="a"
+                      :href="mediaDownloadUrl(item, day.id)"
+                      :download="item.filename"
+                      rel="noopener"
+                    />
                     <q-btn flat dense round icon="edit_note" @click="openNotesEditor(day, item)" />
                     <q-btn flat dense round icon="visibility_off" @click="removeMedia(day, item)" />
                   </div>
@@ -440,6 +478,16 @@
             emit-value
             map-options
             hint="Public / private (you) / group (signed-up members later)"
+          />
+          <q-select
+            v-model="notesDraft.download_visibility"
+            :options="downloadVisibilityOptions"
+            label="Download access"
+            filled
+            dense
+            emit-value
+            map-options
+            hint="Who can use Download — gated by DASMLAB, not a raw CDN guess"
           />
           <q-input
             v-model="notesDraft.external_url"
@@ -547,6 +595,7 @@ import {
   mediaKind,
   mediaOutboundUrl,
   mediaUrl,
+  canDownloadMedia,
   moderateMediaTag,
   proposeMediaTag,
   publishDay,
@@ -599,7 +648,8 @@ const notesDraft = reactive({
   notes: '',
   kind: 'photo',
   external_url: '',
-  notes_visibility: 'public'
+  notes_visibility: 'public',
+  download_visibility: 'public'
 })
 
 const kindOptions = [
@@ -612,6 +662,12 @@ const notesVisibilityOptions = [
   { label: 'Public', value: 'public' },
   { label: 'Private (only you)', value: 'private' },
   { label: 'Group (signed-up members)', value: 'group' }
+]
+
+const downloadVisibilityOptions = [
+  { label: 'Public can download', value: 'public' },
+  { label: 'Private — owner only', value: 'private' },
+  { label: 'Group can download', value: 'group' }
 ]
 
 const newDay = reactive({
@@ -666,7 +722,7 @@ function mediaSections(day) {
       key: 'videos',
       title: 'Videos',
       icon: 'movie',
-      blurb: 'Map = tight clip panel (plays, tags, publish). Double-click or Cards for the browser grid.',
+      blurb: 'Cards first. Cabinet = day drawers by time + tight panel (preview, tags, publish).',
       items: videos
     })
   }
@@ -893,6 +949,7 @@ function openNotesEditor(day, item) {
   notesDraft.kind = mediaKind(item)
   notesDraft.external_url = item.external_url || ''
   notesDraft.notes_visibility = item.notes_visibility || 'public'
+  notesDraft.download_visibility = item.download_visibility || 'public'
   notesOpen.value = true
 }
 
@@ -904,7 +961,8 @@ async function saveNotes() {
       notes: notesDraft.notes,
       kind: notesDraft.kind,
       external_url: notesDraft.external_url,
-      notes_visibility: notesDraft.notes_visibility
+      notes_visibility: notesDraft.notes_visibility,
+      download_visibility: notesDraft.download_visibility
     })
     notesOpen.value = false
     await loadDays(notesDayId.value)

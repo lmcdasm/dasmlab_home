@@ -79,6 +79,7 @@ Same control story: you own visibility; tags are just names on content.
 - Theme: **Windsurfing Trips** (sports motif template; other sports later).  
 - Gallery sections: **Videos** (open-out), **Photos**, **More** (Garmin / iPhone / activity shares).  
 - Per-item **notes** + caption + optional outbound link (`PATCH …/media/:id`).  
+- **Download** control gated by `download_visibility` (`public` | `private` | `group`) via DASMLAB path `GET /days/:id/media/:mediaId/download` — not a raw CDN guess. Storage keys stay off the wire; signed URLs + bucket/infra encrypt land with cdn-mgr + cheapcloud.  
 - Share-link CTA in-app; publish → R2/CDN.  
 - Hide = soft tag (`hidden`) in manifest — **no hard drop yet**.
 

@@ -41,6 +41,10 @@ func ListDays(c *gin.Context) {
 	}
 
 	owner := isOwner(c)
+	group := false
+	if u, ok := currentUser(c); ok {
+		group = hasGroupRole(u)
+	}
 
 	storeMu.RLock()
 	defer storeMu.RUnlock()
@@ -50,7 +54,12 @@ func ListDays(c *gin.Context) {
 		if day.TagPolicy == "" {
 			day.TagPolicy = "public"
 		}
-		day.Media = projectMedia(day.Media, owner)
+		day.Media = projectMediaFor(day.Media, owner, group)
+		for i := range day.Media {
+			if day.Media[i].CanDownload {
+				day.Media[i].DownloadPath = "/days/" + day.ID + "/media/" + day.Media[i].ID + "/download"
+			}
+		}
 		day.Published = dayPublished(DayEntry{Media: day.Media})
 		days = append(days, day)
 	}
@@ -267,11 +276,12 @@ func UpdateMedia(c *gin.Context) {
 	mediaID := c.Param("mediaId")
 
 	var req struct {
-		Caption         *string `json:"caption"`
-		Notes           *string `json:"notes"`
-		Kind            *string `json:"kind"`
-		ExternalURL     *string `json:"external_url"`
-		NotesVisibility *string `json:"notes_visibility"`
+		Caption            *string `json:"caption"`
+		Notes              *string `json:"notes"`
+		Kind               *string `json:"kind"`
+		ExternalURL        *string `json:"external_url"`
+		NotesVisibility    *string `json:"notes_visibility"`
+		DownloadVisibility *string `json:"download_visibility"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON: " + err.Error()})
@@ -323,6 +333,17 @@ func UpdateMedia(c *gin.Context) {
 			return
 		}
 	}
+	if req.DownloadVisibility != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.DownloadVisibility))
+		switch v {
+		case "public", "private", "group":
+			item.DownloadVisibility = v
+		default:
+			storeMu.Unlock()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "download_visibility must be public|private|group"})
+			return
+		}
+	}
 	normalizeMediaKind(&item)
 	day.Media[found] = item
 	dayStore[dayID] = day
@@ -334,7 +355,17 @@ func UpdateMedia(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, item)
+	owner := isOwner(c)
+	group := false
+	if u, ok := currentUser(c); ok {
+		group = hasGroupRole(u)
+	}
+	projected := projectMediaFor([]MediaItem{item}, owner, group)
+	resp := projected[0]
+	if resp.CanDownload {
+		resp.DownloadPath = "/days/" + dayID + "/media/" + resp.ID + "/download"
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 // AddMediaLink creates a link-only "other" item (Garmin / iPhone / activity shares).
