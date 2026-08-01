@@ -557,7 +557,7 @@ import {
 } from 'src/services/surfingApi'
 
 const $q = useQuasar()
-const { isAdmin, authenticated, oidcEnabled, login } = useAuth()
+const { isAdmin, oidcEnabled, login } = useAuth()
 
 const days = ref([])
 const activeDayId = ref('')
