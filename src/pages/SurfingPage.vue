@@ -170,7 +170,7 @@
           >
             <q-icon name="waves" size="40px" class="q-mb-sm drop-zone__icon" />
             <div class="text-subtitle2">Drop photos or videos into this session</div>
-            <div class="text-caption">or click to browse · activity shares via + link</div>
+            <div class="text-caption">or click to browse · uploads go direct-to-CDN · activity shares via + link</div>
             <input
               :ref="(el) => setFileInput(day.id, el)"
               type="file"
@@ -1223,26 +1223,60 @@ function enqueueFiles(dayId, files) {
       file,
       progress: 0,
       status: 'queued',
-      error: ''
+      error: '',
+      attempts: 0
     }
     uploadQueue.value.push(queueItem)
-    startUpload(queueItem)
   })
+  pumpUploadQueue()
 }
 
-async function startUpload(queueItem) {
-  queueItem.status = 'uploading'
+const UPLOAD_CONCURRENCY = 3
+const UPLOAD_MAX_ATTEMPTS = 3
+let uploadWorkers = 0
+let uploadReloadTimer = null
+
+function pumpUploadQueue() {
+  while (uploadWorkers < UPLOAD_CONCURRENCY) {
+    const next = uploadQueue.value.find((i) => i.status === 'queued')
+    if (!next) break
+    uploadWorkers++
+    next.status = 'uploading'
+    runUpload(next).finally(() => {
+      uploadWorkers--
+      pumpUploadQueue()
+    })
+  }
+}
+
+async function runUpload(queueItem) {
+  queueItem.attempts = (queueItem.attempts || 0) + 1
   try {
     await uploadMedia(queueItem.dayId, queueItem.file, {}, (progress) => {
       queueItem.progress = progress
     })
     queueItem.status = 'done'
     queueItem.progress = 100
-    await loadDays(queueItem.dayId)
+    scheduleUploadReload(queueItem.dayId)
   } catch (err) {
+    if (queueItem.attempts < UPLOAD_MAX_ATTEMPTS) {
+      queueItem.status = 'queued'
+      queueItem.error = `retry ${queueItem.attempts}/${UPLOAD_MAX_ATTEMPTS}…`
+      queueItem.progress = 0
+      await new Promise((r) => setTimeout(r, 600 * queueItem.attempts))
+      return
+    }
     queueItem.status = 'error'
-    queueItem.error = err?.response?.data?.error || 'Upload failed'
+    queueItem.error = err?.response?.data?.error || err?.message || 'Upload failed'
   }
+}
+
+function scheduleUploadReload(dayId) {
+  if (uploadReloadTimer) clearTimeout(uploadReloadTimer)
+  uploadReloadTimer = setTimeout(() => {
+    loadDays(dayId)
+    uploadReloadTimer = null
+  }, 800)
 }
 
 function openViewer(item, day) {

@@ -19,9 +19,8 @@ type publishResult struct {
 	Day       DayEntry `json:"day"`
 }
 
-// PublishDay copies unpublished PVC media for an album into R2 under
-// surfing/albums/{dayId}/original/… and rewrites CDN URLs in the manifest.
-// Query: cleanup_pvc=true removes local bytes after a successful put.
+// PublishDay promotes draft R2 objects (copy draft→original) or copies legacy PVC
+// bytes to R2. Direct uploads skip the double-hop: publish is reindex/promote only.
 func PublishDay(c *gin.Context) {
 	dayID := c.Param("id")
 	cleanup := strings.EqualFold(c.Query("cleanup_pvc"), "true") || c.Query("cleanup_pvc") == "1"
@@ -60,11 +59,35 @@ func PublishDay(c *gin.Context) {
 			}
 			continue
 		}
-		if item.Published && strings.HasPrefix(item.URL, "http") {
+		if item.Published && strings.HasPrefix(item.URL, "http") && item.Origin != "r2-draft" {
 			result.Skipped++
 			continue
 		}
+
 		ext := normalizeExt(filepath.Ext(item.Filename))
+		ct := mimeFromExt(ext, item.MediaType)
+
+		// Direct-upload drafts: promote in-bucket (no re-upload through the cluster).
+		if item.Origin == "r2-draft" || strings.Contains(item.ObjectKey, "/draft/") {
+			key, publicURL, err := promoteDraftObject(dayID, item.ID, ext, ct)
+			if err != nil {
+				result.Failed++
+				result.Errors = append(result.Errors, item.ID+": promote "+err.Error())
+				continue
+			}
+			if publicURL == "" {
+				result.Failed++
+				result.Errors = append(result.Errors, item.ID+": empty public URL (set R2_PUBLIC_BASE_URL)")
+				continue
+			}
+			item.URL = publicURL
+			item.Published = true
+			item.Origin = "r2"
+			item.ObjectKey = key
+			result.Published++
+			continue
+		}
+
 		path := resolveMediaPath(item.ID, ext)
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -72,7 +95,7 @@ func PublishDay(c *gin.Context) {
 			result.Errors = append(result.Errors, item.ID+": read "+err.Error())
 			continue
 		}
-		key, publicURL, err := putMediaObject(dayID, item.ID, ext, mimeFromExt(ext, item.MediaType), data)
+		key, publicURL, err := putMediaObject(dayID, item.ID, ext, ct, data)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, item.ID+": put "+err.Error())

@@ -20,6 +20,8 @@ func initializeRoutes(router *gin.Engine) {
 	router.PATCH("/days/:id", api.RequireOwner(), api.PatchDay)
 	router.DELETE("/days/:id", api.RequireOwner(), api.DeleteDay)
 	router.POST("/days/:id/media", api.RequireOwner(), api.UploadMedia)
+	router.POST("/days/:id/media/presign", api.RequireOwner(), api.PresignMediaUpload)
+	router.POST("/days/:id/media/:mediaId/complete", api.RequireOwner(), api.CompleteMediaUpload)
 	router.POST("/days/:id/media/link", api.RequireOwner(), api.AddMediaLink)
 	router.PATCH("/days/:id/media/:mediaId", api.RequireOwner(), api.UpdateMedia)
 	router.DELETE("/days/:id/media/:mediaId", api.RequireOwner(), api.DeleteMedia)

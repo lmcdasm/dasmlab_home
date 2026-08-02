@@ -67,6 +67,96 @@ export async function deleteDay(dayId) {
 }
 
 export async function uploadMedia(dayId, file, meta = {}, onProgress) {
+  // Prefer direct-to-R2 draft (presign → PUT → complete). Falls back to cluster multipart.
+  try {
+    return await uploadMediaDirect(dayId, file, meta, onProgress)
+  } catch (err) {
+    const status = err?.response?.status
+    const fallback = err?.response?.data?.fallback === 'multipart' || status === 503 || status === 404
+    if (!fallback && err?.directFailed) {
+      // Presign worked but R2 PUT failed (often CORS) — try multipart once.
+      return uploadMediaMultipart(dayId, file, meta, onProgress)
+    }
+    if (fallback || !err?.response) {
+      return uploadMediaMultipart(dayId, file, meta, onProgress)
+    }
+    throw err
+  }
+}
+
+async function uploadMediaDirect(dayId, file, meta = {}, onProgress) {
+  const filename = file.name || 'upload.bin'
+  const contentType = file.type || 'application/octet-stream'
+  const body = {
+    filename,
+    content_type: contentType,
+    size: file.size
+  }
+  if (typeof meta === 'string') {
+    if (meta) body.caption = meta
+  } else {
+    if (meta.caption) body.caption = meta.caption
+    if (meta.kind) body.kind = meta.kind
+  }
+
+  let presign
+  try {
+    ;({ data: presign } = await client.post(`/days/${dayId}/media/presign`, body, { timeout: 30000 }))
+  } catch (err) {
+    err.directFailed = false
+    throw err
+  }
+
+  const putURL = presign.upload_url
+  const headers = { ...(presign.headers || {}) }
+  if (!headers['Content-Type'] && !headers['content-type']) {
+    headers['Content-Type'] = contentType
+  }
+
+  try {
+    await axios.put(putURL, file, {
+      headers,
+      timeout: 0, // large videos — no axios timeout on CDN put
+      onUploadProgress: (event) => {
+        if (!onProgress || !event.total) return
+        // Reserve last 5% for complete handshake
+        onProgress(Math.min(95, Math.round((event.loaded / event.total) * 95)))
+      },
+      // Do not send surfing cookies to R2
+      withCredentials: false,
+      // Avoid transforming File/Blob
+      transformRequest: [(d) => d]
+    })
+  } catch (err) {
+    err.directFailed = true
+    throw err
+  }
+
+  const mediaId = presign.media?.id
+  if (!mediaId) {
+    const e = new Error('presign missing media id')
+    e.directFailed = true
+    throw e
+  }
+
+  // Brief settle for R2 listing consistency, then confirm.
+  let lastErr
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      if (attempt) await new Promise((r) => setTimeout(r, 400 * attempt))
+      const { data } = await client.post(`/days/${dayId}/media/${mediaId}/complete`, null, { timeout: 30000 })
+      if (onProgress) onProgress(100)
+      return data.media || data
+    } catch (err) {
+      lastErr = err
+      if (err?.response?.status !== 409) break
+    }
+  }
+  lastErr.directFailed = true
+  throw lastErr
+}
+
+async function uploadMediaMultipart(dayId, file, meta = {}, onProgress) {
   const form = new FormData()
   form.append('file', file)
   if (typeof meta === 'string') {
@@ -79,6 +169,7 @@ export async function uploadMedia(dayId, file, meta = {}, onProgress) {
 
   const { data } = await client.post(`/days/${dayId}/media`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000,
     onUploadProgress: (event) => {
       if (!onProgress || !event.total) return
       onProgress(Math.round((event.loaded / event.total) * 100))
