@@ -219,15 +219,32 @@ export async function moderateMediaTag(dayId, mediaId, tagId, action) {
   return data
 }
 
-export async function publishDay(dayId, cleanupPvc = false) {
-  const q = cleanupPvc ? '?cleanup_pvc=true' : ''
-  const { data } = await client.post(`/days/${dayId}/publish${q}`, null, { timeout: 300000 })
+export async function publishDay(dayId, { cleanupPvc = false, limit = 25 } = {}) {
+  const params = new URLSearchParams()
+  if (cleanupPvc) params.set('cleanup_pvc', 'true')
+  if (limit != null) params.set('limit', String(limit))
+  const q = params.toString() ? `?${params}` : ''
+  const { data } = await client.post(`/days/${dayId}/publish${q}`, null, { timeout: 600000 })
   return data
 }
 
+/** Promote drafts / leftover PVC until remaining=0 (or maxRounds). */
+export async function publishDayUntilDone(dayId, { cleanupPvc = false, limit = 25, maxRounds = 40 } = {}) {
+  let last = null
+  for (let i = 0; i < maxRounds; i++) {
+    last = await publishDay(dayId, { cleanupPvc, limit })
+    if (!last?.remaining) break
+  }
+  return last
+}
+
 export async function curatePublish(dayId, payload = {}) {
-  const { data } = await client.post(`/days/${dayId}/curate/publish`, payload, { timeout: 300000 })
-  return data
+  // Prefer chunked /publish (promote drafts). compress flag is logged-only today and was
+  // causing long-hanging curate/publish calls; keep endpoint for future transcoder.
+  if (payload?.compress) {
+    // fire-and-forget note via curate endpoint is optional; main work is publishDayUntilDone
+  }
+  return publishDayUntilDone(dayId, { cleanupPvc: false, limit: 25 })
 }
 
 export async function aiCurate(dayId, payload = {}) {

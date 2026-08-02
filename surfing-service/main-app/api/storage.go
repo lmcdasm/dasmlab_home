@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -97,7 +99,14 @@ func reloadManifestFromDisk() error {
 	return nil
 }
 
+var (
+	persistMu sync.Mutex
+)
+
 func persistManifest() error {
+	persistMu.Lock()
+	defer persistMu.Unlock()
+
 	storeMu.RLock()
 	days := make([]DayEntry, 0, len(dayStore))
 	for _, day := range dayStore {
@@ -110,11 +119,15 @@ func persistManifest() error {
 		return err
 	}
 
-	tmpPath := manifestPath + ".tmp"
+	tmpPath := manifestPath + ".tmp." + fmt.Sprintf("%d", time.Now().UnixNano())
 	if err := os.WriteFile(tmpPath, payload, 0o664); err != nil {
 		return err
 	}
-	return os.Rename(tmpPath, manifestPath)
+	if err := os.Rename(tmpPath, manifestPath); err != nil {
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	return nil
 }
 
 func mediaFilePath(mediaID, ext string) string {

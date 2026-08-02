@@ -129,11 +129,11 @@
                 dense
                 color="primary"
                 icon="publish"
-                label="Curate & publish"
+                :label="publishButtonLabel(day)"
                 :loading="publishingDayId === day.id"
                 @click="curateAndPublish(day)"
               >
-                <q-tooltip>Publish album to CDN (+ optional compress later)</q-tooltip>
+                <q-tooltip>{{ publishButtonHint(day) }}</q-tooltip>
               </q-btn>
               <q-btn
                 v-if="isAdmin"
@@ -665,7 +665,6 @@ import {
   addMediaLink,
   aiCurate,
   createDay,
-  curatePublish,
   deleteDay,
   deleteMedia,
   fetchDays,
@@ -678,7 +677,7 @@ import {
   moderateMediaTag,
   patchDay,
   proposeMediaTag,
-  publishDay,
+  publishDayUntilDone,
   recordMediaPlay,
   unhideMedia,
   updateMedia,
@@ -1340,9 +1339,9 @@ async function publishAlbum(day) {
   }
   publishingDayId.value = day.id
   try {
-    await publishDay(day.id)
+    const result = await publishDayUntilDone(day.id)
     await loadDays(day.id)
-    $q.notify({ type: 'positive', message: 'Album publish kicked — drafts → CDN' })
+    $q.notify({ type: 'positive', message: publishResultMessage(result) })
   } catch (err) {
     $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Publish failed' })
   } finally {
@@ -1352,19 +1351,62 @@ async function publishAlbum(day) {
 
 async function curateAndPublish(day) {
   if (!day?.id) return
+  if (oidcEnabled.value && !isAdmin.value) {
+    $q.notify({ type: 'warning', message: 'Sign in as owner to publish' })
+    login()
+    return
+  }
+  const pending = countPendingPublish(day)
+  if (pending === 0) {
+    $q.notify({
+      type: 'info',
+      message: 'Already on CDN — nothing to promote. (Compress/transcode adapter not online yet.)'
+    })
+    return
+  }
   publishingDayId.value = day.id
   try {
-    await curatePublish(day.id, { compress: true, notes_public: false })
+    const result = await publishDayUntilDone(day.id)
     await loadDays(day.id)
-    $q.notify({
-      type: 'positive',
-      message: 'Curated publish started — CDN link is yours; compress adapter queues later'
-    })
+    $q.notify({ type: 'positive', message: publishResultMessage(result) })
   } catch (err) {
     $q.notify({ type: 'negative', message: err?.response?.data?.error || 'Curate publish failed' })
   } finally {
     publishingDayId.value = ''
   }
+}
+
+function countPendingPublish(day) {
+  const media = day?.media || []
+  return media.filter((m) => {
+    if (m.hidden) return false
+    if (m.origin === 'r2-draft') return true
+    if (m.origin === 'pvc' || !m.origin) return !m.published
+    if (m.published && String(m.url || '').startsWith('http')) return false
+    return !m.published
+  }).length
+}
+
+function publishButtonLabel(day) {
+  const n = countPendingPublish(day)
+  if (n === 0) return 'On CDN'
+  return `Publish ${n}`
+}
+
+function publishButtonHint(day) {
+  const n = countPendingPublish(day)
+  if (n === 0) {
+    return 'All clips already on CDN (original/). Compress/AI curate are separate.'
+  }
+  return `Promote ${n} draft/PVC item(s) → CDN original/. Direct uploads only need this flip — no re-upload.`
+}
+
+function publishResultMessage(result) {
+  const pub = result?.published || 0
+  const rem = result?.remaining || 0
+  if (pub === 0 && rem === 0) return 'Already on CDN — nothing left to promote'
+  if (rem === 0) return `Published ${pub} to CDN — album ready`
+  return `Published ${pub}; ${rem} still pending — hit Publish again`
 }
 
 async function runAICurate(day) {
