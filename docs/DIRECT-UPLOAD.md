@@ -22,7 +22,8 @@ In Cloudflare R2 → bucket → Settings → CORS, allow PUT from prod + preview
   {
     "AllowedOrigins": [
       "https://dasmlab.org",
-      "https://dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org"
+      "https://dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org",
+      "https://dev-dasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org"
     ],
     "AllowedMethods": ["GET", "PUT", "HEAD"],
     "AllowedHeaders": ["*"],
