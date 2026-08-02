@@ -95,6 +95,9 @@ spec:
             # (preview FE / dasmlab.org /api/surfing). Override when using a dedicated share domain.
             - name: SURFING_SHARE_PATH_PREFIX
               value: "/api/surfing"
+            # Emit share tollgate hits to cheapcloud media FinOps (OCP Route, no HAProxy auth)
+            - name: SURFING_CHEAPCLOUD_HIT_URL
+              value: "https://cheapcloud-dasmlab.apps.2026-prod-1.ocp.dasmlab.org/api/v1/media/share-hits"
             - name: KEYCLOAK_URL
               value: "https://keycloak.apps.2026-prod-1.ocp.dasmlab.org"
             - name: KEYCLOAK_REALM
