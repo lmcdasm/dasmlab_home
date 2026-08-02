@@ -18,7 +18,7 @@ echo "Pod=${POD} day=${DAY_ID} limit=${LIMIT}"
 for round in $(seq 1 "${MAX_ROUNDS}"); do
   echo "── round ${round} ──"
   OUT="$(oc -n "${NAMESPACE}" exec "${POD}" -- \
-    curl -fsS -m 600 -X POST "http://127.0.0.1:10023/days/${DAY_ID}/publish?limit=${LIMIT}" || true)"
+    curl -sS -m 600 -X POST "http://127.0.0.1:10023/days/${DAY_ID}/publish?limit=${LIMIT}" || true)"
   if [[ -z "${OUT}" ]]; then
     echo "empty/failed response — retrying shortly"
     sleep 5
@@ -27,12 +27,13 @@ for round in $(seq 1 "${MAX_ROUNDS}"); do
   echo "${OUT}" | python3 -c '
 import sys, json
 r=json.load(sys.stdin)
-print(f"published={r.get(\"published\")} skipped={r.get(\"skipped\")} failed={r.get(\"failed\")} remaining={r.get(\"remaining\")}")
+print("published=%s skipped=%s failed=%s remaining=%s" % (
+    r.get("published"), r.get("skipped"), r.get("failed"), r.get("remaining")))
 errs=r.get("errors") or []
 for e in errs[:8]:
     print("  err:", e)
-if errs[8:]:
-    print(f"  … +{len(errs)-8} more")
+if len(errs) > 8:
+    print("  … +%d more" % (len(errs)-8))
 open("/tmp/surf-promote-remaining","w").write(str(r.get("remaining", -1)))
 '
   REM="$(cat /tmp/surf-promote-remaining 2>/dev/null || echo -1)"
