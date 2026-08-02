@@ -182,23 +182,45 @@
           </div>
 
           <div v-if="queueForDay(day.id).length" class="upload-queue q-mt-md">
-            <div class="queue-title">Upload queue</div>
-            <div
-              v-for="item in queueForDay(day.id)"
-              :key="item.id"
-              class="queue-item"
-            >
-              <q-icon :name="item.file.type.startsWith('video/') ? 'movie' : 'image'" />
-              <div class="queue-item__meta">
-                <div class="queue-item__name">{{ item.file.name }}</div>
-                <q-linear-progress
-                  v-if="item.status === 'uploading'"
-                  :value="item.progress / 100"
-                  color="primary"
-                  class="q-mt-xs"
-                />
-                <div v-else-if="item.status === 'done'" class="text-positive text-caption">Uploaded</div>
-                <div v-else-if="item.status === 'error'" class="text-negative text-caption">{{ item.error }}</div>
+            <div class="queue-title row items-center no-wrap">
+              <span class="col">
+                Upload queue
+                <span class="queue-title__stats">
+                  · {{ queueStats(day.id).active }} active
+                  <template v-if="queueStats(day.id).done"> · {{ queueStats(day.id).done }} done</template>
+                  <template v-if="queueStats(day.id).error"> · {{ queueStats(day.id).error }} failed</template>
+                </span>
+              </span>
+              <q-btn
+                v-if="queueStats(day.id).done || queueStats(day.id).error"
+                flat
+                dense
+                size="sm"
+                color="primary"
+                label="Clear finished"
+                @click="clearFinishedUploads(day.id)"
+              />
+            </div>
+            <div class="upload-queue__scroll">
+              <div
+                v-for="item in queueForDay(day.id)"
+                :key="item.id"
+                class="queue-item"
+                :class="`queue-item--${item.status}`"
+              >
+                <q-icon :name="item.file.type.startsWith('video/') ? 'movie' : 'image'" />
+                <div class="queue-item__meta">
+                  <div class="queue-item__name">{{ item.file.name }}</div>
+                  <q-linear-progress
+                    v-if="item.status === 'uploading' || item.status === 'queued'"
+                    :value="item.status === 'queued' ? 0 : item.progress / 100"
+                    :indeterminate="item.status === 'queued'"
+                    color="primary"
+                    class="q-mt-xs"
+                  />
+                  <div v-else-if="item.status === 'done'" class="text-positive text-caption">Uploaded</div>
+                  <div v-else-if="item.status === 'error'" class="text-negative text-caption">{{ item.error }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1040,6 +1062,21 @@ function queueForDay(dayId) {
   return uploadQueue.value.filter((item) => item.dayId === dayId)
 }
 
+function queueStats(dayId) {
+  const items = queueForDay(dayId)
+  return {
+    active: items.filter((i) => i.status === 'queued' || i.status === 'uploading').length,
+    done: items.filter((i) => i.status === 'done').length,
+    error: items.filter((i) => i.status === 'error').length
+  }
+}
+
+function clearFinishedUploads(dayId) {
+  uploadQueue.value = uploadQueue.value.filter(
+    (item) => item.dayId !== dayId || (item.status !== 'done' && item.status !== 'error')
+  )
+}
+
 async function loadDays(selectId) {
   try {
     const data = await fetchDays()
@@ -1258,6 +1295,10 @@ async function runUpload(queueItem) {
     queueItem.status = 'done'
     queueItem.progress = 100
     scheduleUploadReload(queueItem.dayId)
+    // Drop successful rows after a short beat so the box doesn't grow forever.
+    setTimeout(() => {
+      uploadQueue.value = uploadQueue.value.filter((i) => i.id !== queueItem.id)
+    }, 3500)
   } catch (err) {
     if (queueItem.attempts < UPLOAD_MAX_ATTEMPTS) {
       queueItem.status = 'queued'
@@ -1676,8 +1717,17 @@ onMounted(() => {
 .upload-queue {
   border: 1px solid rgba(36, 61, 81, 0.12);
   border-radius: 12px;
-  padding: 0.75rem;
+  padding: 0.65rem 0.75rem 0.5rem;
   background: rgba(255, 255, 255, 0.75);
+  max-width: 100%;
+}
+
+.upload-queue__scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.15rem;
+  scrollbar-gutter: stable;
 }
 
 .queue-title {
@@ -1685,18 +1735,30 @@ onMounted(() => {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #6a7f90;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.45rem;
+  gap: 0.5rem;
+}
+
+.queue-title__stats {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: #8a9eac;
 }
 
 .queue-item {
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
-  padding: 0.45rem 0;
+  padding: 0.4rem 0.15rem;
 }
 
 .queue-item + .queue-item {
   border-top: 1px solid rgba(36, 61, 81, 0.08);
+}
+
+.queue-item--done {
+  opacity: 0.72;
 }
 
 .queue-item__meta {
