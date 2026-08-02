@@ -462,7 +462,11 @@ func randomString(n int) (string, error) {
 func RequireOwner() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if authSvc == nil || !authSvc.enabled() {
-			// Dev mode without OIDC — allow mutations (local/cluster bootstrap).
+			c.Next()
+			return
+		}
+		// In-pod rescue / ops: curl to 127.0.0.1 bypasses OIDC (never exposed publicly).
+		if ip := c.ClientIP(); ip == "127.0.0.1" || ip == "::1" {
 			c.Next()
 			return
 		}
