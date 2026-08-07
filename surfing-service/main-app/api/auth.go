@@ -250,17 +250,25 @@ func AuthLogout(c *gin.Context) {
 	setAuthCookie(c, cookieSession, "", -1)
 	setAuthCookie(c, cookieActLogin, "", -1)
 	origin := requestAppOrigin(c)
-	dest := origin + "/#/surfing"
+	if origin == "" && authSvc != nil {
+		origin = authSvc.cfg.AppPublicURL
+	}
+	// Keycloak post_logout_redirect_uri must match Valid Post Logout Redirect URIs.
+	// Use origin+"/" (no hash fragment) — same as mock-me / interview-me. Fragments
+	// in this param are rejected or mangled ("/#surfing" → Invalid redirect uri).
+	postLogout := strings.TrimRight(origin, "/") + "/"
+	dest := postLogout
 	if origin == "" {
 		dest = "/"
-		if authSvc != nil && authSvc.cfg.AppPublicURL != "" {
-			dest = authSvc.cfg.AppPublicURL + "/#/surfing"
-			origin = authSvc.cfg.AppPublicURL
-		}
 	}
 	if authSvc != nil && authSvc.enabled() && origin != "" {
 		end := strings.TrimRight(authSvc.cfg.Issuer, "/") + "/protocol/openid-connect/logout"
-		c.Redirect(http.StatusFound, end+"?post_logout_redirect_uri="+url.QueryEscape(origin+"/#/surfing")+"&client_id="+authSvc.cfg.ClientID)
+		u, _ := url.Parse(end)
+		q := u.Query()
+		q.Set("post_logout_redirect_uri", postLogout)
+		q.Set("client_id", authSvc.cfg.ClientID)
+		u.RawQuery = q.Encode()
+		c.Redirect(http.StatusFound, u.String())
 		return
 	}
 	c.Redirect(http.StatusFound, dest)

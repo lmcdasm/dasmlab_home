@@ -57,6 +57,13 @@ CHANGED="$(python3 - "${TMP}" "${ORIGIN}" <<'PY'
 import json, sys
 path, origin = sys.argv[1], sys.argv[2].rstrip("/")
 need_redirects = [f"{origin}/api/surfing/auth/callback", f"{origin}/*"]
+# Always keep prod post-logout allowlist healthy (logout uses origin+"/").
+always_post = [
+    "https://dasmlab.org/*",
+    "https://dasmlab.org",
+    f"{origin}/*",
+    origin,
+]
 c = json.load(open(path))
 ru = list(c.get("redirectUris") or [])
 wo = list(c.get("webOrigins") or [])
@@ -70,13 +77,11 @@ if origin not in wo and "+" not in wo:
     changed = True
 attrs = dict(c.get("attributes") or {})
 post = attrs.get("post.logout.redirect.uris") or ""
-sep = "##" if "##" in post or not post else " "
 post_parts = [p for p in post.replace("##", " ").split() if p]
-for u in (f"{origin}/*", origin):
+for u in always_post:
     if u not in post_parts:
         post_parts.append(u)
         changed = True
-# de-dupe preserving order
 seen = set()
 uniq = []
 for p in post_parts:

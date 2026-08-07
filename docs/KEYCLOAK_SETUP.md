@@ -20,7 +20,8 @@
    - `https://dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org/*`
    - (repeat for each `dev-<owner>-dasmlab-home…` host)
 4. Web origins: matching prod + each preview origin
-5. Post-logout redirect URIs: same hosts with `/*`
+5. Post-logout redirect URIs: `https://dasmlab.org/*`, `https://dasmlab.org`, and the same for each preview origin.
+   Logout uses `post_logout_redirect_uri={origin}/` (no `#/…` fragment — Keycloak rejects those).
 6. Copy client secret → K8s secret `surfing-service-system/dasmlab-home-oidc` key `client-secret`
 7. Client role **`admin`** → assign to your user (Filter by clients → dasmlab-home)
 8. Optional client role **`group`** (or `member`) → test “group can download”
