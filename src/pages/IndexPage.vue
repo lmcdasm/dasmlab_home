@@ -1,100 +1,136 @@
 <template>
-  <q-page padding class="q-gutter-md home-page">
+  <q-page class="home-page">
+    <div class="home-shell">
 
     <!-- Approach: Nav TL;DR — compact summary at top, then explore -->
     <template v-if="isNavTldr">
-      <div class="hero-shell q-mb-lg">
+      <div class="hero-shell rise" style="--rise-delay: 0ms">
         <div class="hero-noise" />
         <div class="hero-orb hero-orb-a" />
         <div class="hero-orb hero-orb-b" />
         <div class="hero-content">
           <div class="caps-label">TL;DR</div>
-          <h1 class="hero-title q-mt-sm q-mb-sm">
+          <h1 class="hero-title">
             Living lab.
             <span class="accent-word">Real builds.</span>
             Shared craft.
           </h1>
-          <p class="hero-copy q-mb-md">
+          <p class="hero-copy">
             DASMLAB is where ideas get poked, prodded, and brought to life.
             Build notes, experiments, and production lessons in one place.
           </p>
-          <div class="hero-chips">
-            <q-chip dense color="primary" text-color="white" icon="science" label="Experiment" />
-            <q-chip dense color="secondary" text-color="white" icon="construction" label="Build" />
-            <q-chip dense color="accent" text-color="white" icon="school" label="Teach back" />
+          <div class="hero-cta-row">
+            <button type="button" class="hero-btn primary" @click="goTo('/surfing')">Surfing</button>
+            <button type="button" class="hero-btn ghost" @click="goTo('/projects/infrastructure')">Infra</button>
+            <button type="button" class="hero-btn ghost" @click="goTo('/contact')">Contact</button>
           </div>
         </div>
       </div>
-      <div class="scanline q-pa-sm q-mb-md">
+      <div class="scanline">
         <q-icon name="south" class="q-mr-xs" />
         Pick a project lane below
       </div>
     </template>
 
-    <!-- Approach: Hero + block — WhatsNew + Carousel + cards -->
+    <!-- Approach: Hero + lab map + architecture -->
     <template v-else>
-      <div class="hero-shell q-mb-lg">
+      <div class="hero-shell rise" style="--rise-delay: 0ms">
         <div class="hero-noise" />
         <div class="hero-orb hero-orb-a" />
         <div class="hero-orb hero-orb-b" />
         <div class="hero-content">
           <div class="caps-label">DASMLAB</div>
-          <h1 class="hero-title q-mt-sm q-mb-sm">
+          <h1 class="hero-title">
             Craft over templates.
             <span class="accent-word">Systems with personality.</span>
           </h1>
-          <p class="hero-copy q-mb-md">
+          <p class="hero-copy">
             Portfolio plus workshop: production projects, field notes, and practical demos from across the stack.
           </p>
-          <div class="hero-chips">
-            <q-chip dense color="primary" text-color="white" icon="palette" label="Design systems" />
-            <q-chip dense color="secondary" text-color="white" icon="terminal" label="Engineering" />
-            <q-chip dense color="accent" text-color="white" icon="hub" label="Infra + AI" />
+          <div class="hero-cta-row">
+            <button type="button" class="hero-btn primary" @click="goTo('/surfing')">Surfing</button>
+            <button type="button" class="hero-btn ghost" @click="goTo('/projects/frontend')">Projects</button>
+            <button type="button" class="hero-btn ghost" @click="goTo('/contact')">Contact</button>
           </div>
         </div>
       </div>
 
-      <!-- What's New? -->
-      <div class="q-pa-sm flex flex-center content-frame q-mb-md">
-        <div class="frame-label">Live signal</div>
-        <WhatsNew :news="whatsNew" />
-      </div>
+      <section class="section-block rise" style="--rise-delay: 80ms">
+        <div class="section-head">
+          <div class="caps-label">Lab map</div>
+          <h2 class="section-title">Click a lane for builds, teaches, and a deep link.</h2>
+        </div>
+        <LabMap />
+      </section>
 
-      <!-- Carousel Section -->
-      <div class="flex flex-center q-my-md content-frame">
-        <div class="frame-label">Featured experiments</div>
-        <DesignCarousel :entries="carouselEntries" />
-      </div>
+      <section class="section-block rise" style="--rise-delay: 140ms">
+        <div class="section-head section-head--center">
+          <div class="caps-label">Project lanes</div>
+          <h2 class="section-title">Dive by category.</h2>
+        </div>
+        <div class="lane-row">
+          <button
+            v-for="card in cards"
+            :key="card.title"
+            type="button"
+            class="lane-chip"
+            @click="goTo(card.route)"
+          >
+            <q-icon :name="card.icon" size="20px" />
+            <span>{{ card.title }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section-block rise" style="--rise-delay: 180ms">
+        <div class="section-head">
+          <div class="caps-label">How the lab is wired</div>
+          <h2 class="section-title">Edge → OCP → GitOps → media off basement disk.</h2>
+        </div>
+        <LabArchitecture />
+      </section>
+
+      <section class="section-block rise" style="--rise-delay: 220ms">
+        <div class="section-head">
+          <div class="caps-label">Featured experiments</div>
+          <h2 class="section-title">Live carousel feed.</h2>
+        </div>
+        <div class="content-frame">
+          <DesignCarousel :entries="carouselEntries" />
+        </div>
+      </section>
     </template>
 
-    <!-- Project Cards (shared) -->
-    <div class="q-gutter-md row items-start justify-center q-mt-sm">
-      <q-card
-        v-for="card in cards"
-        :key="card.title"
-        class="q-pa-lg cursor-pointer col-xs-12 col-sm-4 col-md-3 project-card animate__animated animate__fadeInUp"
-        flat
-        bordered
-        @click="goTo(card.route)"
-      >
-        <q-card-section class="column items-center justify-center card-inner">
-          <div class="icon-wrap q-mb-sm">
-            <q-icon :name="card.icon" size="34px" class="text-primary" />
-          </div>
-          <div class="text-subtitle1 text-center card-title">{{ card.title }}</div>
-          <div class="card-cta q-mt-xs">Explore</div>
-        </q-card-section>
-      </q-card>
-    </div>
+    <!-- TL;DR approach: lanes still available below -->
+    <section v-if="isNavTldr" class="section-block rise" style="--rise-delay: 120ms">
+      <div class="section-head section-head--center">
+        <div class="caps-label">Project lanes</div>
+        <h2 class="section-title">Dive by category.</h2>
+      </div>
+      <div class="lane-row">
+        <button
+          v-for="card in cards"
+          :key="card.title"
+          type="button"
+          class="lane-chip"
+          @click="goTo(card.route)"
+        >
+          <q-icon :name="card.icon" size="20px" />
+          <span>{{ card.title }}</span>
+        </button>
+      </div>
+    </section>
 
+    </div>
   </q-page>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import WhatsNew from 'src/components/WhatsNew.vue'
 import DesignCarousel from 'src/components/DesignCarousel.vue'
+import LabMap from 'src/components/LabMap.vue'
+import LabArchitecture from 'src/components/LabArchitecture.vue'
 import { useApproach } from 'src/composables/useApproach'
 import axios from 'axios'
 
@@ -102,37 +138,19 @@ const router = useRouter()
 const { isNavTldr } = useApproach()
 
 const carouselEntries = ref([])
-const whatsNew = ref([])
 
 const goTo = (route) => router.push(route)
 
 const cards = [
-  { title: 'Frontend Projects', icon: 'view_quilt', route: '/projects/frontend' },
-  { title: 'Backend Projects', icon: 'dns', route: '/projects/backend' },
-  { title: 'AI/ML Tech Dives', icon: 'psychology', route: '/projects/ai-ml' },
-  { title: 'Cloud Provider Techs.', icon: 'cloud', route: '/projects/cloud' },
-  { title: 'Infrastructure Projects', icon: 'storage', route: '/projects/infrastructure' },
-  { title: 'Security Projects', icon: 'shield', route: '/projects/security' }
+  { title: 'Frontend', icon: 'view_quilt', route: '/projects/frontend' },
+  { title: 'Backend', icon: 'dns', route: '/projects/backend' },
+  { title: 'AI / ML', icon: 'psychology', route: '/projects/ai-ml' },
+  { title: 'Cloud', icon: 'cloud', route: '/projects/cloud' },
+  { title: 'Infra', icon: 'storage', route: '/projects/infrastructure' },
+  { title: 'Security', icon: 'shield', route: '/projects/security' }
 ]
 
 onMounted(async () => {
-  // Fetch WhatsNew
-  try {
-    const res = await axios.get('https://whatsnew.svc.dasmlab.org/get')
-    whatsNew.value = res.data?.latest_commits || []
-  } catch (err) {
-    console.error('Failed to Fetch from whatsnew-service:', err)
-    whatsNew.value = [
-      {
-        id: 1,
-        project: 'Out of Service',
-        title: 'Connection to WhatsNew Service is down.',
-        date: new Date().toISOString().replace('T', ' ').substring(0, 19)
-      }
-    ]
-  }
-
-  // Fetch Carousel
   try {
     const res = await axios.get('https://design-carousel.svc.dasmlab.org/carousel')
     carouselEntries.value = res.data
@@ -154,56 +172,98 @@ onMounted(async () => {
 .home-page {
   position: relative;
   overflow-x: hidden;
+  padding: 0.7rem clamp(0.65rem, 1.6vw, 1.1rem) 1.4rem;
+}
+
+.home-shell {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+@media (min-width: 1400px) {
+  .home-shell {
+    max-width: 980px;
+  }
+}
+
+.rise {
+  animation: riseIn 520ms ease both;
+  animation-delay: var(--rise-delay, 0ms);
 }
 
 .hero-shell {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(43, 76, 103, 0.16);
-  border-radius: 18px;
+  width: 100%;
+  border: 1.5px solid rgba(31, 111, 98, 0.32);
+  border-radius: 20px;
   background:
-    radial-gradient(circle at 12% 20%, rgba(63, 122, 107, 0.14), transparent 46%),
-    radial-gradient(circle at 82% 30%, rgba(158, 115, 178, 0.12), transparent 48%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 255, 0.98));
-  box-shadow: 0 14px 28px rgba(25, 47, 67, 0.08);
+    radial-gradient(circle at 12% 20%, rgba(47, 143, 125, 0.16), transparent 46%),
+    radial-gradient(circle at 82% 30%, rgba(151, 110, 176, 0.14), transparent 48%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(236, 245, 242, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 16px 34px rgba(18, 40, 52, 0.1);
 }
 
 .hero-content {
   position: relative;
   z-index: 2;
-  padding: 1.35rem 1.2rem 1.25rem;
+  padding: 1rem 1.15rem 1.05rem;
+  max-width: 36rem;
+}
+
+.hero-title {
+  margin: 0 0 0.45rem;
+  line-height: 1.08;
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  font-weight: 800;
+  color: #12202c;
+  letter-spacing: -0.01em;
+}
+
+.hero-copy {
+  margin: 0 0 0.75rem;
+  max-width: 34rem;
+  color: #3d5263;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.hero-orb {
+  position: absolute;
+  z-index: 1;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.32;
+  animation: float-orb 7s ease-in-out infinite;
 }
 
 .hero-noise {
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 0.1;
-  background-image: radial-gradient(rgba(44, 66, 86, 0.25) 0.6px, transparent 0.6px);
+  opacity: 0.12;
+  background-image: radial-gradient(rgba(29, 43, 54, 0.28) 0.6px, transparent 0.6px);
   background-size: 4px 4px;
 }
 
-.hero-orb {
-  position: absolute;
-  z-index: 1;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  filter: blur(20px);
-  opacity: 0.34;
-  animation: float-orb 7s ease-in-out infinite;
-}
-
 .hero-orb-a {
-  background: rgba(63, 122, 107, 0.35);
-  top: -60px;
-  right: -40px;
+  background: rgba(47, 143, 125, 0.42);
+  top: -50px;
+  right: -36px;
 }
 
 .hero-orb-b {
-  background: rgba(158, 115, 178, 0.3);
-  left: -50px;
-  bottom: -70px;
+  background: rgba(151, 110, 176, 0.34);
+  left: -40px;
+  bottom: -56px;
   animation-delay: 1.5s;
 }
 
@@ -211,125 +271,122 @@ onMounted(async () => {
   display: inline-block;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  font-size: 0.73rem;
-  color: #607587;
-  font-weight: 600;
-}
-
-.hero-title {
-  max-width: 700px;
-  line-height: 1.08;
-  font-size: clamp(1.4rem, 2.7vw, 2.2rem);
+  font-size: 0.68rem;
+  color: #4d6575;
   font-weight: 700;
-  color: #1f2f3e;
+  margin-bottom: 0.25rem;
 }
 
 .accent-word {
   display: block;
-  color: #885fa0;
-  text-shadow: 0 0 12px rgba(158, 115, 178, 0.22);
+  color: #7a4f96;
+  text-shadow: 0 0 14px rgba(151, 110, 176, 0.25);
   animation: accent-pulse 3.2s ease-in-out infinite;
 }
 
-.hero-copy {
-  max-width: 780px;
-  color: #445769;
+.hero-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
-.hero-chips :deep(.q-chip) {
-  margin-right: 0.45rem;
-  margin-bottom: 0.35rem;
+.hero-btn {
+  border-radius: 10px;
+  padding: 0.48rem 0.85rem;
+  font-weight: 720;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.hero-btn.primary {
+  border: none;
+  background: linear-gradient(135deg, #1f6f62, #2f8f7d);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(31, 111, 98, 0.28);
+}
+
+.hero-btn.ghost {
+  border: 1.5px solid rgba(31, 111, 98, 0.35);
+  background: rgba(255, 255, 255, 0.75);
+  color: #1d2b36;
+}
+
+.hero-btn:hover {
+  transform: translateY(-1px);
 }
 
 .scanline {
-  border: 1px dashed rgba(90, 117, 139, 0.35);
+  border: 1px dashed rgba(90, 117, 139, 0.4);
   border-radius: 10px;
   text-align: center;
-  color: #607587;
+  color: #4d6575;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-size: 0.77rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.55rem 0.75rem;
+}
+
+.section-block {
+  width: 100%;
+}
+
+.section-head {
+  margin-bottom: 0.7rem;
+}
+
+.section-head--center {
+  text-align: center;
+}
+
+.section-title {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  font-weight: 750;
+  color: #12202c;
+  line-height: 1.25;
 }
 
 .content-frame {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border: 1px solid rgba(43, 76, 103, 0.14);
-  border-radius: 14px;
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.96), rgba(247, 251, 254, 0.98));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 8px 20px rgba(25, 47, 67, 0.06);
+  border: 1.5px solid rgba(31, 111, 98, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.98), rgba(243, 248, 246, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 10px 24px rgba(18, 40, 52, 0.07);
+  padding: 0.35rem;
 }
 
-.content-frame::after {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: linear-gradient(180deg, rgba(63, 122, 107, 0.64), rgba(158, 115, 178, 0.55));
-  pointer-events: none;
+.lane-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.35rem 0 0.15rem;
 }
 
-.content-frame::before {
-  display: none;
+.lane-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1.5px solid rgba(31, 111, 98, 0.28);
+  border-radius: 999px;
+  padding: 0.58rem 1.05rem;
+  background: linear-gradient(160deg, #ffffff, #f3f8f6);
+  color: #12202c;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.frame-label {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(84, 106, 124, 0.9);
-}
-
-.project-card {
-  position: relative;
-  border: 1px solid rgba(43, 76, 103, 0.15) !important;
-  border-radius: 14px;
-  background: linear-gradient(160deg, #ffffff, #f7fbfe);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.project-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(151, 110, 176, 0.5) !important;
-  box-shadow: 0 12px 24px rgba(25, 47, 67, 0.12);
-}
-
-.card-inner {
-  min-height: 128px;
-}
-
-.icon-wrap {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: radial-gradient(circle at 30% 25%, rgba(63, 122, 107, 0.18), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(63, 122, 107, 0.25);
-}
-
-.card-title {
-  font-weight: 600;
-  color: #24384a;
-  letter-spacing: 0.01em;
-}
-
-.card-cta {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #607587;
-}
-
-@media (max-width: 900px) {
-  .project-card {
-    width: 100%;
-  }
+.lane-chip:hover {
+  transform: translateY(-2px);
+  border-color: rgba(151, 110, 176, 0.55);
+  box-shadow: 0 10px 20px rgba(18, 40, 52, 0.1);
 }
 
 @keyframes float-orb {
@@ -340,8 +397,18 @@ onMounted(async () => {
 
 @keyframes accent-pulse {
   0%,
-  100% { opacity: 0.86; }
+  100% { opacity: 0.88; }
   50% { opacity: 1; }
 }
-</style>
 
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

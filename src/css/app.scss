@@ -1,22 +1,24 @@
 // app global css in SCSS form
 
 :root {
+  --dasm-ink: #12202c;
   --dasm-primary-light: #3f9f8e;
   --dasm-primary-dark: #1f6f62;
   --dasm-secondary-light: #74865c;
   --dasm-accent-light: #9e73b2;
   --dasm-dark-elevated: #1d2b36;
-  --dasm-surface-0: #f5f8fb;
+  --dasm-surface-0: #f3f8f6;
   --dasm-surface-1: #ffffff;
-  --dasm-surface-2: #eef3f8;
-  --dasm-border-soft: rgba(28, 52, 73, 0.14);
-  --dasm-border-strong: rgba(63, 122, 107, 0.35);
-  --dasm-text-soft: #445566;
-  --dasm-text-muted: #6f7f8d;
-  --dasm-glow-primary: rgba(63, 122, 107, 0.14);
-  --dasm-glow-accent: rgba(158, 115, 178, 0.1);
+  --dasm-surface-2: #e8f0ed;
+  --dasm-border-soft: rgba(28, 52, 73, 0.16);
+  --dasm-border-strong: rgba(31, 111, 98, 0.4);
+  --dasm-text-soft: #3d5263;
+  --dasm-text-muted: #5a6f80;
+  --dasm-glow-primary: rgba(47, 143, 125, 0.16);
+  --dasm-glow-accent: rgba(151, 110, 176, 0.12);
   --dasm-ease-fast: 170ms ease;
   --dasm-ease-mid: 260ms ease;
+  --dasm-shadow: 0 14px 32px rgba(18, 40, 52, 0.1);
 }
 
 * {
@@ -39,13 +41,13 @@ body,
 .dasm-shell {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--dasm-border-strong);
+  border: 1.5px solid var(--dasm-border-strong);
   border-radius: 18px;
   background:
     radial-gradient(circle at 8% 12%, var(--dasm-glow-primary), transparent 40%),
     radial-gradient(circle at 92% 16%, var(--dasm-glow-accent), transparent 42%),
-    linear-gradient(155deg, #ffffff, #f6fafc);
-  box-shadow: 0 16px 34px rgba(24, 43, 60, 0.08);
+    linear-gradient(155deg, #ffffff, #f3f8f6);
+  box-shadow: var(--dasm-shadow);
 }
 
 .dasm-shell__content {

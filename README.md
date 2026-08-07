@@ -13,7 +13,7 @@
   Real-time updates from backend agents and controllers streamed directly into the interface.
 
 - 🧩 **Modular Component Design**  
-  Includes reusable `ProjectCard`, `DesignCarousel`, `WhatsNew`, and `VisitCounter` components with evolving design-system styling.
+  Includes reusable `ProjectCard`, `DesignCarousel`, and `VisitCounter` components with evolving design-system styling. (WhatsNew deprecated in 0.7.0 — see `docs/TARGET-0.7.0.md`.)
 
 - 📦 **Containerized Deployment**  
   Packaged via `nginx` as a static web asset container. Wrapped using `buildme.sh` and `runme.sh` for local or CI builds.

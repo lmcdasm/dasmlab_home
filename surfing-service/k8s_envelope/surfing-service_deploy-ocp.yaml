@@ -5,6 +5,8 @@ metadata:
   namespace: surfing-service-system
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: surfing-service
@@ -37,6 +39,86 @@ spec:
               value: "500"
             - name: SURFING_PRELOAD_DIR
               value: /data/preload
+            - name: SURFING_OBJECT_STORE
+              value: "r2"
+            # Draft-first: uploads stay on PVC until POST /days/:id/publish.
+            # Set "true" to dual-write R2 on every upload.
+            - name: SURFING_AUTO_PUBLISH
+              value: "false"
+            - name: R2_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_ACCOUNT_ID
+            - name: R2_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_ACCESS_KEY_ID
+            - name: R2_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_SECRET_ACCESS_KEY
+            - name: R2_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_BUCKET
+            - name: R2_PUBLIC_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_PUBLIC_BASE_URL
+            - name: R2_S3_URL
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-r2
+                  key: R2_S3_URL
+                  optional: true
+            # Theme MVP: OpenAI now; later point BASE_URL at cheapcloud AI farm (vLLM spots).
+            - name: SURFING_AI_PROVIDER
+              value: "openai"
+            - name: SURFING_AI_BASE_URL
+              value: "https://api.openai.com/v1"
+            - name: SURFING_AI_CHAT_MODEL
+              value: "gpt-4o-mini"
+            - name: SURFING_AI_IMAGE_MODEL
+              value: "gpt-image-1"
+            - name: SURFING_AI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-ai
+                  key: SURFING_AI_API_KEY
+                  optional: true
+            # Share tollgate: omit SURFING_SHARE_PUBLIC_BASE to derive from request Host
+            # (preview FE / dasmlab.org /api/surfing). Override when using a dedicated share domain.
+            - name: SURFING_SHARE_PATH_PREFIX
+              value: "/api/surfing"
+            # Emit share tollgate hits to cheapcloud media FinOps (OCP Route, no HAProxy auth)
+            - name: SURFING_CHEAPCLOUD_HIT_URL
+              value: "https://cheapcloud-dasmlab.apps.2026-prod-1.ocp.dasmlab.org/api/v1/media/share-hits"
+            - name: KEYCLOAK_URL
+              value: "https://keycloak.apps.2026-prod-1.ocp.dasmlab.org"
+            - name: KEYCLOAK_REALM
+              value: "dasmlab"
+            - name: OIDC_CLIENT_ID
+              value: "dasmlab-home"
+            - name: APP_PUBLIC_URL
+              value: "https://dasmlab.org"
+            - name: OIDC_REDIRECT_URI
+              value: "https://dasmlab.org/api/surfing/auth/callback"
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dasmlab-home-oidc
+                  key: client-secret
+                  optional: true
+            - name: OIDC_INSECURE_SKIP_VERIFY
+              value: "true"
+            # preferred_username values treated as album owners when client-role mapper is incomplete
+            - name: OIDC_OWNER_USERNAMES
+              value: "dasm"
           volumeMounts:
             - name: surfing-data
               mountPath: /data

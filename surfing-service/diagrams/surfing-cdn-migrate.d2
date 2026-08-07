@@ -1,0 +1,33 @@
+# Surfing CDN — migration from PVC-era gallery → R2 albums
+# Render: d2 surfing-cdn-migrate.d2 surfing-cdn-migrate.svg
+
+direction: down
+
+today: {
+  label: "Today (pre-publish)"
+  disk: "Basement PVC\n/data/media/*\n~12Gi Bonaire"
+  man: "manifest.json\nurl=/serve?id=…"
+  route: "GET /serve\nvia OCP Route\n(slow / house egress)"
+  disk -> man
+  man -> route
+}
+
+migrate: {
+  label: "Migrate / Publish"
+  job: "POST /days/\{id\}/publish\nor scripts/publish-album.sh"
+  copy: "Read PVC file\n→ R2 PutObject"
+  rewrite: "Rewrite item.url\nto CDN public URL\npersist manifest"
+  job -> copy -> rewrite
+}
+
+after: {
+  label: "After publish"
+  r2: "R2 keys\nsurfing/albums/\{dayId\}/original/\{mediaId\}\{ext\}"
+  cdn: "Cloudflare edge\nzero egress R2→CF"
+  cleanup: "Optional: delete PVC\nbytes for published items\n(keep manifest on OCP)"
+  r2 -> cdn
+  cdn -> cleanup: "when verified"
+}
+
+today.route -> migrate.job: "one album at a time"
+migrate.rewrite -> after.r2

@@ -13,6 +13,9 @@ ENV COUNTER_WORKSPACE=${COUNTER_WORKSPACE}
 ENV COUNTER_COUNTER_SLUG=${COUNTER_COUNTER_SLUG}
 ENV COUNTER_FULL_PATH=${COUNTER_FULL_PATH}
 ENV APP_VERSION=${APP_VERSION}
+# Cheapcloud-style build stamp for the UI chip ([data-build-tag] /version.json).
+RUN mkdir -p public \
+  && printf '{"service":"dasmlab-home","version":"%s","build":"%s"}\n' "${APP_VERSION:-dev}" "${APP_VERSION:-dev}" > public/version.json
 RUN npm install && npm run build
 
 FROM docker.io/library/nginx:alpine

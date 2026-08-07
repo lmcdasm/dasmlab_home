@@ -31,7 +31,7 @@ Multi-sites and many project types live under one umbrella. The challenge: **one
 
 - **About:** Living lab, poked/prodded, brought to life, experiment + education, demystify, share, learn/remix/iterate. Personal: decades in tech, telecom → automotive → AI, 60+ countries, Outaouais/Ottawa, Fernie, Laurentians. Beyond code: snowboard, windsurf, garden, house music, pottery.
 - **Contact:** Short. “Reach out,” email CTA.
-- **Home:** Cards by category (Frontend, Backend, AI/ML, Cloud, Infra, Security); WhatsNew + Design Carousel as live content.
+- **Home:** Cards by category (Frontend, Backend, AI/ML, Cloud, Infra, Security); Design Carousel as live content. (WhatsNew retired — see TARGET-0.7.0.)
 
 ---
 
@@ -55,7 +55,7 @@ We want to **live-switch between different “approaches”** in the same fronte
 - **Mechanism:** Dropdown or toggle (e.g. in toolbar or drawer) that selects the current “approach.”
 - **Persistence:** e.g. `localStorage` so the choice survives refresh.
 - **First use case:** Two home approaches:
-  - **Hero + block** — Current: WhatsNew + Carousel + project cards.
+  - **Hero + block** — Current: Carousel + project cards (constellation map planned in 0.7.0).
   - **Nav-level TL;DR** — Condensed summary (pitch-deck style or compact strip) at top or in nav; user can then dive into full home or sections.
 - **Later:** Reuse the same switcher for other A/B-style component or layout variants.
 

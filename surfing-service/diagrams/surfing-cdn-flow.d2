@@ -1,0 +1,25 @@
+# Surfing CDN — target flow (upload → stage → publish → edge)
+# Style: mini-acm / monday sparse D2 (default theme). Render: d2 surfing-cdn-flow.d2 surfing-cdn-flow.svg
+
+direction: right
+
+you: "You (Dan)\nbuild album / trip"
+home: "dasmlab.org Surfing UI\n(tree + detail panel\n— interview-me style)"
+api: "surfing-service\nOCP Bound (thin-up)"
+pvc: "PVC staging\n/data/media\n(lvms-vg1)"
+publish: "POST …/publish\ncopy + rewrite URLs"
+r2: "R2 bucket\ndasmlab-surfing\nalbums/\{dayId\}/…"
+cdn: "Cloudflare CDN\npub-….r2.dev\n(→ media.surfing later)"
+visitor: "Visitors\nfast media"
+
+you -> home: "create album\nadd photos/video"
+home -> api: "CRUD + upload"
+api -> pvc: "1. stage bytes\n(draft)"
+api -> publish: "2. Publish album"
+publish -> r2: "PutObject\norigin/"
+r2 -> cdn: "public objects"
+cdn -> visitor: "GET media"
+home -> visitor: "gallery URLs\npoint at CDN"
+
+cheap: "cheapcloud\n\$20 storage+CDN wall\n(recommend / alert)"
+r2 -> cheap: "usage profile\n(later)"

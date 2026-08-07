@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+.quasar
+dist
+in_progress:
+in_progress
+surfing-service
+*.md
+docs
+scripts
+banners
+k8s_envelope

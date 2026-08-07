@@ -1,0 +1,36 @@
+# Surfing CDN — album folder layout in R2 + product roles
+# Render: d2 surfing-cdn-layout.d2 surfing-cdn-layout.svg
+
+direction: right
+
+products: {
+  label: "Three products (separate repos)"
+  mock: "mini-mock\nContent Delivery genre\n(mock the pattern)"
+  surf: "dasmlab_home\nSurfing = production twin"
+  cheap: "cheapcloud\n\$20 MediaBroker wall"
+}
+
+bucket: {
+  label: "dasmlab-surfing (single bucket)"
+  root: "surfing/"
+  album: "albums/\{dayId\}/"
+  orig: "original/\{mediaId\}\{ext\}"
+  meta: "day.json (optional snapshot)"
+  legacy: "legacy/media/\{id\}\{ext\}\n(flat keys during cutover)"
+  root -> album
+  album -> orig
+  album -> meta
+  root -> legacy
+}
+
+flow: {
+  label: "Lifecycle"
+  draft: "Draft = PVC only\npublished=false"
+  pub: "Published = R2+CDN\npublished=true\nurl=https://pub-…/…"
+  draft -> pub: "Publish"
+}
+
+products.surf -> bucket.root: "writes"
+products.mock -> flow.draft: "designs"
+products.cheap -> bucket.root: "meters / recommends"
+flow.pub -> bucket.orig

@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -64,7 +66,47 @@ func loadManifest() error {
 	return nil
 }
 
+// reloadManifestFromDisk replaces in-memory state from PVC so multi-replica
+// ListDays sees soft-hides / creates written by another pod.
+func reloadManifestFromDisk() error {
+	raw, err := os.ReadFile(manifestPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	var days []DayEntry
+	if err := json.Unmarshal(raw, &days); err != nil {
+		return err
+	}
+
+	next := make(map[string]DayEntry, len(days))
+	for _, day := range days {
+		if day.ID == "" {
+			continue
+		}
+		if day.Media == nil {
+			day.Media = []MediaItem{}
+		}
+		next[day.ID] = day
+	}
+
+	storeMu.Lock()
+	dayStore = next
+	storeMu.Unlock()
+	return nil
+}
+
+var (
+	persistMu sync.Mutex
+)
+
 func persistManifest() error {
+	persistMu.Lock()
+	defer persistMu.Unlock()
+
 	storeMu.RLock()
 	days := make([]DayEntry, 0, len(dayStore))
 	for _, day := range dayStore {
@@ -77,11 +119,15 @@ func persistManifest() error {
 		return err
 	}
 
-	tmpPath := manifestPath + ".tmp"
+	tmpPath := manifestPath + ".tmp." + fmt.Sprintf("%d", time.Now().UnixNano())
 	if err := os.WriteFile(tmpPath, payload, 0o664); err != nil {
 		return err
 	}
-	return os.Rename(tmpPath, manifestPath)
+	if err := os.Rename(tmpPath, manifestPath); err != nil {
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	return nil
 }
 
 func mediaFilePath(mediaID, ext string) string {
@@ -97,12 +143,22 @@ func Initialize() error {
 	mediaBasePath = filepath.Join(dataDir, mediaSubdirName)
 	manifestPath = filepath.Join(dataDir, manifestFileName)
 
+	initObjectStore()
+
 	if err := ensureStorageDirs(); err != nil {
 		return err
 	}
 
 	if err := loadManifest(); err != nil {
 		log.Warnf("Storage: could not load manifest %s: %v", manifestPath, err)
+	}
+
+	if err := loadShares(); err != nil {
+		log.Warnf("Storage: could not load shares: %v", err)
+	}
+
+	if err := initAuth(); err != nil {
+		return err
 	}
 
 	preloadDir := envOrDefault("SURFING_PRELOAD_DIR", filepath.Join(dataDir, "preload"))

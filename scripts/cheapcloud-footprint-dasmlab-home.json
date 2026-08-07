@@ -1,0 +1,58 @@
+{
+  "product_id": "dasmlab-home",
+  "display_name": "DASMLAB Home + Surfing",
+  "owner": "dasmlab",
+  "env": "prod",
+  "envelope": "surfing-cdn-storage",
+  "source": "ci",
+  "notes": "Homepage + Surfing. DC hosting free; R2 free-tier watched by cheapcloud.",
+  "components": [
+    {
+      "id": "hosting-2026-prod-1",
+      "kind": "hosting",
+      "label": "2026-prod-1 OCP",
+      "provider": "ocp-dc",
+      "external_ref": "apps.2026-prod-1.ocp.dasmlab.org",
+      "opex": "free",
+      "monthly_usd_est": 0,
+      "weight": 1,
+      "notes": "DC-based cluster — no OPEX"
+    },
+    {
+      "id": "storage-r2-surfing",
+      "kind": "storage",
+      "label": "CF R2 dasmlab-surfing",
+      "provider": "r2",
+      "external_ref": "dasmlab-surfing",
+      "opex": "free_tier",
+      "monthly_usd_est": 0,
+      "free_tier": {
+        "storage_gb": 10,
+        "class_a_ops": 1000000,
+        "class_b_ops": 10000000,
+        "egress_gb": 0,
+        "notes": "R2→CF CDN zero egress"
+      },
+      "notes": "Surfing albums surfing/albums/"
+    },
+    {
+      "id": "cdn-cloudflare",
+      "kind": "cdn",
+      "label": "Cloudflare CDN",
+      "provider": "cloudflare",
+      "external_ref": "pub-973dadf41dd44837be5bcdd8913067a7.r2.dev",
+      "opex": "free_tier",
+      "monthly_usd_est": 0
+    },
+    {
+      "id": "certs-dns",
+      "kind": "cert",
+      "label": "CERTS / DNS",
+      "provider": "org-letsencrypt",
+      "external_ref": "dasmlab.org",
+      "opex": "free",
+      "monthly_usd_est": 0,
+      "notes": "ORG / Let's Encrypt / HAProxy"
+    }
+  ]
+}

@@ -1,35 +1,70 @@
-name: Dasmlab Home CX Pipeline (Buildah - Daemonless)
+name: Dasmlab Home CX Pipeline
 
 on:
   push:
-    branches: ["main", "2026-spring-FE-update", "development"]
+    branches:
+      - main
+      - development
+      - "2026-spring-FE-update"
+      - "2026-lab-constellation"
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       cluster_type:
-        description: 'Cluster type (ocp or k3s)'
+        description: "Cluster type for prod publish (ocp or k3s)"
         required: false
-        default: 'ocp'
+        default: "ocp"
         type: choice
-        options:
-          - ocp
-          - k3s
+        options: [ocp, k3s]
+      force_preview:
+        description: "Force preview deploy even on main"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  # Separate push vs PR so open PRs don't cancel branch preview builds.
+  group: dasmlab-home-${{ github.ref == 'refs/heads/main' && 'prod' || format('preview-{0}-{1}', github.actor, github.event_name) }}
+  cancel-in-progress: true
 
 jobs:
-  cx-pipeline:
+  prepare:
+    runs-on: [self-hosted]
+    outputs:
+      version_tag: ${{ steps.meta.outputs.version_tag }}
+      is_prod: ${{ steps.meta.outputs.is_prod }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: |
+          set -euo pipefail
+          PKG_VER=$(node -p "require('./package.json').version")
+          SHA=$(git rev-parse --short HEAD)
+          # Match live image convention: v1.0.0-<sha> (semver + commit), not date-only.
+          TAG="v${PKG_VER}-${SHA}"
+          IS_PROD=false
+          if [ "${{ github.ref }}" = "refs/heads/main" ] && [ "${{ inputs.force_preview || false }}" != "true" ]; then
+            IS_PROD=true
+          fi
+          echo "version_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "is_prod=${IS_PROD}" >> "$GITHUB_OUTPUT"
+          echo "VERSION_TAG=${TAG} is_prod=${IS_PROD}"
+
+  build-publish:
+    needs: prepare
     permissions:
       contents: read
       packages: write
     runs-on: [self-hosted]
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Build Metadata
         id: vars
         run: |
           echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "VERSION_TAG=v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          # Image tag is now set by kaniko destination
+          echo "VERSION_TAG=${{ needs.prepare.outputs.version_tag }}" >> $GITHUB_ENV
           echo "COUNTER_FULL_PATH=${{ vars.COUNTER_FULL_PATH }}" >> $GITHUB_ENV
           echo "COUNTER_API_TOKEN=${{ vars.COUNTER_API_TOKEN }}" >> $GITHUB_ENV
           echo "COUNTER_COUNTER_SLUG=${{ vars.COUNTER_COUNTER_SLUG }}" >> $GITHUB_ENV
@@ -48,24 +83,21 @@ jobs:
             echo "ERROR: No supported container builder found (buildah or kaniko)"
             exit 1
           fi
-          echo "Container builder is ready!"
 
       - name: Build Phase
         env:
+          # Prefer host token when present — repo secret may lack GHCR write for lmcdasm packages.
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
-          # Ensure PATH includes standard directories
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
           export BUILDAH_ISOLATION=chroot
           export STORAGE_DRIVER=vfs
           export XDG_RUNTIME_DIR="/tmp/xdg-runtime-${GITHUB_RUN_ID}"
           mkdir -p "${XDG_RUNTIME_DIR}"
 
-          # Reset stale buildah state on long-lived self-hosted runners
           buildah rm -a 2>/dev/null || true
           rm -rf ~/.local/share/containers/storage/vfs/dir/* 2>/dev/null || true
 
-          # Use per-run container storage to avoid vfs layer collisions on shared runners
           if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
             export BUILDAH_RUNROOT="/tmp/buildah-runroot-${GITHUB_RUN_ID}"
             export BUILDAH_GRAPHROOT="/tmp/buildah-graphroot-${GITHUB_RUN_ID}"
@@ -81,23 +113,16 @@ jobs:
               > "${CONTAINERS_STORAGE_CONF}"
           fi
 
-          # Runner-local fallback for token bootstrap (keeps CI moving while secrets are rotated)
-          if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+          # Host token wins when available (packages:write for lmcdasm/*).
+          if [ -f "/home/dasm/gh_token" ]; then
+            GHCR_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+          elif [ -f "/home/dasm/gh-pat" ]; then
+            # shellcheck disable=SC1091
             source /home/dasm/gh-pat
-            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-${GHCR_TOKEN:-}}}"
           fi
-
-          # Verify token is set
           if [ -z "${GHCR_TOKEN}" ]; then
             echo "ERROR: GHCR_TOKEN is not set!"
-            exit 1
-          fi
-          echo "Token length: ${#GHCR_TOKEN} characters"
-          
-          # Verify Dockerfile exists
-          if [ ! -f Dockerfile ]; then
-            echo "ERROR: Dockerfile not found in current directory"
-            ls -la
             exit 1
           fi
 
@@ -110,26 +135,7 @@ jobs:
                 "$@"
             }
 
-            echo "Logging in to GHCR with buildah..."
-            if ! echo "${GHCR_TOKEN}" | buildah_cmd login --username lmcdasm --password-stdin ghcr.io; then
-              echo "Primary GHCR token failed, trying runner-local fallback..."
-              if [ -f "/home/dasm/gh-pat" ]; then
-                source /home/dasm/gh-pat
-                FALLBACK_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
-                if [ -n "${FALLBACK_TOKEN}" ]; then
-                  GHCR_TOKEN="${FALLBACK_TOKEN}"
-                  echo "Using runner-local token fallback."
-                  echo "${GHCR_TOKEN}" | buildah_cmd login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
-                else
-                  echo "ERROR: runner-local token fallback is empty"
-                  exit 1
-                fi
-              else
-                echo "ERROR: no runner-local token file available for fallback"
-                exit 1
-              fi
-            fi
-
+            echo "${GHCR_TOKEN}" | buildah_cmd login --username lmcdasm --password-stdin ghcr.io
             echo "::add-mask::${GHCR_TOKEN}"
             echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
 
@@ -139,13 +145,11 @@ jobs:
               --build-arg COUNTER_COUNTER_SLUG="$COUNTER_COUNTER_SLUG" \
               --build-arg COUNTER_WORKSPACE="$COUNTER_WORKSPACE" \
               --build-arg APP_VERSION="$VERSION_TAG" \
-              -t ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG} \
+              -t "ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}" \
               -f Dockerfile \
               .
-
-            buildah_cmd push ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}
+            buildah_cmd push "ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}"
           else
-            echo "Using kaniko to build and push image..."
             echo "::add-mask::${GHCR_TOKEN}"
             echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
             SUDO_CMD=""
@@ -166,34 +170,51 @@ jobs:
               --build-arg APP_VERSION="$VERSION_TAG"
           fi
 
-      - name: Run Phase (App Container Test)
+      - name: Teardown (Cleanup)
+        if: always()
         run: |
-          # Buildah builds and pushes to registry
-          echo "Container image built and pushed successfully with Buildah"
+          if [ -n "${BUILDAH_GRAPHROOT:-}" ] && [ -n "${BUILDAH_RUNROOT:-}" ]; then
+            buildah --storage-driver=vfs --root "${BUILDAH_GRAPHROOT}" --runroot "${BUILDAH_RUNROOT}" rm -a 2>/dev/null || true
+            rm -rf "${BUILDAH_RUNROOT}" "${BUILDAH_GRAPHROOT}" 2>/dev/null || true
+          fi
 
-      - name: Secure Phase (Stub)
-        run: |
-          echo "Run SAST/DAST tools here (stub - can be implemented later)"
-          exit 0
-
-      - name: Test Phase (Stub)
-        run: |
-          echo "Run Selenium/Playwright/etc tests here (stub - can be implemented later)"
-          exit 0
-
-      - name: Publish Phase
-        run: |
-          # Buildah already pushes during build phase
-          echo "Image published to ghcr.io/lmcdasm/dasmlab-home:${VERSION_TAG}"
-
-      - name: GitOps Sync (Deploy) Phase
+  preview-deploy:
+    needs: [prepare, build-publish]
+    if: success() && needs.prepare.outputs.is_prod != 'true'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy developer preview
         env:
-          # Default to 'ocp' since cluster is now OpenShift
-          # Can override via workflow_dispatch input if needed
-          CLUSTER_TYPE: ${{ inputs.cluster_type || 'ocp' }}
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+          PREVIEW_ACTOR: ${{ github.actor }}
+          PREVIEW_PROXY_HOST: "10.20.1.10"
+          PREVIEW_PROXY_USER: "dasm"
+          DASMLAB_GHCR_PAT: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
-          DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
+          set -euo pipefail
+          chmod +x scripts/ci/*.sh
+          ./scripts/ci/deploy-preview.sh
+
+  prod-gitops:
+    needs: [prepare, build-publish]
+    if: success() && needs.prepare.outputs.is_prod == 'true'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/checkout@v4
+      - name: GitOps Sync (prod)
+        env:
+          CLUSTER_TYPE: ${{ inputs.cluster_type || 'ocp' }}
+          VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+          DASMLAB_GHCR_PAT: ${{ secrets.DASMLAB_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-}"
+          if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh_token" ]; then
+            DEPLOY_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+          fi
           if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+            # shellcheck disable=SC1091
             source /home/dasm/gh-pat
             DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
           fi
@@ -202,85 +223,36 @@ jobs:
             exit 1
           fi
 
-          # Determine which manifest to use based on CLUSTER_TYPE (default: ocp)
-          # Can be set via workflow_dispatch input or environment variable
           if [ "$CLUSTER_TYPE" = "ocp" ]; then
             MANIFEST_SOURCE="k8s_envelope/dasmlab-home_deploy-ocp.yaml"
-            echo "Using OCP manifest for OpenShift deployment"
-          else
-            MANIFEST_SOURCE="k8s_envelope/dasmlab-home_deploy.yaml"
-            echo "Using k3s manifest for k3s deployment"
-          fi
-          
-          sed "s|__VERSION__|${VERSION_TAG}|g" "$MANIFEST_SOURCE" > generated.yaml
-
-          git clone "https://x-access-token:${DEPLOY_TOKEN}@github.com/lmcdasm/dasmlab-live-cicd.git"
-
-          # Use dual-cluster OCP deployment for HA; k3s keeps legacy single target
-          if [ "$CLUSTER_TYPE" = "ocp" ]; then
             TARGET_CLUSTERS=("2026-prod-2-1" "2026-prod-1")
           else
+            MANIFEST_SOURCE="k8s_envelope/dasmlab-home_deploy.yaml"
             TARGET_CLUSTERS=("dasmlab-prod-1")
           fi
+
+          sed "s|__VERSION__|${VERSION_TAG}|g" "$MANIFEST_SOURCE" > generated.yaml
+          git clone "https://x-access-token:${DEPLOY_TOKEN}@github.com/lmcdasm/dasmlab-live-cicd.git"
 
           for CLUSTER_NAME in "${TARGET_CLUSTERS[@]}"; do
             DEPLOY_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/live"
             ARCHIVE_DIR="dasmlab-live-cicd/clusters/${CLUSTER_NAME}/dasmlab-home/archived"
-            mkdir -p "$ARCHIVE_DIR"
-            mkdir -p "$DEPLOY_DIR"
-
-            # Keep only one live versioned manifest per cluster (Argo CD syncs via OpenShift GitOps)
+            mkdir -p "$ARCHIVE_DIR" "$DEPLOY_DIR"
             if [ -d "$DEPLOY_DIR" ]; then
               find "$DEPLOY_DIR" -maxdepth 1 -type f -name 'dasmlab-home-v*.yaml' -print0 | while IFS= read -r -d '' file; do
-                if [ -f "$file" ]; then
-                  echo "Archiving old manifest for ${CLUSTER_NAME}: $(basename "$file")"
-                  mv "$file" "$ARCHIVE_DIR/"
-                fi
+                mv "$file" "$ARCHIVE_DIR/"
               done
             fi
-
             cp generated.yaml "$DEPLOY_DIR/dasmlab-home-${VERSION_TAG}.yaml"
-            echo "Created manifest for ${CLUSTER_NAME}: dasmlab-home-${VERSION_TAG}.yaml"
           done
 
           cd dasmlab-live-cicd
           git config user.name "dasmlab-bot"
           git config user.email "ci@dasmlab.org"
           git add .
+          if git diff --cached --quiet; then
+            echo "No GitOps changes"
+            exit 0
+          fi
           git commit -m "Auto-publish dasmlab-home ${VERSION_TAG} (${CLUSTER_TYPE})"
           git push
-
-      - name: Teardown (Cleanup)
-        if: always()
-        run: |
-          # Clean up buildah containers and temp files
-          if [ -n "${BUILDAH_GRAPHROOT:-}" ] && [ -n "${BUILDAH_RUNROOT:-}" ]; then
-            buildah --storage-driver=vfs --root "${BUILDAH_GRAPHROOT}" --runroot "${BUILDAH_RUNROOT}" rm -a 2>/dev/null || true
-            rm -rf "${BUILDAH_RUNROOT}" "${BUILDAH_GRAPHROOT}" 2>/dev/null || true
-          fi
-          buildah rm -a 2>/dev/null || true
-          rm -rf ~/.docker ~/.local/share/containers 2>/dev/null || true
-
-  auto-merge-to-main:
-    name: Auto merge passing branch to main
-    needs: cx-pipeline
-    if: github.ref == 'refs/heads/2026-spring-FE-update' || github.ref == 'refs/heads/development'
-    runs-on: [self-hosted]
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository with full history
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Merge successful commit into main
-        env:
-          SOURCE_BRANCH: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          echo "Auto-merge source branch: ${SOURCE_BRANCH}"
-          git fetch origin main "${SOURCE_BRANCH}"
-          git checkout main
-          git merge --no-ff --no-edit "origin/${SOURCE_BRANCH}"
-          git push origin main

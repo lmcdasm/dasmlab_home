@@ -54,6 +54,28 @@
           </q-btn-dropdown>
         </div>
         <div class="right-controls">
+          <q-btn
+            v-if="oidcEnabled && !authenticated"
+            flat
+            dense
+            no-caps
+            class="header-link-btn"
+            icon="login"
+            label="Sign in"
+            @click="login"
+          />
+          <q-btn
+            v-else-if="oidcEnabled && authenticated"
+            flat
+            dense
+            no-caps
+            class="header-link-btn"
+            icon="logout"
+            :label="user?.preferred_username || 'Sign out'"
+            @click="logout"
+          >
+            <q-tooltip>{{ isAdmin ? 'Admin (owner)' : 'Signed in' }}</q-tooltip>
+          </q-btn>
           <q-btn flat dense round icon="tune" class="top-icon-btn">
             <q-menu class="approach-menu">
               <q-list dense style="min-width: 180px;">
@@ -73,7 +95,11 @@
               </q-list>
             </q-menu>
           </q-btn>
-          <div class="version-chip">{{ appVersion }}</div>
+          <div
+            class="version-chip"
+            data-build-tag
+            :title="'Build ' + appVersion"
+          >{{ appVersion }}</div>
         </div>
       </q-toolbar>
     </q-header>
@@ -148,6 +174,9 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useAuth } from 'src/composables/useAuth'
+
+const { oidcEnabled, authenticated, isAdmin, user, login, logout } = useAuth()
 import { useRoute } from 'vue-router'
 import VisitCounter from 'src/components/VisitCounter.vue'
 import { useApproach } from 'src/composables/useApproach'
@@ -155,13 +184,14 @@ import { useApproach } from 'src/composables/useApproach'
 const route = useRoute()
 const leftDrawerOpen = ref(false)
 const scrollProgress = ref(0)
-const appVersion = (process.env.APP_VERSION || import.meta.env.APP_VERSION || 'dev')
+const appVersion = ref(process.env.APP_VERSION || import.meta.env.APP_VERSION || 'dev')
 const { approach, approachOptions } = useApproach()
 
 const topNav = [
   { label: 'Home', icon: 'home', to: '/' },
   { label: 'About DASMLAB', icon: 'school', to: '/about' },
   { label: 'Surfing', icon: 'sailing', to: '/surfing' },
+  { label: 'Live Cams', icon: 'videocam', href: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/' },
   { label: 'Contact', icon: 'mail', to: '/contact' },
   { label: 'GitHub', icon: 'code', href: 'https://github.com/lmcdasm' }
 ]
@@ -201,6 +231,15 @@ const updateScrollProgress = () => {
 }
 
 onMounted(() => {
+  // Prefer runtime /version.json (same pattern as cheapcloud data-build-tag) so chip matches image tag.
+  fetch(`/version.json?${Date.now()}`, { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((info) => {
+      const build = info?.build || info?.version
+      if (build) appVersion.value = build
+    })
+    .catch(() => {})
+
   updateScrollProgress()
   window.addEventListener('scroll', updateScrollProgress, { passive: true })
 })

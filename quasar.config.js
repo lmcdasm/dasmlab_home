@@ -55,11 +55,11 @@ export default defineConfig((/* ctx */) => {
         COUNTER_API_TOKEN: process.env.COUNTER_API_TOKEN,
         COUNTER_FULL_PATH: process.env.COUNTER_FULL_PATH,
         COUNTER_COUNTER_SLUG: process.env.COUNTER_COUNTER_SLUG,
-        APP_VERSION: process.env.APP_VERSION,
+        APP_VERSION: process.env.APP_VERSION || 'dev',
         COUNTER_DEBUG: process.env.COUNTER_DEBUG || 'true'
       },
       rawDefine: {
-        'process.env.APP_VERSION': JSON.stringify(process.env.APP_VERSION)
+        'process.env.APP_VERSION': JSON.stringify(process.env.APP_VERSION || 'dev')
       },
       // ignorePublicFolder: true,
       // minify: false,
@@ -114,7 +114,7 @@ export default defineConfig((/* ctx */) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: ['Dialog'] 
+      plugins: ['Dialog', 'Notify']
     },
 
     // animations: 'all', // --- includes all animations
