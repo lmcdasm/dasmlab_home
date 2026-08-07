@@ -121,6 +121,12 @@ spec:
               value: "dasm"
             - name: ACTIVITY_VIEWERS
               value: "dasm"
+            - name: ACTIVITY_MACHINE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: surfing-activity-bridge
+                  key: ACTIVITY_MACHINE_TOKEN
+                  optional: true
           volumeMounts:
             - name: surfing-data
               mountPath: /data

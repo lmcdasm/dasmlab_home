@@ -90,8 +90,16 @@ func RequireAuth() gin.HandlerFunc {
 }
 
 // RequireActivityViewer requires owner/admin AND preferred_username on ACTIVITY_VIEWERS (default dasm).
+// Machine access: Authorization: Bearer $ACTIVITY_MACHINE_TOKEN (for DPO / internal collectors).
 func RequireActivityViewer() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if tok := strings.TrimSpace(os.Getenv("ACTIVITY_MACHINE_TOKEN")); tok != "" {
+			authz := strings.TrimSpace(c.GetHeader("Authorization"))
+			if strings.HasPrefix(authz, "Bearer ") && strings.TrimSpace(strings.TrimPrefix(authz, "Bearer ")) == tok {
+				c.Next()
+				return
+			}
+		}
 		if authSvc == nil || !authSvc.enabled() {
 			c.Next()
 			return
