@@ -24,7 +24,8 @@ on:
         type: boolean
 
 concurrency:
-  group: dasmlab-home-${{ github.ref == 'refs/heads/main' && 'prod' || format('preview-{0}', github.actor) }}
+  # Separate push vs PR so open PRs don't cancel branch preview builds.
+  group: dasmlab-home-${{ github.ref == 'refs/heads/main' && 'prod' || format('preview-{0}-{1}', github.actor, github.event_name) }}
   cancel-in-progress: true
 
 jobs:
@@ -85,6 +86,7 @@ jobs:
 
       - name: Build Phase
         env:
+          # Prefer host token when present — repo secret may lack GHCR write for lmcdasm packages.
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
@@ -111,13 +113,13 @@ jobs:
               > "${CONTAINERS_STORAGE_CONF}"
           fi
 
-          if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+          # Host token wins when available (packages:write for lmcdasm/*).
+          if [ -f "/home/dasm/gh_token" ]; then
+            GHCR_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+          elif [ -f "/home/dasm/gh-pat" ]; then
             # shellcheck disable=SC1091
             source /home/dasm/gh-pat
-            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
-          fi
-          if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh_token" ]; then
-            GHCR_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-${GHCR_TOKEN:-}}}"
           fi
           if [ -z "${GHCR_TOKEN}" ]; then
             echo "ERROR: GHCR_TOKEN is not set!"
