@@ -60,32 +60,40 @@ jobs:
           GHCR_TOKEN: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
-          if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
-            source /home/dasm/gh-pat
-            GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
-          fi
-          if [ -z "${GHCR_TOKEN}" ]; then
-            echo "ERROR: GHCR token not set"
-            exit 1
-          fi
-          echo "::add-mask::${GHCR_TOKEN}"
-          echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
-          echo "Token length: ${#GHCR_TOKEN} characters"
-
-          if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
-            if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
-              echo "Primary GHCR token failed, trying runner-local fallback..."
-              if [ -f "/home/dasm/gh-pat" ]; then
-                source /home/dasm/gh-pat
-                GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
-                echo "::add-mask::${GHCR_TOKEN}"
-                echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
-                echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
-              else
-                echo "ERROR: no runner-local token file available for fallback"
-                exit 1
-              fi
+            if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+              source /home/dasm/gh-pat
+              GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
             fi
+            if [ -z "${GHCR_TOKEN}" ] && [ -f "/home/dasm/gh_token" ]; then
+              GHCR_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+            fi
+            if [ -z "${GHCR_TOKEN}" ]; then
+              echo "ERROR: GHCR token not set"
+              exit 1
+            fi
+            echo "::add-mask::${GHCR_TOKEN}"
+            echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+            echo "Token length: ${#GHCR_TOKEN} characters"
+
+            if [ "${BUILDER_RUNTIME}" = "buildah" ]; then
+              if ! echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io; then
+                echo "Primary GHCR token failed, trying runner-local fallback..."
+                if [ -f "/home/dasm/gh_token" ]; then
+                  GHCR_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+                  echo "::add-mask::${GHCR_TOKEN}"
+                  echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+                  echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+                elif [ -f "/home/dasm/gh-pat" ]; then
+                  source /home/dasm/gh-pat
+                  GHCR_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+                  echo "::add-mask::${GHCR_TOKEN}"
+                  echo "DEPLOY_TOKEN=${GHCR_TOKEN}" >> $GITHUB_ENV
+                  echo "${GHCR_TOKEN}" | buildah login --username lmcdasm --password-stdin ghcr.io || (echo "ERROR: buildah login failed with fallback token" && exit 1)
+                else
+                  echo "ERROR: no runner-local token file available for fallback"
+                  exit 1
+                fi
+              fi
 
             buildah bud \
               --build-arg ARCH=amd64 \
@@ -121,6 +129,9 @@ jobs:
           CLUSTER_TYPE: ${{ inputs.cluster_type || 'ocp' }}
         run: |
           DEPLOY_TOKEN="${DEPLOY_TOKEN:-}"
+          if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh_token" ]; then
+            DEPLOY_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
+          fi
           if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
             source /home/dasm/gh-pat
             DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"

@@ -25,3 +25,13 @@ export function authLoginUrl() {
 export function authLogoutUrl() {
   return `${SURFING_HOST}/auth/logout`
 }
+
+export async function postActivity(payload) {
+  const { data } = await authClient.post('/activity', payload)
+  return data
+}
+
+export async function listActivity({ limit = 200 } = {}) {
+  const { data } = await authClient.get('/activity', { params: { limit } })
+  return data
+}

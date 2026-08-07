@@ -10,7 +10,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -130,12 +132,13 @@ func AuthConfig(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"enabled": false})
 		return
 	}
+	origin := requestAppOrigin(c)
 	c.JSON(http.StatusOK, gin.H{
 		"enabled":        authSvc.enabled(),
 		"issuer":         authSvc.cfg.Issuer,
 		"client_id":      authSvc.cfg.ClientID,
-		"redirect_uri":   authSvc.cfg.RedirectURL,
-		"app_public_url": authSvc.cfg.AppPublicURL,
+		"redirect_uri":   oauthRedirectURI(origin),
+		"app_public_url": origin,
 		"login_path":     "/auth/login",
 		"logout_path":    "/auth/logout",
 	})
@@ -146,18 +149,21 @@ func AuthLogin(c *gin.Context) {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "OIDC not configured"})
 		return
 	}
+	origin := requestAppOrigin(c)
 	state, err := randomString(24)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "state"})
 		return
 	}
-	token, err := signOAuthState(state, time.Now().Add(stateTTL))
+	token, err := signOAuthState(state, time.Now().Add(stateTTL), origin)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "state sign"})
 		return
 	}
 	setAuthCookie(c, cookieState, token, int(stateTTL.Seconds()))
-	c.Redirect(http.StatusFound, authSvc.oauth.AuthCodeURL(state, oauth2.AccessTypeOffline))
+	cfg := authSvc.oauth
+	cfg.RedirectURL = oauthRedirectURI(origin)
+	c.Redirect(http.StatusFound, cfg.AuthCodeURL(state, oauth2.AccessTypeOffline))
 }
 
 func AuthCallback(c *gin.Context) {
@@ -172,31 +178,38 @@ func AuthCallback(c *gin.Context) {
 		return
 	}
 	if cookie == "" {
+		originHint := requestAppOrigin(c)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":  "invalid oauth state",
-			"detail": "missing state cookie — start Sign in again from https://dasmlab.org (not a stale tab)",
+			"detail": "missing state cookie — start Sign in again from " + originHint + " (same tab / host; not a stale tab)",
 		})
 		return
 	}
-	if !verifyOAuthState(cookie, state) {
+	ok, origin := verifyOAuthState(cookie, state)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":  "invalid oauth state",
 			"detail": "state cookie mismatch or expired — try Sign in once more",
 		})
 		return
 	}
+	if origin == "" {
+		origin = requestAppOrigin(c)
+	}
 	code := c.Query("code")
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing code"})
 		return
 	}
-	tok, err := authSvc.oauth.Exchange(oidc.ClientContext(c.Request.Context(), oidcHTTPClient()), code)
+	cfg := authSvc.oauth
+	cfg.RedirectURL = oauthRedirectURI(origin)
+	tok, err := cfg.Exchange(oidc.ClientContext(c.Request.Context(), oidcHTTPClient()), code)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "token exchange failed"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "token exchange failed", "detail": err.Error()})
 		return
 	}
-	rawID, ok := tok.Extra("id_token").(string)
-	if !ok || rawID == "" {
+	rawID, okTok := tok.Extra("id_token").(string)
+	if !okTok || rawID == "" {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "missing id_token"})
 		return
 	}
@@ -220,22 +233,42 @@ func AuthCallback(c *gin.Context) {
 	})
 	setAuthCookie(c, cookieSession, base64.RawURLEncoding.EncodeToString(payload), int(sessionTTL.Seconds()))
 	setAuthCookie(c, cookieState, "", -1)
-	dest := authSvc.cfg.AppPublicURL
+	emitLoginOnce(c, user)
+	dest := origin
+	if dest == "" {
+		dest = authSvc.cfg.AppPublicURL
+	}
 	if dest == "" {
 		dest = "/"
+		c.Redirect(http.StatusFound, dest)
+		return
 	}
 	c.Redirect(http.StatusFound, dest+"/#/surfing")
 }
 
 func AuthLogout(c *gin.Context) {
 	setAuthCookie(c, cookieSession, "", -1)
-	dest := "/"
-	if authSvc != nil && authSvc.cfg.AppPublicURL != "" {
-		dest = authSvc.cfg.AppPublicURL + "/#/surfing"
+	setAuthCookie(c, cookieActLogin, "", -1)
+	origin := requestAppOrigin(c)
+	if origin == "" && authSvc != nil {
+		origin = authSvc.cfg.AppPublicURL
 	}
-	if authSvc != nil && authSvc.enabled() {
+	// Keycloak post_logout_redirect_uri must match Valid Post Logout Redirect URIs.
+	// Use origin+"/" (no hash fragment) — same as mock-me / interview-me. Fragments
+	// in this param are rejected or mangled ("/#surfing" → Invalid redirect uri).
+	postLogout := strings.TrimRight(origin, "/") + "/"
+	dest := postLogout
+	if origin == "" {
+		dest = "/"
+	}
+	if authSvc != nil && authSvc.enabled() && origin != "" {
 		end := strings.TrimRight(authSvc.cfg.Issuer, "/") + "/protocol/openid-connect/logout"
-		c.Redirect(http.StatusFound, end+"?post_logout_redirect_uri="+authSvc.cfg.AppPublicURL+"%2F%23%2Fsurfing&client_id="+authSvc.cfg.ClientID)
+		u, _ := url.Parse(end)
+		q := u.Query()
+		q.Set("post_logout_redirect_uri", postLogout)
+		q.Set("client_id", authSvc.cfg.ClientID)
+		u.RawQuery = q.Encode()
+		c.Redirect(http.StatusFound, u.String())
 		return
 	}
 	c.Redirect(http.StatusFound, dest)
@@ -247,7 +280,13 @@ func AuthMe(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"authenticated": false, "oidc_enabled": authSvc != nil && authSvc.enabled()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"authenticated": true, "oidc_enabled": true, "user": user})
+	emitLoginOnce(c, user)
+	c.JSON(http.StatusOK, gin.H{
+		"authenticated":      true,
+		"oidc_enabled":       true,
+		"user":               user,
+		"can_view_activity":  canViewActivity(user) && user.IsAdmin,
+	})
 }
 
 func currentUser(c *gin.Context) (AuthUser, bool) {
@@ -408,46 +447,142 @@ func setAuthCookie(c *gin.Context, name, value string, maxAge int) {
 	})
 }
 
+var previewHomeHostRE = regexp.MustCompile(`(?i)^dev-[a-z0-9-]+-dasmlab-home\.apps\.2026-prod-1\.ocp\.dasmlab\.org$`)
+
+// requestAppOrigin returns the browser-facing origin (scheme://host) for this request.
+// Shared surfing serves both dasmlab.org and per-developer preview FE hosts via nginx proxy.
+func requestAppOrigin(c *gin.Context) string {
+	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
+	if host == "" {
+		host = strings.TrimSpace(c.Request.Host)
+	}
+	if i := strings.IndexByte(host, ','); i >= 0 {
+		host = strings.TrimSpace(host[:i])
+	}
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host == "" {
+		if authSvc != nil {
+			return authSvc.cfg.AppPublicURL
+		}
+		return ""
+	}
+	proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto"))
+	if i := strings.IndexByte(proto, ','); i >= 0 {
+		proto = strings.TrimSpace(proto[:i])
+	}
+	// Edge TLS (OpenShift route / HAProxy) often reaches the pod as plain HTTP, so
+	// nginx $scheme is http. Known public hosts are HTTPS-only — force https.
+	if previewHomeHostRE.MatchString(host) || host == "dasmlab.org" || host == "www.dasmlab.org" {
+		proto = "https"
+	} else if proto == "" {
+		if c.Request.TLS != nil {
+			proto = "https"
+		} else if authSvc != nil && strings.HasPrefix(authSvc.cfg.AppPublicURL, "https://") {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+	origin := strings.TrimRight(proto+"://"+host, "/")
+	if !allowedAppOrigin(origin) {
+		if authSvc != nil && authSvc.cfg.AppPublicURL != "" {
+			return authSvc.cfg.AppPublicURL
+		}
+		return ""
+	}
+	return origin
+}
+
+func allowedAppOrigin(origin string) bool {
+	o := strings.TrimRight(strings.ToLower(origin), "/")
+	if o == "" {
+		return false
+	}
+	if authSvc != nil && authSvc.cfg.AppPublicURL != "" && o == strings.TrimRight(strings.ToLower(authSvc.cfg.AppPublicURL), "/") {
+		return true
+	}
+	for _, extra := range strings.Split(os.Getenv("OIDC_ALLOWED_ORIGINS"), ",") {
+		extra = strings.TrimRight(strings.ToLower(strings.TrimSpace(extra)), "/")
+		if extra != "" && extra == o {
+			return true
+		}
+	}
+	switch o {
+	case "https://dasmlab.org", "https://www.dasmlab.org":
+		return true
+	}
+	u, err := url.Parse(o)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return previewHomeHostRE.MatchString(u.Host)
+}
+
+func oauthRedirectURI(origin string) string {
+	origin = strings.TrimRight(origin, "/")
+	if origin == "" && authSvc != nil {
+		return authSvc.cfg.RedirectURL
+	}
+	return origin + "/api/surfing/auth/callback"
+}
+
 // signOAuthState builds a cookie that survives Recreate rollouts / multi-replica
-// (no in-memory map). Format: base64url(state|exp|mac).
-func signOAuthState(state string, exp time.Time) (string, error) {
+// (no in-memory map). Format: base64url(state|exp|origin|mac).
+func signOAuthState(state string, exp time.Time, origin string) (string, error) {
 	if authSvc == nil || authSvc.cfg.ClientSecret == "" {
 		return "", fmt.Errorf("no signing secret")
 	}
 	expStr := strconv.FormatInt(exp.Unix(), 10)
-	payload := state + "|" + expStr
+	origin = strings.TrimRight(origin, "/")
+	payload := state + "|" + expStr + "|" + origin
 	mac := hmac.New(sha256.New, []byte(authSvc.cfg.ClientSecret))
 	_, _ = mac.Write([]byte(payload))
 	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 	return base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + sig)), nil
 }
 
-func verifyOAuthState(cookieVal, stateQuery string) bool {
+// verifyOAuthState checks the signed cookie and returns the login origin (may be empty for legacy cookies).
+func verifyOAuthState(cookieVal, stateQuery string) (bool, string) {
 	raw, err := base64.RawURLEncoding.DecodeString(cookieVal)
 	if err != nil {
 		// Legacy: plain state cookie from older builds (equality only).
-		return cookieVal == stateQuery
+		return cookieVal == stateQuery, ""
 	}
 	parts := strings.Split(string(raw), "|")
-	if len(parts) != 3 {
-		return cookieVal == stateQuery
+	// New: state|exp|origin|sig  Legacy signed: state|exp|sig
+	if len(parts) != 3 && len(parts) != 4 {
+		return cookieVal == stateQuery, ""
 	}
-	state, expStr, sig := parts[0], parts[1], parts[2]
+	var state, expStr, origin, sig string
+	if len(parts) == 4 {
+		state, expStr, origin, sig = parts[0], parts[1], parts[2], parts[3]
+	} else {
+		state, expStr, sig = parts[0], parts[1], parts[2]
+	}
 	if state == "" || state != stateQuery {
-		return false
+		return false, ""
 	}
 	expUnix, err := strconv.ParseInt(expStr, 10, 64)
 	if err != nil || time.Now().Unix() > expUnix {
-		return false
+		return false, ""
 	}
 	if authSvc == nil || authSvc.cfg.ClientSecret == "" {
-		return false
+		return false, ""
 	}
 	payload := state + "|" + expStr
+	if len(parts) == 4 {
+		payload = state + "|" + expStr + "|" + origin
+	}
 	mac := hmac.New(sha256.New, []byte(authSvc.cfg.ClientSecret))
 	_, _ = mac.Write([]byte(payload))
 	want := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(want), []byte(sig))
+	if !hmac.Equal([]byte(want), []byte(sig)) {
+		return false, ""
+	}
+	if origin != "" && !allowedAppOrigin(origin) {
+		return false, ""
+	}
+	return true, origin
 }
 
 func randomString(n int) (string, error) {

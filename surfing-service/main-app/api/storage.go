@@ -161,6 +161,10 @@ func Initialize() error {
 		return err
 	}
 
+	if err := initActivityStore(dataDir); err != nil {
+		log.Warnf("Storage: activity store: %v", err)
+	}
+
 	preloadDir := envOrDefault("SURFING_PRELOAD_DIR", filepath.Join(dataDir, "preload"))
 	if seeded, err := PreloadDaysFromDir(preloadDir); err != nil {
 		log.Warnf("Storage: preload from %s failed: %v", preloadDir, err)
