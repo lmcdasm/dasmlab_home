@@ -462,7 +462,11 @@ func requestAppOrigin(c *gin.Context) string {
 	if i := strings.IndexByte(proto, ','); i >= 0 {
 		proto = strings.TrimSpace(proto[:i])
 	}
-	if proto == "" {
+	// Edge TLS (OpenShift route / HAProxy) often reaches the pod as plain HTTP, so
+	// nginx $scheme is http. Known public hosts are HTTPS-only — force https.
+	if previewHomeHostRE.MatchString(host) || host == "dasmlab.org" || host == "www.dasmlab.org" {
+		proto = "https"
+	} else if proto == "" {
 		if c.Request.TLS != nil {
 			proto = "https"
 		} else if authSvc != nil && strings.HasPrefix(authSvc.cfg.AppPublicURL, "https://") {
