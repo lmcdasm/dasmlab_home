@@ -4,15 +4,34 @@
       <div class="col text-caption text-grey-7">
         {{ modeHint }}
       </div>
-      <q-btn-toggle
-        v-model="mode"
-        dense
-        toggle-color="primary"
-        :options="[
-          { label: 'Cards', value: 'grid', icon: 'grid_view' },
-          { label: 'Cabinet', value: 'cabinet', icon: 'folder_open' }
-        ]"
-      />
+      <div class="row no-wrap q-gutter-xs">
+        <q-btn
+          dense
+          unelevated
+          :outline="mode !== 'grid'"
+          :color="mode === 'grid' ? 'primary' : 'grey-7'"
+          icon="grid_view"
+          label="Cards"
+          @click="mode = 'grid'"
+        >
+          <q-tooltip anchor="top middle" self="bottom middle" :delay="250">
+            Cards shows large thumbnails
+          </q-tooltip>
+        </q-btn>
+        <q-btn
+          dense
+          unelevated
+          :outline="mode !== 'cabinet'"
+          :color="mode === 'cabinet' ? 'primary' : 'grey-7'"
+          icon="folder_open"
+          label="Cabinet"
+          @click="mode = 'cabinet'"
+        >
+          <q-tooltip anchor="top middle" self="bottom middle" :delay="250">
+            This shows a smaller player view
+          </q-tooltip>
+        </q-btn>
+      </div>
     </div>
 
     <!-- Cards = default browser grid (slot from parent) -->
@@ -236,8 +255,8 @@ const props = defineProps({
 
 const emit = defineEmits(['play', 'share', 'cdn', 'publish', 'propose-tag', 'approve-tag', 'reject-tag', 'browse'])
 
-/** Cards first — radial hub was dense at 40+ clips; cabinet is the exploratory view. */
-const mode = ref('grid')
+/** Cabinet first — compact timeline + side player; Cards for large thumbnails. */
+const mode = ref('cabinet')
 const selectedId = ref(null)
 const tagDraft = ref('')
 const collapsed = reactive({})
@@ -265,8 +284,8 @@ const totalApprovedTags = computed(() =>
 
 const modeHint = computed(() =>
   mode.value === 'grid'
-    ? 'Card browser — open a clip for full viewer. Switch to Cabinet for timeline + panel.'
-    : 'Cabinet = day drawers by time · click a row for the tight panel · double-click → Cards'
+    ? 'Cards — large thumbnails. Open a clip for the full viewer.'
+    : 'Cabinet — smaller player view · day drawers by time · double-click a row → Cards'
 )
 
 const selectedTimeLabel = computed(() => {
