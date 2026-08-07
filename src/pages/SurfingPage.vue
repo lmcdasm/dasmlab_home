@@ -346,76 +346,88 @@
                 </VideoAlbumMap>
               </div>
 
-              <!-- Photos: hot grid -->
-              <div v-else-if="section.key === 'photos'" class="photo-grid">
-                <article
-                  v-for="item in section.items"
-                  :key="item.id"
-                  class="photo-card"
-                  :class="{ 'media-card--hidden': item.hidden }"
+              <!-- Photos: Cards / Cabinet (parity with videos) -->
+              <div v-else-if="section.key === 'photos'">
+                <PhotoAlbumMap
+                  :items="section.items"
+                  :album-title="day.title"
+                  :day-id="day.id"
+                  :publishing="publishingDayId === day.id"
+                  :tagging="taggingMedia"
+                  :is-admin="isAdmin"
+                  @view="(item) => openViewer(item, day)"
+                  @share="(item) => openShareSheet(day, item)"
+                  @cdn="openOutbound"
+                  @publish="() => publishAlbum(day)"
+                  @notes="(item) => openNotesEditor(day, item)"
+                  @hide="(item) => removeMedia(day, item)"
+                  @restore="(item) => restoreMedia(day, item)"
+                  @propose-tag="(item, name) => proposeTag(day, item, name)"
+                  @approve-tag="(item, tag) => moderateTag(day, item, tag, 'approve')"
+                  @reject-tag="(item, tag) => moderateTag(day, item, tag, 'reject')"
                 >
-                  <div class="photo-card__frame" @click="openViewer(item, day)">
-                    <img
-                      :src="mediaUrl(item.url)"
-                      :alt="item.caption || item.filename"
-                      class="photo-card__asset"
-                      loading="lazy"
-                    />
-                    <div class="photo-card__veil">
-                      <q-icon name="zoom_in" size="22px" />
+                  <template #grid>
+                    <div class="photo-rail">
+                      <article
+                        v-for="item in section.items"
+                        :key="item.id"
+                        class="photo-card"
+                        :class="{ 'media-card--hidden': item.hidden }"
+                      >
+                        <button type="button" class="photo-card__stage" @click="openViewer(item, day)">
+                          <img
+                            :src="mediaUrl(item.url)"
+                            :alt="item.caption || item.filename"
+                            class="photo-card__asset"
+                            loading="lazy"
+                          />
+                          <span class="photo-card__glow" aria-hidden="true" />
+                          <span class="photo-card__open">
+                            <q-icon name="zoom_in" size="28px" />
+                          </span>
+                          <span v-if="item.published" class="photo-card__badge">CDN</span>
+                          <span v-else-if="item.notes" class="photo-card__badge photo-card__badge--notes">Notes</span>
+                        </button>
+                        <div class="photo-card__body">
+                          <div class="photo-card__title">{{ item.caption || item.filename }}</div>
+                          <div class="photo-card__meta text-caption">
+                            {{ (item.tags || []).filter((t) => t.status === 'approved').length }} tags
+                            · {{ item.published ? 'CDN' : 'Draft' }}
+                          </div>
+                          <p v-if="item.notes" class="photo-card__notes">{{ item.notes }}</p>
+                          <div class="photo-card__actions">
+                            <q-btn flat dense size="sm" icon="ios_share" label="Share" @click="openShareSheet(day, item)" />
+                            <q-btn flat dense size="sm" icon="edit_note" label="Notes" @click="openNotesEditor(day, item)" />
+                            <q-btn
+                              v-if="canDownloadMedia(item)"
+                              flat
+                              dense
+                              size="sm"
+                              icon="download"
+                              label="Download"
+                              tag="a"
+                              :href="mediaDownloadUrl(item, day.id)"
+                              :download="item.filename"
+                              rel="noopener"
+                            />
+                            <q-btn flat dense size="sm" icon="open_in_new" label="CDN" @click="openOutbound(item)" />
+                            <q-btn flat dense size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
+                            <q-btn
+                              v-if="isAdmin && item.hidden"
+                              flat
+                              dense
+                              size="sm"
+                              icon="visibility"
+                              color="primary"
+                              label="Show"
+                              @click="restoreMedia(day, item)"
+                            />
+                          </div>
+                        </div>
+                      </article>
                     </div>
-                  </div>
-                  <div class="photo-card__body">
-                    <div class="photo-card__title">{{ item.caption || item.filename }}</div>
-                    <p v-if="item.notes" class="photo-card__notes">{{ item.notes }}</p>
-                    <div class="photo-card__actions">
-                      <q-btn flat dense round size="sm" icon="ios_share" @click="openShareSheet(day, item)">
-                        <q-tooltip>Share</q-tooltip>
-                      </q-btn>
-                      <q-btn flat dense round size="sm" icon="edit_note" @click="openNotesEditor(day, item)">
-                        <q-tooltip>Edit notes</q-tooltip>
-                      </q-btn>
-                      <q-btn
-                        v-if="canDownloadMedia(item)"
-                        flat
-                        dense
-                        round
-                        size="sm"
-                        icon="download"
-                        tag="a"
-                        :href="mediaDownloadUrl(item, day.id)"
-                        :download="item.filename"
-                        rel="noopener"
-                      >
-                        <q-tooltip>Download ({{ item.download_visibility || 'public' }})</q-tooltip>
-                      </q-btn>
-                      <q-btn
-                        v-else
-                        flat
-                        dense
-                        round
-                        size="sm"
-                        icon="download"
-                        disable
-                      >
-                        <q-tooltip>Download restricted ({{ item.download_visibility || 'private' }})</q-tooltip>
-                      </q-btn>
-                      <q-btn flat dense round size="sm" icon="visibility_off" @click="removeMedia(day, item)" />
-                      <q-btn
-                        v-if="isAdmin && item.hidden"
-                        flat
-                        dense
-                        round
-                        size="sm"
-                        icon="visibility"
-                        color="primary"
-                        @click="restoreMedia(day, item)"
-                      >
-                        <q-tooltip>Show again (unhide)</q-tooltip>
-                      </q-btn>
-                    </div>
-                  </div>
-                </article>
+                  </template>
+                </PhotoAlbumMap>
               </div>
 
               <!-- Other: Garmin / iPhone / shares -->
@@ -677,6 +689,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import ShareSheet from 'src/components/ShareSheet.vue'
+import PhotoAlbumMap from 'src/components/PhotoAlbumMap.vue'
 import VideoAlbumMap from 'src/components/VideoAlbumMap.vue'
 import { useAuth } from 'src/composables/useAuth'
 import {
@@ -847,7 +860,7 @@ function mediaSections(day) {
       key: 'photos',
       title: 'Photos',
       icon: 'photo_camera',
-      blurb: 'Session stills — add notes so the story travels with the frame.',
+      blurb: 'Session stills — Cabinet by default. Notes, tags, share, and publish live next to the frame.',
       items: photos
     })
   }
@@ -2060,7 +2073,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.photo-card__notes,
 .other-card__notes {
   color: #5a7080;
 }
@@ -2068,36 +2080,41 @@ onMounted(() => {
 .video-card__actions,
 .photo-card__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.15rem;
-  margin-top: 0.35rem;
+  margin-top: 0.45rem;
 }
 
-.photo-grid {
+.photo-rail {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.1rem;
 }
 
 .photo-card {
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  background: #fff;
-  border: 1px solid rgba(15, 143, 124, 0.14);
-  box-shadow: 0 10px 24px rgba(18, 50, 62, 0.08);
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  background: linear-gradient(165deg, #10262e 0%, #18343c 55%, #1c2e28 100%);
+  color: #eef7f3;
+  box-shadow: 0 16px 36px rgba(6, 40, 52, 0.26);
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 .photo-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 32px rgba(6, 54, 66, 0.14);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 22px 44px rgba(6, 40, 52, 0.36);
 }
 
-.photo-card__frame {
+.photo-card__stage {
   position: relative;
-  aspect-ratio: 4 / 5;
-  background: #d7ebe6;
-  cursor: zoom-in;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: #0a2430;
   overflow: hidden;
 }
 
@@ -2106,39 +2123,88 @@ onMounted(() => {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 420ms ease;
+  opacity: 0.94;
+  transition: transform 360ms ease, opacity 220ms ease;
 }
 
 .photo-card:hover .photo-card__asset {
   transform: scale(1.06);
+  opacity: 1;
 }
 
-.photo-card__veil {
+.photo-card__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 15%, rgba(255, 186, 96, 0.28), transparent 42%),
+    linear-gradient(180deg, transparent 45%, rgba(6, 24, 32, 0.55));
+}
+
+.photo-card__open {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   color: #fff;
-  background: linear-gradient(180deg, transparent 45%, rgba(6, 40, 48, 0.45));
   opacity: 0;
-  transition: opacity 200ms ease;
+  background: radial-gradient(circle, rgba(15, 143, 124, 0.32), transparent 62%);
+  transition: opacity 180ms ease;
 }
 
-.photo-card:hover .photo-card__veil {
+.photo-card:hover .photo-card__open {
   opacity: 1;
 }
 
+.photo-card__badge {
+  position: absolute;
+  left: 0.55rem;
+  top: 0.45rem;
+  z-index: 2;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(15, 143, 124, 0.88);
+  border-radius: 6px;
+  padding: 0.12rem 0.4rem;
+}
+
+.photo-card__badge--notes {
+  background: rgba(176, 122, 18, 0.9);
+}
+
 .photo-card__body {
-  padding: 0.65rem 0.7rem 0.45rem;
+  padding: 0.75rem 0.85rem 0.85rem;
 }
 
 .photo-card__title {
-  font-size: 0.84rem;
-  color: #2b4452;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  color: #eef7f3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.photo-card__meta {
+  margin-top: 0.2rem;
+  color: rgba(210, 236, 230, 0.75);
+}
+
+.photo-card__notes {
+  color: rgba(220, 236, 228, 0.88);
+}
+
+.photo-card__actions :deep(.q-btn) {
+  color: rgba(210, 236, 230, 0.92);
+}
+
+.media-card--hidden {
+  opacity: 0.55;
+  filter: grayscale(0.35);
 }
 
 .other-list {
@@ -2267,12 +2333,12 @@ onMounted(() => {
 }
 
 @media (max-width: 760px) {
-  .photo-grid,
+  .photo-rail,
   .video-rail {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
-  .photo-card__frame {
+  .photo-card__stage {
     aspect-ratio: 1;
   }
 }
