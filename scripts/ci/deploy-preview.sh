@@ -31,6 +31,15 @@ else
   bash "${ROOT}/scripts/ci/ensure-preview-cert.sh" "${HOST}"
 fi
 
+# Keycloak Valid Redirect URIs must list each preview host (no subdomain wildcards).
+if [[ "${SKIP_KEYCLOAK_PREVIEW_URIS:-}" == "true" ]]; then
+  echo "SKIP_KEYCLOAK_PREVIEW_URIS=true — not updating Keycloak client"
+else
+  bash "${ROOT}/scripts/ci/ensure-keycloak-preview-uris.sh" "${HOST}" || {
+    echo "WARN: ensure-keycloak-preview-uris.sh failed; preview login may 400 until URIs are added" >&2
+  }
+fi
+
 
 if [[ "${SKIP_PREVIEW_BOOTSTRAP:-}" == "true" ]]; then
   echo "SKIP_PREVIEW_BOOTSTRAP=true — not copying preview secrets"
