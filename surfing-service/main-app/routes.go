@@ -15,6 +15,9 @@ func initializeRoutes(router *gin.Engine) {
 	router.GET("/auth/logout", api.AuthLogout)
 	router.GET("/auth/me", api.AuthMe)
 
+	router.POST("/activity", api.RequireAuth(), api.PostActivity)
+	router.GET("/activity", api.RequireActivityViewer(), api.ListActivity)
+
 	router.GET("/days", api.ListDays)
 	router.POST("/days", api.RequireOwner(), api.CreateDay)
 	router.PATCH("/days/:id", api.RequireOwner(), api.PatchDay)

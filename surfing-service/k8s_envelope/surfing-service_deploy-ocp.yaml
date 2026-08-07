@@ -119,6 +119,8 @@ spec:
             # preferred_username values treated as album owners when client-role mapper is incomplete
             - name: OIDC_OWNER_USERNAMES
               value: "dasm"
+            - name: ACTIVITY_VIEWERS
+              value: "dasm"
           volumeMounts:
             - name: surfing-data
               mountPath: /data

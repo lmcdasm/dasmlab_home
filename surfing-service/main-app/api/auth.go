@@ -220,6 +220,7 @@ func AuthCallback(c *gin.Context) {
 	})
 	setAuthCookie(c, cookieSession, base64.RawURLEncoding.EncodeToString(payload), int(sessionTTL.Seconds()))
 	setAuthCookie(c, cookieState, "", -1)
+	emitLoginOnce(c, user)
 	dest := authSvc.cfg.AppPublicURL
 	if dest == "" {
 		dest = "/"
@@ -229,6 +230,7 @@ func AuthCallback(c *gin.Context) {
 
 func AuthLogout(c *gin.Context) {
 	setAuthCookie(c, cookieSession, "", -1)
+	setAuthCookie(c, cookieActLogin, "", -1)
 	dest := "/"
 	if authSvc != nil && authSvc.cfg.AppPublicURL != "" {
 		dest = authSvc.cfg.AppPublicURL + "/#/surfing"
@@ -247,7 +249,13 @@ func AuthMe(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"authenticated": false, "oidc_enabled": authSvc != nil && authSvc.enabled()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"authenticated": true, "oidc_enabled": true, "user": user})
+	emitLoginOnce(c, user)
+	c.JSON(http.StatusOK, gin.H{
+		"authenticated":      true,
+		"oidc_enabled":       true,
+		"user":               user,
+		"can_view_activity":  canViewActivity(user) && user.IsAdmin,
+	})
 }
 
 func currentUser(c *gin.Context) (AuthUser, bool) {
