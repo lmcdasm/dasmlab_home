@@ -41,6 +41,24 @@
       </div>
     </section>
 
+    <a
+      class="dasm-panel surfing-related"
+      href="https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <div class="surfing-related__icon" aria-hidden="true">
+        <q-icon name="videocam" size="26px" />
+      </div>
+      <div class="surfing-related__body">
+        <div class="surfing-related__title">Live Cams</div>
+        <div class="text-caption text-grey-7">
+          Ste-Agathe · Jibe City — scrape snapshots and stitch timelapses from the spots you ride.
+        </div>
+      </div>
+      <q-icon name="open_in_new" size="18px" color="grey-6" />
+    </a>
+
     <div v-if="loadError" class="dasm-panel surfing-alert">
       <q-icon name="cloud_off" size="28px" class="q-mb-sm" />
       <div class="text-subtitle2">Surfing service is offline</div>
@@ -1629,6 +1647,41 @@ onMounted(() => {
 .surfing-hero__hint {
   font-size: 0.82rem;
   color: rgba(220, 245, 238, 0.78);
+}
+
+.surfing-related {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.95rem 1.1rem;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.surfing-related:hover {
+  transform: translateX(3px);
+}
+
+.surfing-related__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: rgba(6, 54, 66, 0.9);
+  color: #9feedd;
+}
+
+.surfing-related__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.surfing-related__title {
+  font-weight: 650;
+  color: var(--surf-ink, #12202c);
 }
 
 @keyframes hero-rise {
