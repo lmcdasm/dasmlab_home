@@ -14,8 +14,6 @@ let engagedSegmentStart = 0
 let lastInputAt = 0
 let visible = true
 let engaged = false
-let flushTimer = null
-
 function now() {
   return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
 }
@@ -176,7 +174,7 @@ export function installActivityTracker(router) {
       window.addEventListener(evt, onInput, { passive: true })
     })
     window.addEventListener('pagehide', onPageHide)
-    flushTimer = setInterval(tickEngagementIdle, 1000)
+    setInterval(tickEngagementIdle, 1000)
   }
 
   router.afterEach((to) => {
