@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://dasmlab.org/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://dasmlab.org/about</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://dasmlab.org/contact</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://dasmlab.org/surfing</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://dasmlab.org/projects/frontend</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/projects/backend</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/projects/ai-ml</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/projects/cloud</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/projects/infrastructure</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/projects/security</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/projects/dasmlab-home</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dasmlab.org/projects/surfing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dasmlab.org/projects/mock-me</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dasmlab.org/projects/interview-me</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dasmlab.org/projects/cheapcloud</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dasmlab.org/topics/vue</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/topics/quasar</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/topics/gin</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/topics/oidc</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/topics/metallb</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://dasmlab.org/topics/openshift</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://dasmlab.org/labs/activity-anon-cdp</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://dasmlab.org/labs/demo-visitor-facade</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://dasmlab.org/labs/surfing-r2-origin</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>
