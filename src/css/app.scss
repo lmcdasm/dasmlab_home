@@ -36,6 +36,11 @@ body.body--dark {
 body,
 #q-app {
   color: #233241;
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+}
+
+h1, h2, h3, .dasm-title, .hero-title, .section-title {
+  font-family: 'Fraunces', Georgia, serif;
 }
 
 .dasm-shell {

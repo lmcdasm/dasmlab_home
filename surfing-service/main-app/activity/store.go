@@ -1,4 +1,4 @@
-// Package activity stores append-only login/navigation engagement events.
+// Package activity stores append-only engagement events (anon + known).
 package activity
 
 import (
@@ -16,22 +16,41 @@ const (
 	TypeLogin    = "login"
 	TypeNavigate = "navigate"
 	TypeEngaged  = "engaged"
+	TypePage     = "page"
+	TypeIdentify = "identify"
+	TypeAlias    = "alias"
+	TypeTrack    = "track"
 
 	DefaultListLimit = 200
 	MaxListLimit     = 500
 )
 
-// Event is one activity log line (JSONL).
+// Event is one activity log line (JSONL). First-party mini-CDP shape.
 type Event struct {
-	TS        time.Time `json:"ts"`
-	Type      string    `json:"type"` // login | navigate | engaged
-	User      string    `json:"user"` // preferred_username
-	Sub       string    `json:"sub,omitempty"`
-	Email     string    `json:"email,omitempty"`
-	Path      string    `json:"path,omitempty"`
-	DwellMs   int64     `json:"dwellMs,omitempty"`
-	VisibleMs int64     `json:"visibleMs,omitempty"`
-	EngagedMs int64     `json:"engagedMs,omitempty"`
+	TS          time.Time `json:"ts"`
+	Type        string    `json:"type"` // login|navigate|engaged|page|identify|alias|track
+	Event       string    `json:"event,omitempty"`
+	User        string    `json:"user,omitempty"` // preferred_username when known
+	Sub         string    `json:"sub,omitempty"`
+	Email       string    `json:"email,omitempty"`
+	AnonymousID string    `json:"anonymousId,omitempty"`
+	SessionID   string    `json:"sessionId,omitempty"`
+	PreviousID  string    `json:"previousId,omitempty"` // alias: anon id being linked
+	Path        string    `json:"path,omitempty"`
+	Title       string    `json:"title,omitempty"`
+	Referrer    string    `json:"referrer,omitempty"`
+	UTMSource   string    `json:"utmSource,omitempty"`
+	UTMMedium   string    `json:"utmMedium,omitempty"`
+	UTMCampaign string    `json:"utmCampaign,omitempty"`
+	DwellMs     int64     `json:"dwellMs,omitempty"`
+	VisibleMs   int64     `json:"visibleMs,omitempty"`
+	EngagedMs   int64     `json:"engagedMs,omitempty"`
+	ScrollMax   int       `json:"scrollMaxPct,omitempty"`
+	UA          string    `json:"ua,omitempty"`
+	Locale      string    `json:"locale,omitempty"`
+	Country     string    `json:"country,omitempty"` // coarse (CF-IPCountry etc.)
+	Bot         bool      `json:"bot,omitempty"`
+	MessageID   string    `json:"messageId,omitempty"`
 }
 
 // Store is an append-only JSONL file under dataDir/activity/events.jsonl.
@@ -48,6 +67,15 @@ func NewStore(dataDir string) (*Store, error) {
 	return &Store{path: filepath.Join(root, "events.jsonl")}, nil
 }
 
+func validType(t string) bool {
+	switch t {
+	case TypeLogin, TypeNavigate, TypeEngaged, TypePage, TypeIdentify, TypeAlias, TypeTrack:
+		return true
+	default:
+		return false
+	}
+}
+
 // Append writes one event (server stamps TS if zero).
 func (s *Store) Append(ev Event) error {
 	if s == nil {
@@ -57,9 +85,7 @@ func (s *Store) Append(ev Event) error {
 		ev.TS = time.Now().UTC()
 	}
 	ev.Type = strings.TrimSpace(ev.Type)
-	switch ev.Type {
-	case TypeLogin, TypeNavigate, TypeEngaged:
-	default:
+	if !validType(ev.Type) {
 		return fmt.Errorf("invalid activity type %q", ev.Type)
 	}
 	b, err := json.Marshal(ev)

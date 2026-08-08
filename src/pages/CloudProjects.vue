@@ -1,238 +1,194 @@
 <template>
-  <q-page padding class="q-gutter-md cloud-page">
-    <section class="dasm-shell">
-      <div class="dasm-floating-grid" />
-      <div class="dasm-shell__content">
-        <div class="dasm-caps">Project lane</div>
-        <h1 class="dasm-title">Cloud provider projects</h1>
-        <p class="dasm-subtitle">
-          Serverless, platform automation, and cost-aware patterns across AWS, Azure, and GCP.
-        </p>
-      </div>
-    </section>
-    <div class="dasm-waypoint">Provider-by-provider map</div>
+  <q-page class="lane-page">
+    <header class="lane-hero">
+      <div class="dasm-caps">Project lane</div>
+      <h1>Cloud provider projects</h1>
+      <p>
+        Cost-aware origins, orchestration, and multi-cloud patterns — standardized visual stages (same language as
+        Frontend/Backend), not a mismatched card soup.
+      </p>
+    </header>
 
-    <section class="cloud-stage">
-      <article
-        v-for="(lane, laneIndex) in providerLanes"
-        :key="lane.key"
-        class="cloud-lane dasm-panel"
-        :class="[
-          `cloud-lane--${lane.key}`,
-          { 'cloud-lane--offset': laneIndex === 1 }
-        ]"
+    <div class="provider-rail" aria-label="Providers">
+      <button
+        v-for="p in providers"
+        :key="p.id"
+        type="button"
+        class="provider-chip"
+        :class="{ active: filter === p.id }"
+        @click="filter = p.id"
       >
-        <header class="cloud-lane-head">
-          <div class="cloud-lane-emblem">
-            <q-icon :name="lane.icon" size="18px" />
-          </div>
-          <div>
-            <h3 class="cloud-lane-title">{{ lane.title }}</h3>
-            <p class="cloud-lane-subtitle">{{ lane.subtitle }}</p>
-          </div>
-        </header>
+        {{ p.label }}
+      </button>
+    </div>
 
-        <div class="cloud-lane-cards">
-          <ProjectCard
-            v-for="(project, idx) in lane.projects"
-            :key="`${lane.key}-${idx}`"
-            v-bind="project"
-            :category="lane.category"
-          />
-        </div>
-      </article>
-    </section>
+    <div class="stage-stack">
+      <ProjectStage v-for="p in visible" :key="p.title" v-bind="p" />
+    </div>
   </q-page>
 </template>
 
 <script setup>
-import ProjectCard from 'src/components/ProjectCard.vue'
+import { computed, ref } from 'vue'
+import ProjectStage from 'src/components/ProjectStage.vue'
+import { useSeo } from 'src/composables/useSeo'
 
-// Static AWS projects
-const awsProjects = [
+useSeo({
+  title: 'Cloud projects',
+  description: 'CheapCloud, Mock-Me, and multi-cloud lab patterns from Technologies DASMLAB Inc.',
+  path: '/projects/cloud'
+})
+
+const filter = ref('all')
+const providers = [
+  { id: 'all', label: 'All' },
+  { id: 'aws', label: 'AWS' },
+  { id: 'azure', label: 'Azure' },
+  { id: 'gcp', label: 'GCP' },
+  { id: 'multi', label: 'Multi' }
+]
+
+const projects = [
   {
+    provider: 'multi',
+    title: 'CheapCloud',
+    lane: 'Cloud',
+    badge: 'Demo',
+    description: 'Spend envelopes and provider recommendations — demo is readonly fixtures.',
+    problem: 'Picking cheap origins is tribal knowledge',
+    outcome: 'Recommend + envelope UX without credentials in demo',
+    techs: ['Go', 'Gin', 'AWS', 'Azure', 'GCP'],
+    accent: '#1f6f62',
+    hubPath: '/projects/cheapcloud',
+    liveUrl: 'https://cheapcloud.dasmlab.org/demo'
+  },
+  {
+    provider: 'aws',
+    title: 'Mock-Me orchestration',
+    lane: 'Cloud',
+    badge: 'Demo',
+    description: 'CDN/platform workflow orchestration — fake mode never deploys live nodes.',
+    problem: 'Showcase vs production deploy collision',
+    outcome: 'Scripted assembly line for visitors',
+    techs: ['Go', 'Vue', 'OpenShift', 'OIDC'],
+    accent: '#2f8f7d',
+    hubPath: '/projects/mock-me',
+    liveUrl: 'https://mock-me.dasmlab.org/demo'
+  },
+  {
+    provider: 'aws',
     title: 'AWS Lambda Demo',
-    description: 'A serverless API example using AWS Lambda + API Gateway.',
-    url: 'https://github.com/dasmlab/aws-lambda-demo',
-    language: 'AWS Lambda / Node.js',
-    badge: 'Public'
+    lane: 'Cloud',
+    badge: 'Public',
+    description: 'Serverless API example using Lambda + API Gateway.',
+    problem: 'Need a minimal serverless reference',
+    outcome: 'Public demo repo + pattern notes',
+    techs: ['Lambda', 'API Gateway', 'Node.js'],
+    accent: '#74865c',
+    url: 'https://github.com/dasmlab/aws-lambda-demo'
   },
   {
-    title: 'ECS CI Pipeline',
-    description: 'Build, test, and deploy Docker containers to ECS with GitHub Actions.',
-    url: '',
-    language: 'ECS / GitHub Actions',
-    badge: 'Coming soon'
+    provider: 'azure',
+    title: 'CheapCloud Azure adapters',
+    lane: 'Cloud',
+    badge: 'Lab',
+    description: 'Azure-shaped dry-run and cost envelope patterns.',
+    problem: 'Azure SKUs obscure free-tier burn',
+    outcome: 'Adapter layer for recommend path',
+    techs: ['Azure', 'Go', 'dry-run'],
+    accent: '#1f6f62',
+    hubPath: '/projects/cheapcloud'
+  },
+  {
+    provider: 'azure',
+    title: 'OpenShift lab (Azure-adjacent)',
+    lane: 'Cloud',
+    badge: 'Hub',
+    description: 'GitOps envelopes and origin broker notes for lab clusters.',
+    problem: 'Cluster ops docs scatter across repos',
+    outcome: 'Topic hub for OpenShift patterns',
+    techs: ['OpenShift', 'GitOps', 'Argo'],
+    accent: '#2f8f7d',
+    hubPath: '/topics/openshift'
+  },
+  {
+    provider: 'gcp',
+    title: 'Surfing object origin',
+    lane: 'Cloud',
+    badge: 'Lab',
+    description: 'Move Surfing bytes off PVC to object storage + CDN.',
+    problem: 'Basement disk as origin does not scale',
+    outcome: 'Manifest CDN URLs + cheap origin path',
+    techs: ['Object storage', 'CDN', 'Go'],
+    accent: '#3f9f8e',
+    hubPath: '/labs/surfing-r2-origin'
+  },
+  {
+    provider: 'multi',
+    title: 'dasmlab-cdn-mgr (radar)',
+    lane: 'Cloud',
+    badge: '3.0',
+    description: 'Future multi-realm CDN manager for GEO/SEO/engagement — see ADR-001.',
+    problem: 'Per-site nginx proxies won’t carry GEO + engagement',
+    outcome: 'Platform roadmap without blocking 2.0 polish',
+    techs: ['CDN', 'realms', 'GEO', 'Activity'],
+    accent: '#12202c',
+    hubPath: '/labs/surfing-r2-origin'
   }
 ]
 
-// Static Azure projects
-const azureProjects = [
-  {
-    title: 'Azure Function Quickstart',
-    description: 'Deploy Python serverless workloads using Azure Functions and Durable Tasks.',
-    url: '',
-    language: 'Azure Functions / Python',
-    badge: 'Coming soon'
-  }
-]
-
-// Static GCP projects
-const gcpProjects = [
-  {
-    title: 'GKE Node Pool Toolkit',
-    description: 'Utility for managing GKE clusters, auto-scaling node pools, and network policies.',
-    url: '',
-    language: 'GKE / Golang',
-    badge: 'Coming soon'
-  },
-  {
-    title: 'BigQuery Cost Explorer',
-    description: 'Visualize and optimize BigQuery usage and cost.',
-    url: '',
-    language: 'BigQuery / React',
-    badge: 'Coming soon'
-  }
-]
-
-const providerLanes = [
-  {
-    key: 'aws',
-    title: 'AWS Projects',
-    subtitle: 'Serverless and container delivery paths tuned for resilient release velocity.',
-    icon: 'cloud_done',
-    category: 'AWS',
-    projects: awsProjects
-  },
-  {
-    key: 'azure',
-    title: 'Azure Projects',
-    subtitle: 'Functions-first automation with strong workflow orchestration patterns.',
-    icon: 'account_tree',
-    category: 'Azure',
-    projects: azureProjects
-  },
-  {
-    key: 'gcp',
-    title: 'GCP Projects',
-    subtitle: 'Cluster operations and cost-visibility tooling for practical platform ownership.',
-    icon: 'storage',
-    category: 'GCP',
-    projects: gcpProjects
-  }
-]
+const visible = computed(() =>
+  filter.value === 'all' ? projects : projects.filter((p) => p.provider === filter.value)
+)
 </script>
 
 <style scoped>
-.cloud-page {
-  overflow-x: clip;
-}
-
-.cloud-stage {
-  width: min(1240px, 100%);
+.lane-page {
+  max-width: 1100px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  padding: 0.75rem clamp(0.7rem, 2vw, 1.2rem) 2rem;
+}
+.lane-hero {
+  border: 1.5px solid rgba(31, 111, 98, 0.32);
+  border-radius: 20px;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 0.85rem;
+  background: linear-gradient(155deg, #fff, #eef5f2);
+}
+.lane-hero h1 {
+  margin: 0.2rem 0 0.4rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  color: #12202c;
+}
+.lane-hero p {
+  margin: 0;
+  color: #3d5263;
+  line-height: 1.5;
+}
+.provider-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+.provider-chip {
+  border: 1.5px solid rgba(31, 111, 98, 0.28);
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.4rem 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #1d2b36;
+}
+.provider-chip.active {
+  background: linear-gradient(135deg, #1f6f62, #2f8f7d);
+  color: #fff;
+  border-color: transparent;
+}
+.stage-stack {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
-
-.cloud-lane {
-  grid-column: span 4;
-  min-width: 0;
-  padding: 1rem 1rem 1.05rem;
-  border: 1px solid rgba(41, 72, 99, 0.16);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.97), rgba(246, 251, 255, 0.9));
-  box-shadow: 0 14px 30px rgba(23, 43, 60, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-
-.cloud-lane::after {
-  content: '';
-  position: absolute;
-  width: 210px;
-  height: 210px;
-  border-radius: 999px;
-  top: -140px;
-  right: -105px;
-  background: radial-gradient(circle, rgba(120, 163, 193, 0.24), transparent 70%);
-  pointer-events: none;
-}
-
-.cloud-lane--offset {
-  transform: translateY(16px);
-}
-
-.cloud-lane-head {
-  display: flex;
-  gap: 0.72rem;
-  align-items: flex-start;
-  margin-bottom: 0.86rem;
-}
-
-.cloud-lane-emblem {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(61, 99, 130, 0.24);
-  color: #355774;
-  background: linear-gradient(155deg, rgba(216, 235, 247, 0.95), rgba(239, 248, 253, 0.8));
-  flex-shrink: 0;
-}
-
-.cloud-lane-title {
-  margin: 0;
-  color: #253a4d;
-  font-size: clamp(1.15rem, 1.8vw, 1.34rem);
-  line-height: 1.25;
-}
-
-.cloud-lane-subtitle {
-  margin: 0.34rem 0 0;
-  color: #617587;
-  font-size: 0.86rem;
-  line-height: 1.48;
-}
-
-.cloud-lane-cards {
-  display: grid;
-  gap: 0.72rem;
-}
-
-.cloud-lane--aws :deep(.project-card) {
-  border-color: rgba(57, 103, 141, 0.2);
-}
-
-.cloud-lane--azure :deep(.project-card) {
-  border-color: rgba(84, 126, 156, 0.2);
-}
-
-.cloud-lane--gcp :deep(.project-card) {
-  border-color: rgba(65, 118, 129, 0.2);
-}
-
-@media (max-width: 1180px) {
-  .cloud-lane {
-    grid-column: span 6;
-  }
-
-  .cloud-lane--offset {
-    transform: none;
-  }
-}
-
-@media (max-width: 780px) {
-  .cloud-stage {
-    gap: 0.82rem;
-  }
-
-  .cloud-lane {
-    grid-column: span 12;
-    padding: 0.86rem 0.82rem 0.92rem;
-  }
-}
 </style>
-

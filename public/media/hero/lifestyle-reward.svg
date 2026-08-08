@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Reward">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7fafc"/>
+      <stop offset="100%" stop-color="#e8f0ed"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" fill="url(#g)"/>
+  <rect x="24" y="24" width="592" height="372" rx="18" fill="#fff" stroke="#1f6f62" stroke-width="3" opacity="0.95"/>
+  <circle cx="120" cy="120" r="48" fill="#1f6f62" opacity="0.18"/>
+  <circle cx="520" cy="300" r="70" fill="#1f6f62" opacity="0.12"/>
+  <path d="M260 180 h120 l-20 140 h-80 z" fill="#1f6f62" opacity="0.4"/><ellipse cx="320" cy="180" rx="60" ry="16" fill="#3f9f8e" opacity="0.5"/><path d="M380 210 h40 v50 h-40" fill="none" stroke="#1f6f62" stroke-width="8"/>
+  <text x="48" y="380" font-family="Georgia,serif" font-size="28" fill="#1d2b36">Reward</text>
+  <text x="48" y="68" font-family="system-ui,sans-serif" font-size="14" letter-spacing="3" fill="#607483">DASMLAB · LIFE</text>
+</svg>

@@ -261,45 +261,10 @@ function go(route) {
   --ink: #12202c;
   --muted: #5a6f80;
   width: 100%;
-}
-
-.map-toolbar {
-  margin-bottom: 0.55rem;
-}
-
-.hint {
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.map-layout {
+  height: 100%;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: stretch;
-  gap: 0.75rem;
-  width: 100%;
-}
-
-.map-stage {
-  border-radius: 14px;
-  overflow: hidden;
-  border: 2px solid rgba(18, 72, 64, 0.45);
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(47, 143, 125, 0.16), transparent 56%),
-    linear-gradient(165deg, #eef6f3 0%, #dfe8f0 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    0 10px 22px rgba(10, 28, 36, 0.12);
-  flex: 0 0 380px;
-  width: 380px;
-  height: 380px;
-  max-width: min(100%, 380px);
-  max-height: min(42vh, 380px);
-  aspect-ratio: 1 / 1;
-  display: grid;
-  place-items: center;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .map-svg {
@@ -309,15 +274,51 @@ function go(route) {
   min-height: 0;
 }
 
+.map-toolbar {
+  display: none;
+}
+
+.map-layout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.85rem;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.map-stage {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(18, 72, 64, 0.45);
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(47, 143, 125, 0.16), transparent 56%),
+    linear-gradient(165deg, #eef6f3 0%, #dfe8f0 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 10px 22px rgba(10, 28, 36, 0.12);
+  flex: 1 1 420px;
+  width: min(100%, 560px);
+  height: min(52vh, 520px);
+  max-width: 560px;
+  max-height: 520px;
+  min-height: 320px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+}
+
 .detail-panel {
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1.5px solid rgba(31, 111, 98, 0.22);
   background: linear-gradient(175deg, #ffffff, #f5f9fb);
-  padding: 0.85rem 0.9rem;
-  flex: 0 1 300px;
-  width: min(100%, 300px);
-  min-height: 220px;
-  max-height: 380px;
+  padding: 1rem 1.05rem;
+  flex: 1 1 280px;
+  width: min(100%, 340px);
+  min-height: 280px;
+  max-height: min(52vh, 520px);
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -334,10 +335,11 @@ function go(route) {
   }
 
   .map-stage {
-    flex: 0 1 auto;
-    width: min(100%, 340px);
+    flex: 1 1 auto;
+    width: min(100%, 100%);
     height: auto;
-    max-height: min(58vw, 340px);
+    min-height: 280px;
+    max-height: min(70vw, 400px);
   }
 }
 

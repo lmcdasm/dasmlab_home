@@ -12,7 +12,21 @@
           <q-badge v-if="badge" color="secondary" outline>{{ badge }}</q-badge>
         </div>
         <div class="text-h6 card-title">
-          <a :href="url || '#'" class="text-primary card-link" target="_blank" rel="noopener" @click.prevent="onTitleClick">
+          <router-link
+            v-if="hubPath"
+            :to="hubPath"
+            class="text-primary card-link"
+          >
+            {{ title }}
+          </router-link>
+          <a
+            v-else
+            :href="url || '#'"
+            class="text-primary card-link"
+            target="_blank"
+            rel="noopener"
+            @click.prevent="onTitleClick"
+          >
             {{ title }}
           </a>
         </div>
@@ -27,6 +41,12 @@
     <div class="q-mt-sm detail-line">
       <q-icon name="code" size="16px" class="q-mr-xs" />
       <span class="text-caption">{{ language || 'Stack not listed yet' }}</span>
+    </div>
+
+    <div v-if="hubPath" class="q-mt-sm text-caption detail-line">
+      <q-icon name="hub" class="q-mr-xs" />
+      <span class="detail-label">Hub:</span>
+      <router-link :to="hubPath" class="text-secondary link-inline">Behind the Design</router-link>
     </div>
 
     <div class="q-mt-sm text-caption detail-line">
@@ -66,7 +86,8 @@ const props = defineProps({
   badge: String,
   category: String,
   liveUrl: String,
-  tutoUrl: String
+  tutoUrl: String,
+  hubPath: String
 })
 
 // ✅ Access Quasar Dialog plugin

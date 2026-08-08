@@ -14,7 +14,7 @@
 - **First product specialization:** Digital Presence Observatory — platform `docs/adr/ADR-0400-digital-presence-observatory.md` (`/home/dasm/dasmlab-observatory-platform`).
 - Home remains Activity producer and topical authority; DPO consumes Activity + GSC + edge + GitHub.
 - Home [ADR-001 CDN-mgr GEO](./ADR-001-CDN-MGR-GEO-ENGAGEMENT.md) stays valid and local; CDN-mgr is not DOP.
-- **Live repo:** https://github.com/lmcdasm/dasmlab-observatory-platform  
+- **Live repo:** https://github.com/dasmlab/dasmlab-observatory-platform  
 - **Live DPO (prod-1):** https://dpo-dasmlab.apps.2026-prod-1.ocp.dasmlab.org  
 - GitOps: Argo Application `dpo` → `dasmlab-live-cicd` `clusters/2026-prod-1/dpo/live`
 
