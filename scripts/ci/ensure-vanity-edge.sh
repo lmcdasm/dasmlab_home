@@ -144,8 +144,10 @@ if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx new-haproxy; then
   if docker exec new-haproxy pgrep -x haproxy >/dev/null 2>&1; then
     docker kill -s HUP new-haproxy
     echo "SIGHUP sent"
+  elif docker exec new-haproxy pgrep -f certbot >/dev/null 2>&1 || docker exec new-haproxy pgrep -f certs.sh >/dev/null 2>&1; then
+    echo "new-haproxy is mid certbot walk via authoritative runme.sh — do NOT restart"
   else
-    echo "haproxy not ready yet inside container — skip HUP"
+    echo "haproxy not ready yet inside container — skip HUP (do not re-run runme)"
   fi
 else
   echo "new-haproxy not running — starting via ./runme.sh"

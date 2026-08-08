@@ -43,7 +43,7 @@
 
     <a
       class="dasm-panel surfing-related"
-      href="https://camera-scrape.dasmlab.org/"
+      href="https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/"
       target="_blank"
       rel="noopener noreferrer"
     >

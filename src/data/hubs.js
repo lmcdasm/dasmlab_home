@@ -2,7 +2,7 @@
  * Engineering Knowledge Network — hub inventory for dasmlab.org 2.0
  */
 
-/** Public vanity hosts only — never apps.* or dev-* on visitor CTAs. */
+/** Live product URLs. Prefer vanity when CERT+DNS+edge proven; keep apps.* until then. */
 export const PRODUCT_URLS = {
   home: 'https://dasmlab.org',
   surfing: 'https://dasmlab.org/surfing',
@@ -10,7 +10,8 @@ export const PRODUCT_URLS = {
   mockMeDemo: 'https://mock-me.dasmlab.org/demo',
   interviewMe: 'https://interview-me.dasmlab.org',
   interviewMeDemo: 'https://interview-me.dasmlab.org/demo',
-  cameraScrape: 'https://camera-scrape.dasmlab.org/',
+  // Vanity camera-scrape.dasmlab.org is additive — do not cut over until edge CERT walk is healthy.
+  cameraScrape: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/',
   designCarousel: 'https://design-carousel.svc.dasmlab.org/carousel'
 }
 
@@ -206,7 +207,7 @@ export const projectHubs = {
     architecture:
       'Scrapers + schedule workers on OpenShift; public gallery for sample / published cams; private camera URLs and operator controls stay proprietary. Identity boundary separates public gallery from private scrapes.',
     howWeBuilt:
-      'Started as a practical way to keep wind / snow / garden cams without SaaS camera platforms. 2.0 adds a project hub and vanity host so Live Cams links match other products — never raw apps.* preview URLs.',
+      'Started as a practical way to keep wind / snow / garden cams without SaaS camera platforms. 2.0 adds a project hub; vanity host is additive once DNS+CERT are proven — Live CTAs keep the working apps.* route until then.',
     faq: [
       {
         question: 'Are private camera URLs public?',
