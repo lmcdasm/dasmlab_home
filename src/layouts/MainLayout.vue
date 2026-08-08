@@ -192,7 +192,7 @@ const topNav = computed(() => {
     { label: 'Home', icon: 'home', to: '/' },
     { label: 'About DASMLAB', icon: 'school', to: '/about' },
     { label: 'Surfing', icon: 'sailing', to: '/surfing' },
-    { label: 'Live Cams', icon: 'videocam', href: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/' },
+    { label: 'Live Cams', icon: 'videocam', href: 'https://camera-scrape.dasmlab.org/' },
     { label: 'Contact', icon: 'mail', to: '/contact' },
     { label: 'GitHub', icon: 'code', href: 'https://github.com/lmcdasm' }
   ]

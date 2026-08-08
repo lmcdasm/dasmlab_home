@@ -11,7 +11,7 @@ export const PRODUCT_URLS = {
   interviewMe: 'https://interview-me.dasmlab.org',
   interviewMeDemo: 'https://interview-me.dasmlab.org/demo',
   // Vanity camera-scrape.dasmlab.org is additive — do not cut over until edge CERT walk is healthy.
-  cameraScrape: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/',
+  cameraScrape: 'https://camera-scrape.dasmlab.org/',
   designCarousel: 'https://design-carousel.svc.dasmlab.org/carousel'
 }
 

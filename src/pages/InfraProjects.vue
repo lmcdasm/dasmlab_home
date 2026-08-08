@@ -58,7 +58,7 @@ const projects = [
     techs: ['Go', 'OpenShift', 'object storage', 'cron'],
     accent: '#1f6f62',
     hubPath: '/projects/camera-scrape',
-    liveUrl: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/'
+    liveUrl: 'https://camera-scrape.dasmlab.org/'
   },
   {
     title: 'etcd synthetic load',
