@@ -93,7 +93,7 @@ const projects = [
     techs: ['Go', 'schedulers', 'image pipeline', 'OpenShift'],
     accent: '#2f8f7d',
     hubPath: '/projects/camera-scrape',
-    liveUrl: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/'
+    liveUrl: 'https://camera-scrape.dasmlab.org/'
   }
 ]
 </script>
