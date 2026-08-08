@@ -2,7 +2,7 @@
  * Engineering Knowledge Network — hub inventory for dasmlab.org 2.0
  */
 
-/** Live product URLs. Prefer vanity when CERT+DNS+edge proven; keep apps.* until then. */
+/** Public vanity hosts only — never apps.* or dev-* on visitor CTAs. */
 export const PRODUCT_URLS = {
   home: 'https://dasmlab.org',
   surfing: 'https://dasmlab.org/surfing',
