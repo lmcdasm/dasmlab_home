@@ -11,6 +11,7 @@ import ActivityPage from 'pages/ActivityPage.vue'
 import ProjectHubPage from 'pages/ProjectHubPage.vue'
 import TopicHubPage from 'pages/TopicHubPage.vue'
 import LabHubPage from 'pages/LabHubPage.vue'
+import LaunchPage from 'pages/LaunchPage.vue'
 
 const routes = [
   {
@@ -18,6 +19,8 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', component: () => import('pages/IndexPage.vue') },
+      { path: 'launch', component: LaunchPage },
+      { path: '2.0', redirect: '/launch' },
       { path: 'about', component: AboutPage },
       { path: 'projects/frontend', component: FrontendProjects },
       { path: 'projects/backend', component: BackendProjects },

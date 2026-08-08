@@ -53,14 +53,13 @@ const projects = [
     provider: 'multi',
     title: 'CheapCloud',
     lane: 'Cloud',
-    badge: 'Demo',
-    description: 'Spend envelopes and provider recommendations — demo is readonly fixtures.',
+    badge: 'Hub',
+    description: 'Spend envelopes and provider recommendations — operator UI behind edge auth; public demo on the roadmap.',
     problem: 'Picking cheap origins is tribal knowledge',
-    outcome: 'Recommend + envelope UX without credentials in demo',
+    outcome: 'Recommend + envelope UX without credentials in a future labeled demo',
     techs: ['Go', 'Gin', 'AWS', 'Azure', 'GCP'],
     accent: '#1f6f62',
-    hubPath: '/projects/cheapcloud',
-    liveUrl: 'https://cheapcloud.dasmlab.org/demo'
+    hubPath: '/projects/cheapcloud'
   },
   {
     provider: 'aws',

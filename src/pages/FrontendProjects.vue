@@ -76,6 +76,18 @@ const projects = [
     liveUrl: 'https://mock-me.dasmlab.org/demo'
   },
   {
+    title: 'Live Cams (camera-scrape)',
+    lane: 'Frontend',
+    badge: 'Live',
+    description: 'Public gallery for multi-source scrape snapshots and timelapses — field cams without a heavyweight VMS.',
+    problem: 'Keep wind / snow / garden cams without SaaS camera platforms',
+    outcome: 'Cheap scrape → snapshot → timelapse gallery',
+    techs: ['Vue', 'Go', 'image pipeline', 'OpenShift'],
+    accent: '#2a6f62',
+    hubPath: '/projects/camera-scrape',
+    liveUrl: 'https://camera-scrape.apps.2026-prod-1.ocp.dasmlab.org/'
+  },
+  {
     title: 'tutorial-generator',
     lane: 'Frontend',
     badge: 'Public',
@@ -90,13 +102,12 @@ const projects = [
   {
     title: 'mcp-tour UI',
     lane: 'Frontend',
-    badge: 'Public',
-    description: 'Visual authoring for MCP clients/servers — explore Model Context Protocol hands-on.',
+    badge: 'Lab',
+    description: 'Visual authoring for MCP clients/servers — explore Model Context Protocol hands-on (deployment on radar).',
     problem: 'MCP concepts stay abstract without a playground',
-    outcome: 'Interactive MCP tour UI',
+    outcome: 'Interactive MCP tour UI (code / repo — live explorer not public yet)',
     techs: ['Vue', 'Quasar', 'MCP', 'Go'],
     accent: '#2a6f62',
-    liveUrl: 'https://mcp-explorer.dasmlab.org',
     url: 'https://github.com/lmcdasm/mcp-tour'
   }
 ]
