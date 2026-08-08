@@ -15,6 +15,7 @@
   <url><loc>https://dasmlab.org/projects/mock-me</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://dasmlab.org/projects/interview-me</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://dasmlab.org/projects/cheapcloud</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dasmlab.org/projects/camera-scrape</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://dasmlab.org/topics/vue</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://dasmlab.org/topics/quasar</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://dasmlab.org/topics/gin</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>

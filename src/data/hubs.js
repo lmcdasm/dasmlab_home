@@ -2,6 +2,18 @@
  * Engineering Knowledge Network — hub inventory for dasmlab.org 2.0
  */
 
+/** Public vanity hosts only — never apps.* or dev-* on visitor CTAs. */
+export const PRODUCT_URLS = {
+  home: 'https://dasmlab.org',
+  surfing: 'https://dasmlab.org/surfing',
+  mockMe: 'https://mock-me.dasmlab.org',
+  mockMeDemo: 'https://mock-me.dasmlab.org/demo',
+  interviewMe: 'https://interview-me.dasmlab.org',
+  interviewMeDemo: 'https://interview-me.dasmlab.org/demo',
+  cameraScrape: 'https://camera-scrape.dasmlab.org/',
+  designCarousel: 'https://design-carousel.svc.dasmlab.org/carousel'
+}
+
 export const SITE = {
   name: 'DASMLAB',
   legalName: 'Technologies DASMLAB Inc.',
@@ -56,7 +68,7 @@ export const projectHubs = {
       'dasmlab-home is a Vue 3 + Quasar SPA served by nginx on OpenShift, backed by surfing-service for media and OIDC, designed as a two-facet site: visitor answers and engineer-level how-we-built depth.',
     stack: ['Vue 3', 'Quasar', 'Vite', 'nginx', 'OpenShift'],
     topics: ['vue', 'quasar', 'oidc', 'openshift'],
-    liveUrl: 'https://dasmlab.org',
+    liveUrl: PRODUCT_URLS.home,
     sourceUrl: 'https://github.com/lmcdasm/dasmlab_home',
     architecture:
       'Static Quasar build in nginx; `/api/surfing` reverse-proxied to surfing-service; Keycloak realm `dasmlab` for owner features; public Activity POST for anonymous engagement; R2/CDN path for media bytes.',
@@ -84,7 +96,7 @@ export const projectHubs = {
       'Surfing is a Go API plus Vue client that stores media metadata on OpenShift and serves bytes from object storage / CDN, with public browse and owner publish controls via OIDC.',
     stack: ['Go', 'Gin', 'Vue 3', 'Quasar', 'Object storage', 'OIDC'],
     topics: ['gin', 'vue', 'oidc', 'openshift'],
-    liveUrl: 'https://dasmlab.org/surfing',
+    liveUrl: PRODUCT_URLS.surfing,
     architecture:
       'surfing-service (Gin) owns auth, days, upload orchestration, and Activity. Bytes migrate off PVC to object store + CDN URLs in manifests. Home nginx proxies `/api/surfing`.',
     howWeBuilt:
@@ -110,9 +122,8 @@ export const projectHubs = {
       'Mock-Me lets operators mock and orchestrate workflows that need a CDN or platform path. Unknown visitors use Demo / fake mode: scripted steps with zero live node deploys.',
     stack: ['Go', 'Vue 3', 'Quasar', 'Keycloak', 'OpenShift'],
     topics: ['gin', 'vue', 'oidc', 'openshift'],
-    demoUrl: 'https://mock-me.dasmlab.org/demo',
-    sourceUrl: 'https://github.com/dasmlab/mock-me-ce',
-    ceUrl: 'https://github.com/dasmlab/mock-me-ce',
+    liveUrl: PRODUCT_URLS.mockMe,
+    demoUrl: PRODUCT_URLS.mockMeDemo,
     architecture:
       'OIDC-gated API for real orchestration; parallel `/demo` simulate endpoints return fixture timelines. Activity events tagged demo=true for operator filters.',
     howWeBuilt:
@@ -125,7 +136,7 @@ export const projectHubs = {
       {
         question: 'Is there a Community Edition?',
         answer:
-          'Yes — mock-me-ce under MPL 2.0 with a commercial license option for white-label / hosted use. SaaS and secrets stay private.'
+          'CE is planned (MPL 2.0 + commercial dual license). Scaffolds live under open-core/mock-me-ce until github.com/dasmlab/mock-me-ce is published. SaaS and secrets stay private.'
       }
     ]
   },
@@ -138,9 +149,8 @@ export const projectHubs = {
       'Interview-Me runs invite-based interview sessions with OTP guest cookies for candidates, while admins use Keycloak. A public demo session uses synthetic content with no PII writes.',
     stack: ['Go', 'Vue 3', 'Quasar', 'Keycloak', 'SMTP'],
     topics: ['vue', 'gin', 'oidc', 'quasar'],
-    demoUrl: 'https://interview-me.dasmlab.org/demo',
-    sourceUrl: 'https://github.com/dasmlab/interview-me-ce',
-    ceUrl: 'https://github.com/dasmlab/interview-me-ce',
+    liveUrl: PRODUCT_URLS.interviewMe,
+    demoUrl: PRODUCT_URLS.interviewMeDemo,
     architecture:
       'Admin OIDC + invite OTP → im_guest cookie scoped to one session. Public demo mints im_demo with a fixed synthetic session id.',
     howWeBuilt:
@@ -149,6 +159,11 @@ export const projectHubs = {
       {
         question: 'Does the public demo store candidate data?',
         answer: 'No. It uses synthetic fixtures only; answers are not persisted as PII.'
+      },
+      {
+        question: 'Is there a Community Edition?',
+        answer:
+          'CE is planned under open-core/interview-me-ce (MPL + commercial). Public GitHub publish comes after the dual-license extract is ready.'
       }
     ]
   },
@@ -156,22 +171,51 @@ export const projectHubs = {
     slug: 'cheapcloud',
     title: 'CheapCloud',
     lane: 'Cloud',
-    summary: 'Spend envelopes, free-tier burn, and provider recommendations — demo is readonly fixtures.',
+    summary: 'Spend envelopes, free-tier burn, and provider recommendations — operator UI behind edge auth today.',
     answer:
-      'CheapCloud helps pick cost-aware cloud origins and envelopes. Demo mode exposes recommend/envelope UI over fixtures with no cloud credentials.',
+      'CheapCloud helps pick cost-aware cloud origins and envelopes. The public site documents the product; the live operator UI stays behind edge authentication until a labeled public demo path is opened.',
     stack: ['Go', 'Vue', 'Azure/AWS/GCP abstractions'],
     topics: ['openshift', 'gin'],
-    demoUrl: 'https://cheapcloud.dasmlab.org/demo',
-    sourceUrl: 'https://github.com/dasmlab/cheapcloud-ce',
-    ceUrl: 'https://github.com/dasmlab/cheapcloud-ce',
     architecture:
-      'API + UI with provider interfaces. Production may sit behind edge basic auth; demo uses AllowDemoRead + fixture recommend.',
+      'API + UI with provider interfaces. Production sits behind edge basic auth. Future demo will use AllowDemoRead + fixture recommend with no cloud credentials.',
     howWeBuilt:
       'Started Azure-shaped / dry-run; evolving into cheap origin broker for Surfing and friends. CE will publish abstractions without prod keys.',
     faq: [
       {
+        question: 'Can I try CheapCloud without login?',
+        answer:
+          'Not yet on the public edge — operator login is required. Use this hub for the how-we-built story; a labeled fake-mode demo is on the roadmap.'
+      },
+      {
         question: 'Does demo call my cloud account?',
-        answer: 'No. Demo never injects credentials or mutates cloud resources.'
+        answer: 'No. When public demo ships it will never inject credentials or mutate cloud resources.'
+      }
+    ]
+  },
+  'camera-scrape': {
+    slug: 'camera-scrape',
+    title: 'Camera Scrape / Live Cams',
+    lane: 'Infrastructure',
+    summary:
+      'Cheap multi-source camera scrape, real-time snapshots, and timelapse stitch — field cams for spots you ride and lab scenes you watch.',
+    answer:
+      'camera-scrape pulls frames from heterogeneous camera sources on a budget stack, stores snapshots, and stitches timelapses so Surfing / Live Cams can show Ste-Agathe, Jibe City, and other spots without a heavyweight VMS.',
+    stack: ['Go', 'OpenShift', 'object storage', 'cron/schedulers', 'image pipeline'],
+    topics: ['openshift', 'gin', 'oidc'],
+    liveUrl: PRODUCT_URLS.cameraScrape,
+    architecture:
+      'Scrapers + schedule workers on OpenShift; public gallery for sample / published cams; private camera URLs and operator controls stay proprietary. Identity boundary separates public gallery from private scrapes.',
+    howWeBuilt:
+      'Started as a practical way to keep wind / snow / garden cams without SaaS camera platforms. 2.0 adds a project hub and vanity host so Live Cams links match other products — never raw apps.* preview URLs.',
+    faq: [
+      {
+        question: 'Are private camera URLs public?',
+        answer: 'No. Public gallery shows allowed samples; private endpoints and schedules stay operator-gated.'
+      },
+      {
+        question: 'Is there a Community Edition?',
+        answer:
+          'Scaffolded under open-core/camera-scrape-ce (MPL + commercial). Sample gallery sketches publish; production schedules and camera credentials never leave the private tree.'
       }
     ]
   }
@@ -207,7 +251,7 @@ export const topicHubs = {
     summary: 'HTTP APIs for surfing, mock-me, and interview-me.',
     answer:
       'Gin handlers plus cookie sessions keep OIDC and demo middleware explicit: RequireAuth, AllowDemoRead, DenyDemoMutate.',
-    projects: ['surfing', 'mock-me', 'interview-me', 'cheapcloud'],
+    projects: ['surfing', 'mock-me', 'interview-me', 'cheapcloud', 'camera-scrape'],
     faq: []
   },
   oidc: {
@@ -216,7 +260,7 @@ export const topicHubs = {
     summary: 'Identity for live ops — never required for labeled demos.',
     answer:
       'Live mutate paths use Keycloak (realm dasmlab). Demo visitors use product demo cookies and never receive admin roles.',
-    projects: ['dasmlab-home', 'surfing', 'mock-me', 'interview-me'],
+    projects: ['dasmlab-home', 'surfing', 'mock-me', 'interview-me', 'camera-scrape'],
     faq: [
       {
         question: 'Can I use the products without Keycloak?',
@@ -230,7 +274,7 @@ export const topicHubs = {
     summary: 'Bare-metal LoadBalancer patterns in the DASMLAB lab.',
     answer:
       'Lab clusters use MetalLB for service exposure where cloud LBs are unavailable; docs link from infra projects and OpenShift lab notes.',
-    projects: ['dasmlab-home'],
+    projects: ['dasmlab-home', 'camera-scrape'],
     faq: []
   },
   openshift: {
@@ -239,7 +283,7 @@ export const topicHubs = {
     summary: 'Deploy envelope for the constellation.',
     answer:
       'Apps ship via container images and GitOps overlays (dasmlab-live-cicd). Production overlays and secrets stay private; CE shows example envelopes only.',
-    projects: ['dasmlab-home', 'surfing', 'mock-me', 'cheapcloud'],
+    projects: ['dasmlab-home', 'surfing', 'mock-me', 'cheapcloud', 'camera-scrape'],
     faq: []
   }
 }
@@ -269,7 +313,7 @@ export const labs = {
     summary: 'Move media bytes off basement PVC to object storage + CDN.',
     answer:
       'API stays on OpenShift; manifests carry CDN URLs so playback no longer depends on cluster disk for hot paths.',
-    relatedProjects: ['surfing', 'cheapcloud'],
+    relatedProjects: ['surfing', 'cheapcloud', 'camera-scrape'],
     faq: []
   }
 }

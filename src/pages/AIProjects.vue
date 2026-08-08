@@ -60,13 +60,12 @@ const projects = [
   {
     title: 'mcp-tour',
     lane: 'AI/ML',
-    badge: 'Public',
-    description: 'Hands-on Model Context Protocol tour — clients, servers, and visual authoring.',
+    badge: 'Lab',
+    description: 'Hands-on Model Context Protocol tour — clients, servers, and visual authoring (live explorer not public yet).',
     problem: 'MCP stays abstract without a playground',
-    outcome: 'Interactive explorer for agents & tools',
+    outcome: 'Interactive explorer for agents & tools — follow the repo until deploy returns',
     techs: ['MCP', 'Go', 'Vue', 'Quasar'],
     accent: '#2f8f7d',
-    liveUrl: 'https://mcp-explorer.dasmlab.org',
     url: 'https://github.com/lmcdasm/mcp-tour'
   },
   {

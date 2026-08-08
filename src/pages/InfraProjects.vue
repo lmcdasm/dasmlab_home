@@ -49,6 +49,18 @@ useSeo({
 
 const projects = [
   {
+    title: 'camera-scrape / Live Cams',
+    lane: 'Infrastructure',
+    badge: 'Live',
+    description: 'Cheap real-time scrape and timelapse from field cams — multi-source capture without SaaS VMS.',
+    problem: 'Keep wind / snow / garden cams on a budget stack',
+    outcome: 'Snapshots + timelapses on vanity camera-scrape.dasmlab.org',
+    techs: ['Go', 'OpenShift', 'object storage', 'cron'],
+    accent: '#1f6f62',
+    hubPath: '/projects/camera-scrape',
+    liveUrl: 'https://camera-scrape.dasmlab.org/'
+  },
+  {
     title: 'etcd synthetic load',
     lane: 'Infrastructure',
     badge: 'Lab',

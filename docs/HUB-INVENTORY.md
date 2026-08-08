@@ -2,55 +2,65 @@
 
 Living checklist for the Engineering Knowledge Network on dasmlab.org.
 
+## Public vanity hosts (CTAs)
+
+Never list `dev-*` or `*.apps.2026-prod-1…` on visitor CTAs.
+
+| Product | Vanity |
+|---------|--------|
+| Mock-Me | https://mock-me.dasmlab.org/demo |
+| Interview-Me | https://interview-me.dasmlab.org/demo |
+| Camera Scrape | https://camera-scrape.dasmlab.org/ |
+| Surfing | https://dasmlab.org/surfing |
+| CheapCloud | hub only (edge auth — no public Live yet) |
+| mcp-explorer | hub/repo only (no live deploy) |
+
 ## Project hubs (first wave)
 
 | Slug | Title | Lane | Live / demo | CE / source | Hub status |
 |------|-------|------|-------------|-------------|------------|
-| `dasmlab-home` | dasmlab-home | Frontend | https://dasmlab.org | github.com/lmcdasm/dasmlab_home | Ship in 2.0 |
-| `surfing` | Surfing CDN | Frontend / Backend | /surfing | private + future CE notes | Ship in 2.0 |
-| `mock-me` | Mock-Me | Cloud / Infra | demo facade | mock-me-ce (planned) | Ship in 2.0 |
-| `interview-me` | Interview-Me | AI / Frontend | demo facade | interview-me-ce (planned) | Ship Wave 1+ |
-| `cheapcloud` | CheapCloud | Cloud | demo readonly | cheapcloud-ce (planned) | Ship Wave 2+ |
+| `dasmlab-home` | dasmlab-home | Frontend | https://dasmlab.org | github.com/lmcdasm/dasmlab_home | Live |
+| `surfing` | Surfing CDN | Frontend / Backend | /surfing | private + future CE notes | Live |
+| `mock-me` | Mock-Me | Cloud / Frontend | mock-me.dasmlab.org/demo | open-core/mock-me-ce (planned GH) | Live |
+| `interview-me` | Interview-Me | AI / Frontend | interview-me.dasmlab.org/demo | open-core/interview-me-ce (planned GH) | Live |
+| `cheapcloud` | CheapCloud | Cloud | hub only (operator auth) | open-core/cheapcloud-ce (planned GH) | Live |
+| `camera-scrape` | Live Cams | Infra / Frontend / Backend | camera-scrape.dasmlab.org | open-core/camera-scrape-ce (planned GH) | Live |
 
 ## Project hubs (later)
 
 | Slug | Title | Notes |
 |------|-------|-------|
-| `design-carousel-service` | Design Carousel | Backend lane |
+| `design-carousel-service` | Design Carousel | Backend lane — design-carousel.svc.dasmlab.org |
 | `activity-cdp` | Public Activity spine | Surfing engagement |
 | `etcd-synth` | etcd synthetic load | Demo dry-run only |
-| `camera-scrape` | Camera scrape | After identity boundary |
 | `tutorial-generator` | Tutorial generator | Public repo exists |
+
+## CE GitHub repos to create (when ready)
+
+Push each `open-core/<name>/` folder — do not link until published:
+
+- `dasmlab/mock-me-ce`, `dasmlab/interview-me-ce`, `dasmlab/cheapcloud-ce`
+- `dasmlab/camera-scrape-ce`, `dasmlab/etcd-synth-ce`
+- `dasmlab/dasmlab-go` (Apache 2.0)
 
 ## Topic hubs (first wave)
 
 | Slug | Tech | Linked projects |
 |------|------|-----------------|
 | `vue` | Vue 3 | dasmlab-home, interview-me, mock-me |
-| `gin` | Gin (Go) | surfing, mock-me, interview-me |
-| `oidc` | OIDC / Keycloak | home, mock-me, interview-me |
-| `metallb` | MetalLB | infra lab narratives |
+| `gin` | Gin (Go) | surfing, mock-me, interview-me, camera-scrape |
+| `oidc` | OIDC / Keycloak | home, mock-me, interview-me, camera-scrape |
+| `metallb` | MetalLB | infra + camera-scrape |
 | `quasar` | Quasar | dasmlab-home, siblings |
-| `openshift` | OpenShift / GitOps | cheapcloud, live-cicd |
+| `openshift` | OpenShift / GitOps | cheapcloud, camera-scrape, live-cicd |
 
-## Labs (Wave 3+)
+## Labs
 
 | Slug | Focus |
 |------|-------|
 | `activity-anon-cdp` | Anonymous visitor CDP on public sites |
 | `surfing-r2-origin` | Surfing bytes off PVC → object/CDN |
 | `demo-visitor-facade` | Cross-product fake mode pattern |
-
-## Lane fill status
-
-| Lane | Route | Gap to close |
-|------|-------|--------------|
-| Frontend | /projects/frontend | Link cards → hubs |
-| Backend | /projects/backend | Add surfing-service, activity |
-| AI/ML | /projects/ai-ml | Link interview-me hub |
-| Cloud | /projects/cloud | Replace Coming soon with CheapCloud / OpenShift / demo |
-| Infrastructure | /projects/infrastructure | Link etcd-synth, GitOps |
-| Security | /projects/security | Thicken + OIDC topic |
 
 ## SEO surface checklist
 
@@ -61,3 +71,4 @@ Living checklist for the Engineering Knowledge Network on dasmlab.org.
 - [x] FAQPage on hubs with FAQ
 - [x] Answer-first article template
 - [x] History mode routing (nginx try_files)
+- [x] Vanity Live/Demo CTAs (no apps.* / dev-*)

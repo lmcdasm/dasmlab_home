@@ -68,7 +68,8 @@ const projects = [
     outcome: 'Admin OIDC + im_demo synthetic session',
     techs: ['Go', 'chi', 'SQLite', 'SMTP'],
     accent: '#3f9f8e',
-    hubPath: '/projects/interview-me'
+    hubPath: '/projects/interview-me',
+    liveUrl: 'https://interview-me.dasmlab.org/demo'
   },
   {
     title: 'Mock-Me API',
@@ -79,7 +80,20 @@ const projects = [
     outcome: 'Fixture timelines + Activity demo flag',
     techs: ['Go', 'chi', 'OIDC', 'deploy engine'],
     accent: '#1f6f62',
-    hubPath: '/projects/mock-me'
+    hubPath: '/projects/mock-me',
+    liveUrl: 'https://mock-me.dasmlab.org/demo'
+  },
+  {
+    title: 'camera-scrape',
+    lane: 'Backend',
+    badge: 'Live',
+    description: 'Multi-source scrape workers, snapshot store, and timelapse stitch for Live Cams.',
+    problem: 'Heterogeneous cams without a VMS tax',
+    outcome: 'Scheduled scrape → gallery + Surfing cross-link',
+    techs: ['Go', 'schedulers', 'image pipeline', 'OpenShift'],
+    accent: '#2f8f7d',
+    hubPath: '/projects/camera-scrape',
+    liveUrl: 'https://camera-scrape.dasmlab.org/'
   }
 ]
 </script>
