@@ -54,7 +54,7 @@ const projects = [
     badge: 'Live',
     description: 'Cheap real-time scrape and timelapse from field cams — multi-source capture without SaaS VMS.',
     problem: 'Keep wind / snow / garden cams on a budget stack',
-    outcome: 'Snapshots + timelapses via camera-scrape OpenShift route (vanity additive)',
+    outcome: 'Snapshots + timelapses on vanity camera-scrape.dasmlab.org',
     techs: ['Go', 'OpenShift', 'object storage', 'cron'],
     accent: '#1f6f62',
     hubPath: '/projects/camera-scrape',
