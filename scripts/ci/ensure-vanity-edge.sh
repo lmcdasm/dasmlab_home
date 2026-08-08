@@ -119,6 +119,10 @@ EOS
 need_runme=0
 for fqdn in mock-me.dasmlab.org interview-me.dasmlab.org camera-scrape.dasmlab.org; do
   echo "--- CERT ensure: ${fqdn} ---"
+  if ! getent hosts "$fqdn" >/dev/null 2>&1; then
+    echo "SKIP CERT ${fqdn} — no DNS yet (add A/AAAA to 209.15.95.244, then re-run)"
+    continue
+  fi
   if ssh -o BatchMode=yes "${PROXY_USER}@${PROXY_HOST}" "grep -Fq '=${fqdn}' '${PROXY_DIR}/runme.sh'"; then
     echo "HAProxy CERT already present for ${fqdn}"
   else
