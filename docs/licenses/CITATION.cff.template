@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "{{PROJECT_NAME}}"
+authors:
+  - family-names: "Smith"
+    given-names: "Daniel"
+    affiliation: "Technologies DASMLAB Inc."
+  - name: "Technologies DASMLAB Inc."
+version: "{{VERSION}}"
+date-released: "{{DATE}}"
+url: "https://dasmlab.org"
+repository-code: "{{REPO_URL}}"
+license: "MPL-2.0"

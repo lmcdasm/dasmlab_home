@@ -1,224 +1,177 @@
 <template>
-  <q-page padding class="q-gutter-md security-page">
-    <section class="dasm-shell">
-      <div class="dasm-floating-grid" />
-      <div class="dasm-shell__content">
-        <div class="dasm-caps">Project lane</div>
-        <h1 class="dasm-title">Security projects</h1>
-        <p class="dasm-subtitle">
-          Secure-by-design experiments across SAST/DAST, cluster hardening, and practical AI-era defense patterns.
-        </p>
-      </div>
-    </section>
-
-    <section class="security-scene dasm-panel">
-      <div class="security-scene-copy">
-        <div class="security-caps">Defense in motion</div>
-        <h2 class="security-title">Secure systems should look and feel alive.</h2>
-        <p class="security-copy">
-          This lane blends shift-left scanning, runtime checks, and cluster-era hardening patterns into practical release workflows.
-          The goal is not only finding issues early, but continuously proving trust through every deploy hop.
-        </p>
-        <div class="security-pills">
-          <span v-for="pill in focusPills" :key="pill" class="security-pill">
-            {{ pill }}
-          </span>
+  <q-page class="lane-page">
+    <header class="lane-hero">
+      <div class="lane-hero__grid">
+        <div>
+          <div class="dasm-caps">Defense in motion</div>
+          <h1>Security projects</h1>
+          <p>
+            Secure-by-design experiments that feel alive — shift-left gates, OIDC boundaries, and demo facades that
+            never get live privileges.
+          </p>
+          <div class="pill-row">
+            <span v-for="p in pills" :key="p">{{ p }}</span>
+          </div>
         </div>
-      </div>
-      <div class="security-scene-signal" aria-hidden="true">
-        <div class="security-signal-card">
-          <div class="security-signal-kicker">Live posture</div>
-          <div class="security-signal-title">Pipeline guardrails</div>
-          <ul class="security-signal-list">
+        <aside class="posture">
+          <div class="posture__kicker">Live posture</div>
+          <div class="posture__title">Pipeline guardrails</div>
+          <ul>
             <li>Static + dynamic scan gates</li>
             <li>Container image policy checks</li>
-            <li>Cluster workload verification</li>
+            <li>Demo DenyMutate on live APIs</li>
+            <li>OIDC for operators only</li>
           </ul>
-        </div>
+        </aside>
       </div>
-    </section>
+    </header>
 
-    <div class="dasm-waypoint">Trust is a feature</div>
-    <section class="security-card-rack dasm-panel">
-      <ProjectCard
-        v-for="(project, index) in projects"
-        :key="index"
-        :title="project.title"
-        :description="project.description"
-        :url="project.url"
-        :language="project.language"
-        :badge="project.badge"
-        category="Security"
-        :live-url="project.liveUrl"
-        :tuto-url="project.tutoUrl"
-      />
-    </section>
+    <div class="stage-stack">
+      <ProjectStage v-for="p in projects" :key="p.title" v-bind="p" />
+    </div>
   </q-page>
 </template>
 
 <script setup>
-import ProjectCard from 'src/components/ProjectCard.vue'
+import ProjectStage from 'src/components/ProjectStage.vue'
+import { useSeo } from 'src/composables/useSeo'
 
-const focusPills = [
-  'SAST / DAST',
-  'Supply chain checks',
-  'Runtime hardening',
-  'Policy as code'
-]
+useSeo({
+  title: 'Security projects',
+  description: 'Security suite, OIDC patterns, and demo visitor safeguards from DASMLAB.',
+  path: '/projects/security'
+})
+
+const pills = ['SAST / DAST', 'Supply chain', 'Runtime hardening', 'OIDC', 'Demo facades']
 
 const projects = [
   {
     title: 'security-suite',
-    description: 'A portable DAST/SAST container with an assortment of tooling to allow for GitActions scanning (code and Application) as well as running within a K8s cluster',
-    url: 'https://github.com/dasmlab/security-suite',
-    language: 'Trivy / SemGrep / Nikto / Docker / GitActions',
+    lane: 'Security',
     badge: 'Public',
+    description: 'Portable DAST/SAST container for GitHub Actions and in-cluster scanning.',
+    problem: 'Scan tooling is fragmented across pipelines',
+    outcome: 'One container for Trivy / Semgrep / Nikto paths',
+    techs: ['Trivy', 'Semgrep', 'Nikto', 'Docker'],
+    accent: '#1f6f62',
+    url: 'https://github.com/dasmlab/security-suite'
+  },
+  {
+    title: 'OIDC across the constellation',
+    lane: 'Security',
+    badge: 'Hub',
+    description: 'Keycloak-backed live ops; demos never receive admin roles.',
+    problem: 'Showcase vs operator privilege collision',
+    outcome: 'Clear persona split: demo / guest / admin',
+    techs: ['OIDC', 'Keycloak', 'cookies'],
+    accent: '#2f8f7d',
+    hubPath: '/topics/oidc'
+  },
+  {
+    title: 'Demo visitor facade',
+    lane: 'Security',
+    badge: 'Lab',
+    description: 'Labeled fake mode contract — simulate-only writes, DenyDemoMutate.',
+    problem: 'Public interest vs IP-protected mutate paths',
+    outcome: 'Cross-product demo cookie pattern',
+    techs: ['authz', 'fixtures', 'Activity'],
+    accent: '#74865c',
+    hubPath: '/labs/demo-visitor-facade'
+  },
+  {
+    title: 'Activity owner gate',
+    lane: 'Security',
+    badge: 'Live',
+    description: 'Public POST for anon engagement; GET/panel dual-gated to owner viewers.',
+    problem: 'Engagement data must not leak broadly',
+    outcome: 'Write-open / read-gated Activity spine',
+    techs: ['Go', 'allowlist', 'cookies'],
+    accent: '#3f9f8e',
+    hubPath: '/labs/activity-anon-cdp'
   }
 ]
 </script>
 
 <style scoped>
-.security-page {
-  overflow-x: clip;
+.lane-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem clamp(0.7rem, 2vw, 1.2rem) 2rem;
 }
-
-.security-scene {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(44, 78, 101, 0.2);
-  background: linear-gradient(155deg, rgba(251, 254, 255, 0.98), rgba(240, 248, 254, 0.96));
-  box-shadow: 0 16px 32px rgba(22, 43, 61, 0.09);
+.lane-hero {
+  border: 1.5px solid rgba(31, 111, 98, 0.32);
+  border-radius: 20px;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(47, 143, 125, 0.12), transparent 40%),
+    linear-gradient(155deg, #fff, #e8f0f4);
+}
+.lane-hero__grid {
   display: grid;
-  grid-template-columns: 1.08fr 0.92fr;
-  gap: 0.95rem;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 1rem;
+  align-items: stretch;
 }
-
-.security-scene::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url('/media/hero/security-ambient.svg');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.36;
-  pointer-events: none;
+.lane-hero h1 {
+  margin: 0.2rem 0 0.4rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  color: #12202c;
 }
-
-.security-scene-copy,
-.security-scene-signal {
-  position: relative;
-  z-index: 1;
+.lane-hero p {
+  margin: 0 0 0.65rem;
+  color: #3d5263;
+  line-height: 1.5;
 }
-
-.security-scene-copy {
-  padding: 1.2rem 1.24rem;
-}
-
-.security-caps {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.34rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #557488;
-  border: 1px solid rgba(89, 120, 143, 0.26);
-  border-radius: 999px;
-  padding: 0.22rem 0.62rem;
-  background: rgba(255, 255, 255, 0.74);
-}
-
-.security-title {
-  margin: 0.6rem 0 0.52rem;
-  color: #1f3547;
-  font-size: clamp(1.22rem, 2.2vw, 1.6rem);
-  line-height: 1.2;
-}
-
-.security-copy {
-  margin: 0;
-  color: #4f6475;
-  line-height: 1.66;
-  font-size: 0.97rem;
-  max-width: 58ch;
-}
-
-.security-pills {
-  margin-top: 0.86rem;
+.pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
-
-.security-pill {
-  border-radius: 999px;
-  border: 1px solid rgba(83, 120, 146, 0.28);
-  background: linear-gradient(150deg, rgba(223, 239, 251, 0.7), rgba(246, 252, 255, 0.88));
-  color: #3b5c75;
-  font-size: 0.74rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-weight: 600;
-  padding: 0.26rem 0.56rem;
-}
-
-.security-scene-signal {
-  padding: 1.15rem 1.08rem 1.08rem 0.55rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.security-signal-card {
-  width: min(100%, 360px);
-  border-radius: 16px;
-  border: 1px solid rgba(58, 89, 112, 0.22);
-  background: linear-gradient(160deg, rgba(31, 56, 76, 0.88), rgba(39, 75, 102, 0.84));
-  box-shadow: 0 16px 28px rgba(14, 28, 40, 0.26);
-  padding: 0.9rem 0.92rem;
-}
-
-.security-signal-kicker {
-  color: rgba(200, 228, 247, 0.86);
+.pill-row span {
   font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.11em;
-}
-
-.security-signal-title {
-  margin-top: 0.36rem;
-  color: #ecf7ff;
   font-weight: 700;
-  font-size: 1.03rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(31, 111, 98, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f6f62;
 }
-
-.security-signal-list {
-  margin: 0.68rem 0 0;
-  padding-left: 1rem;
-  color: rgba(220, 241, 255, 0.9);
-  line-height: 1.58;
-  font-size: 0.86rem;
+.posture {
+  border-radius: 16px;
+  padding: 1rem;
+  background: linear-gradient(150deg, #12202c, #1a3532);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(18, 40, 52, 0.2);
 }
-
-.security-card-rack {
-  border: 1px solid rgba(42, 74, 97, 0.18);
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.95), rgba(247, 252, 255, 0.9));
+.posture__kicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
 }
-
-.security-card-rack :deep(.project-card) {
-  border-color: rgba(58, 99, 128, 0.2);
+.posture__title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.2rem;
+  margin: 0.25rem 0 0.55rem;
 }
-
-@media (max-width: 980px) {
-  .security-scene {
+.posture ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.55;
+  font-size: 0.9rem;
+}
+.stage-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+@media (max-width: 860px) {
+  .lane-hero__grid {
     grid-template-columns: 1fr;
-    gap: 0.45rem;
-  }
-
-  .security-scene-signal {
-    padding: 0.2rem 1rem 1.06rem;
-    justify-content: flex-start;
   }
 }
 </style>
-

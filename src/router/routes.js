@@ -8,6 +8,9 @@ import SecurityProjects from 'pages/SecurityProjects.vue'
 import ContactPage from 'pages/ContactPage.vue'
 import SurfingPage from 'pages/SurfingPage.vue'
 import ActivityPage from 'pages/ActivityPage.vue'
+import ProjectHubPage from 'pages/ProjectHubPage.vue'
+import TopicHubPage from 'pages/TopicHubPage.vue'
+import LabHubPage from 'pages/LabHubPage.vue'
 
 const routes = [
   {
@@ -22,6 +25,9 @@ const routes = [
       { path: 'projects/cloud', component: CloudProjects },
       { path: 'projects/infrastructure', component: InfraProjects },
       { path: 'projects/security', component: SecurityProjects },
+      { path: 'projects/:slug', component: ProjectHubPage },
+      { path: 'topics/:tech', component: TopicHubPage },
+      { path: 'labs/:slug', component: LabHubPage },
       { path: 'contact', component: ContactPage },
       { path: 'surfing', component: SurfingPage },
       {

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Garden">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7fafc"/>
+      <stop offset="100%" stop-color="#e8f0ed"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" fill="url(#g)"/>
+  <rect x="24" y="24" width="592" height="372" rx="18" fill="#fff" stroke="#3f9f8e" stroke-width="3" opacity="0.95"/>
+  <circle cx="120" cy="120" r="48" fill="#3f9f8e" opacity="0.18"/>
+  <circle cx="520" cy="300" r="70" fill="#3f9f8e" opacity="0.12"/>
+  <circle cx="200" cy="260" r="40" fill="#3f9f8e" opacity="0.45"/><circle cx="280" cy="240" r="50" fill="#74865c" opacity="0.4"/><circle cx="360" cy="270" r="36" fill="#1f6f62" opacity="0.35"/><rect x="190" y="300" width="20" height="60" fill="#5a6f80"/><rect x="270" y="290" width="20" height="70" fill="#5a6f80"/><rect x="350" y="300" width="20" height="60" fill="#5a6f80"/>
+  <text x="48" y="380" font-family="Georgia,serif" font-size="28" fill="#1d2b36">Garden</text>
+  <text x="48" y="68" font-family="system-ui,sans-serif" font-size="14" letter-spacing="3" fill="#607483">DASMLAB · LIFE</text>
+</svg>

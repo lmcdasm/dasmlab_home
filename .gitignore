@@ -36,3 +36,6 @@ yarn-error.log*
 in_progress:/
 **/in_progress:/
 
+
+# local GCP SA key — never commit
+gcpsa-key
