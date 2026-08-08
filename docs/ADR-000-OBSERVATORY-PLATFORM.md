@@ -6,7 +6,7 @@
 
 ## Context
 
-`dasmlab_home` is the public Engineering Knowledge Network. The Digital Observatory / observability architecture lives in a dedicated platform repo so product ADRs (home CDN-mgr, etc.) do not collide with platform numbering.
+`dasmlab_home` is the public Engineering Knowledge Network. Company-wide Observatory architecture now lives in a dedicated platform repo so product ADRs (home CDN-mgr, etc.) do not collide with platform numbering.
 
 ## Decision
 

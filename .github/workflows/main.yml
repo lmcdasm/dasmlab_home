@@ -209,14 +209,16 @@ jobs:
           DASMLAB_GHCR_PAT: ${{ secrets.DASMLAB_GHCR_PAT }}
         run: |
           set -euo pipefail
-          DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-}"
-          if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh_token" ]; then
+          # Prefer host token — repo secret often lacks git push to dasmlab-live-cicd.
+          DEPLOY_TOKEN=""
+          if [ -f "/home/dasm/gh_token" ]; then
             DEPLOY_TOKEN="$(tr -d '\n\r' < /home/dasm/gh_token)"
-          fi
-          if [ -z "${DEPLOY_TOKEN}" ] && [ -f "/home/dasm/gh-pat" ]; then
+          elif [ -f "/home/dasm/gh-pat" ]; then
             # shellcheck disable=SC1091
             source /home/dasm/gh-pat
             DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-${GH_TOKEN:-}}"
+          else
+            DEPLOY_TOKEN="${DASMLAB_GHCR_PAT:-}"
           fi
           if [ -z "${DEPLOY_TOKEN}" ]; then
             echo "ERROR: DEPLOY_TOKEN is not set!"
