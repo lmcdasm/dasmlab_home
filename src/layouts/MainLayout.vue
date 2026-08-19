@@ -180,6 +180,7 @@ const { oidcEnabled, authenticated, isAdmin, canViewActivity, user, login, logou
 import { useRoute } from 'vue-router'
 import VisitCounter from 'src/components/VisitCounter.vue'
 import { useApproach } from 'src/composables/useApproach'
+import { PRODUCT_URLS } from 'src/data/hubs'
 
 const route = useRoute()
 const leftDrawerOpen = ref(false)
@@ -192,7 +193,8 @@ const topNav = computed(() => {
     { label: 'Home', icon: 'home', to: '/' },
     { label: 'About DASMLAB', icon: 'school', to: '/about' },
     { label: 'Surfing', icon: 'sailing', to: '/surfing' },
-    { label: 'Live Cams', icon: 'videocam', href: 'https://camera-scrape.dasmlab.org/' },
+    { label: 'Live Cams', icon: 'videocam', href: PRODUCT_URLS.cameraScrape },
+    { label: 'Bonaire Info', icon: 'travel_explore', href: PRODUCT_URLS.bonaireInfo },
     { label: 'Contact', icon: 'mail', to: '/contact' },
     { label: 'GitHub', icon: 'code', href: 'https://github.com/lmcdasm' }
   ]

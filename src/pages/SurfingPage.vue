@@ -41,23 +41,43 @@
       </div>
     </section>
 
-    <a
-      class="dasm-panel surfing-related"
-      href="https://camera-scrape.dasmlab.org/"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <div class="surfing-related__icon" aria-hidden="true">
-        <q-icon name="videocam" size="26px" />
-      </div>
-      <div class="surfing-related__body">
-        <div class="surfing-related__title">Live Cams</div>
-        <div class="text-caption text-grey-7">
-          Ste-Agathe · Jibe City — scrape snapshots and stitch timelapses from the spots you ride.
+    <div class="surfing-related-stack">
+      <a
+        class="dasm-panel surfing-related"
+        :href="PRODUCT_URLS.cameraScrape"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="surfing-related__icon" aria-hidden="true">
+          <q-icon name="videocam" size="26px" />
         </div>
-      </div>
-      <q-icon name="open_in_new" size="18px" color="grey-6" />
-    </a>
+        <div class="surfing-related__body">
+          <div class="surfing-related__title">Live Cams</div>
+          <div class="text-caption text-grey-7">
+            Ste-Agathe · Jibe City — scrape snapshots and stitch timelapses from the spots you ride.
+          </div>
+        </div>
+        <q-icon name="open_in_new" size="18px" color="grey-6" />
+      </a>
+
+      <a
+        class="dasm-panel surfing-related"
+        :href="PRODUCT_URLS.bonaireInfo"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="surfing-related__icon surfing-related__icon--bonaire" aria-hidden="true">
+          <q-icon name="travel_explore" size="26px" />
+        </div>
+        <div class="surfing-related__body">
+          <div class="surfing-related__title">Bonaire Info</div>
+          <div class="text-caption text-grey-7">
+            Budgets, property research, healthcare, and relocation guides — island-life context for your sessions.
+          </div>
+        </div>
+        <q-icon name="open_in_new" size="18px" color="grey-6" />
+      </a>
+    </div>
 
     <div v-if="loadError" class="dasm-panel surfing-alert">
       <q-icon name="cloud_off" size="28px" class="q-mb-sm" />
@@ -692,6 +712,7 @@ import ShareSheet from 'src/components/ShareSheet.vue'
 import PhotoAlbumMap from 'src/components/PhotoAlbumMap.vue'
 import VideoAlbumMap from 'src/components/VideoAlbumMap.vue'
 import { useAuth } from 'src/composables/useAuth'
+import { PRODUCT_URLS } from 'src/data/hubs'
 import {
   addMediaLink,
   aiCurate,
@@ -1662,6 +1683,12 @@ onMounted(() => {
   color: rgba(220, 245, 238, 0.78);
 }
 
+.surfing-related-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
 .surfing-related {
   display: flex;
   align-items: center;
@@ -1685,6 +1712,11 @@ onMounted(() => {
   flex-shrink: 0;
   background: rgba(6, 54, 66, 0.9);
   color: #9feedd;
+}
+
+.surfing-related__icon--bonaire {
+  background: rgba(18, 92, 78, 0.92);
+  color: #c8f5e8;
 }
 
 .surfing-related__body {

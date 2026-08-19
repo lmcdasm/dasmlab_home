@@ -11,6 +11,7 @@ export const PRODUCT_URLS = {
   interviewMe: 'https://interview-me.dasmlab.org',
   interviewMeDemo: 'https://interview-me.dasmlab.org/demo',
   cameraScrape: 'https://camera-scrape.dasmlab.org/',
+  bonaireInfo: 'https://bonaire-info.dasmlab.org/',
   designCarousel: 'https://design-carousel.svc.dasmlab.org/carousel'
 }
 
