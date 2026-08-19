@@ -17,6 +17,7 @@
           width="420"
           height="525"
           alt="Daniel Smith (dasm), founder of Technologies DASMLAB Inc."
+          @error="onMediaError"
         />
       </div>
       <div class="bio-panel">
@@ -60,7 +61,14 @@
             class="column items-center justify-center"
           >
             <div class="q-pa-sm column items-center">
-              <img :src="img.src" :alt="img.caption" width="560" height="300" class="about-lifestyle-img" />
+              <img
+                :src="img.src"
+                :alt="img.caption"
+                width="560"
+                height="300"
+                class="about-lifestyle-img"
+                @error="onMediaError"
+              />
               <div class="caption-band">{{ img.caption }}</div>
             </div>
           </q-carousel-slide>
@@ -84,14 +92,20 @@
 <script setup>
 import { ref } from 'vue'
 import { useSeo } from 'src/composables/useSeo'
+import { ABOUT_MEDIA_BASE } from 'src/data/hubs'
 
 const carouselIndex = ref(0)
 
-// Prefer a CDN base when set; otherwise serve local WebP under public/media/hero/.
-const CDN = (import.meta.env.VITE_ABOUT_MEDIA_BASE || '').replace(/\/$/, '')
-
 function media(name) {
-  return CDN ? `${CDN}/${name}` : `/media/hero/${name}`
+  return `${ABOUT_MEDIA_BASE}/${name}`
+}
+
+function onMediaError(event) {
+  const el = event.target
+  const name = (el.getAttribute('src') || '').split('/').pop()
+  if (!name || el.dataset.fallback === '1') return
+  el.dataset.fallback = '1'
+  el.src = `/media/hero/${name}`
 }
 
 const meHead = media('portrait.webp')
@@ -112,7 +126,7 @@ useSeo({
     'Daniel Smith (dasm) — Technologies DASMLAB Inc. Living lab, 60+ countries, windsurfing, and engineering teach-back.',
   path: '/about',
   person: true,
-  image: 'https://dasmlab.org/media/hero/portrait.webp'
+  image: media('portrait.webp')
 })
 </script>
 

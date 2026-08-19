@@ -27,6 +27,12 @@ export const SITE = {
   ]
 }
 
+/** About photos on Cloudflare R2 (bucket dasmlab-home). Override with VITE_ABOUT_MEDIA_BASE. */
+export const ABOUT_MEDIA_BASE = (
+  import.meta.env.VITE_ABOUT_MEDIA_BASE ||
+  'https://pub-29bde7a836c744729bebe74bfd4008a2.r2.dev/about'
+).replace(/\/$/, '')
+
 export const AUTHOR = {
   name: 'Daniel Smith',
   alternateName: 'dasm',
@@ -34,7 +40,7 @@ export const AUTHOR = {
   description:
     'Two decades across telecom, automotive, cloud, and AI. Based in the Laurentians after Outaouais/Ottawa and Fernie. Windsurfer, snowboarder, gardener.',
   url: 'https://dasmlab.org/about',
-  image: 'https://dasmlab.org/media/hero/portrait.svg'
+  image: `${ABOUT_MEDIA_BASE}/portrait.webp`
 }
 
 /** @typedef {{ question: string, answer: string }} FaqItem */

@@ -1,12 +1,18 @@
 # About page media
 
-Portrait and lifestyle photos ship as local WebP under `public/media/hero/`. The About page
-frames and captions stay the same; only the bytes inside the frames changed.
+Portrait and lifestyle photos are on **Cloudflare R2** (same Personal CDN path as Surfing).
+The browser loads absolute `https://pub-….r2.dev/about/…` URLs — not the cluster nginx
+tree in the basement. Local WebPs under `public/media/hero/` stay in the image as a
+fallback if R2 is unreachable.
 
-Sources:
+## Live objects
 
-| Slot | WebP (served) | Source file |
-|------|----------------|-------------|
+Bucket: `dasmlab-home`  
+Public base: `https://pub-29bde7a836c744729bebe74bfd4008a2.r2.dev/about`  
+Keys: `about/<file>.webp` with `Cache-Control: public, max-age=31536000, immutable`
+
+| Slot | Object | Source file |
+|------|--------|-------------|
 | Portrait | `portrait.webp` | `/home/dasm/me-suit.jpg` |
 | Windsurf | `dasm_ride.webp` | `src/assets/dasm_ride.jpg` |
 | Snowboard | `me_ride_2.webp` | `src/assets/me_ride_2.jpg` |
@@ -17,17 +23,33 @@ Sources:
 | Baking | `me_baking_1.webp` | `src/assets/me_baking_1.jpg` |
 | Pies | `me_baking_2.webp` | `src/assets/me_baking_2.jpg` |
 
-Original JPEGs remain in `src/assets/` (already in git). The About page does **not** import
-those binaries into the JS bundle — it loads the converted WebP from `/media/hero/`.
+Re-publish after converting new files:
 
-`dasm_ride.jpg` is a 6000×4000 / ~11 MB original; the WebP is resized to 1600px on the
-long edge.
+```bash
+python3 scripts/publish-about-media.py
+```
 
-## Optional CDN override
+`dasm_ride.jpg` is a 6000×4000 / ~11 MB original; the WebP is 1600px on the long edge.
 
-Set build env `VITE_ABOUT_MEDIA_BASE=https://…cdn…/about` (no trailing slash) and About
-will load `{base}/portrait.webp`, `{base}/dasm_ride.webp`, etc. Until that is set, local
-WebP is used.
+## CORS
+
+R2 bucket Settings → CORS (same origins as Surfing):
+
+- `https://dasmlab.org`
+- `https://dev-lmcdasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org`
+- `https://dev-dasm-dasmlab-home.apps.2026-prod-1.ocp.dasmlab.org`
+
+Methods: `GET`, `PUT`, `HEAD`. Headers: `*`.
+
+## Override / custom domain
+
+`*.r2.dev` is rate-limited (Cloudflare public development URL). For production SLA,
+attach a custom domain on the bucket (e.g. `media.dasmlab.org`) once `dasmlab.org`
+is on Cloudflare, then set build env:
+
+`VITE_ABOUT_MEDIA_BASE=https://media.dasmlab.org/about`
+
+Until then, `src/data/hubs.js` `ABOUT_MEDIA_BASE` defaults to the pub URL above.
 
 The homepage `design-carousel-service` feed is a separate spinner (infra / MCP diagrams).
 These personal photos belong on About, not that service.
