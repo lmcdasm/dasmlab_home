@@ -1,24 +1,33 @@
 # About page media
 
-## What happened to the old photos?
+Portrait and lifestyle photos ship as local WebP under `public/media/hero/`. The About page
+frames and captions stay the same; only the bytes inside the frames changed.
 
-The previous About carousel used missing / lost binaries (and later gray SVG placeholders). For 2.0 we shipped **illustrated SVG stand-ins** under `public/media/hero/` so the page is never empty. Captions (windsurf, snowboard, Leah, etc.) stayed.
+Sources:
 
-## How to drop real photos
+| Slot | WebP (served) | Source file |
+|------|----------------|-------------|
+| Portrait | `portrait.webp` | `/home/dasm/me-suit.jpg` |
+| Windsurf | `dasm_ride.webp` | `src/assets/dasm_ride.jpg` |
+| Snowboard | `me_ride_2.webp` | `src/assets/me_ride_2.jpg` |
+| Country | `me_home.webp` | `src/assets/me_home.jpg` |
+| Garden | `me_plant_1.webp` | `src/assets/me_plant_1.jpg` |
+| Leah | `me_leah_1.webp` | `src/assets/me_leah_1.jpg` |
+| Sail | `me_sail_1.webp` | `src/assets/me_sail_1.jpg` |
+| Baking | `me_baking_1.webp` | `src/assets/me_baking_1.jpg` |
+| Pies | `me_baking_2.webp` | `src/assets/me_baking_2.jpg` |
 
-### Option A — local files (fast)
+Original JPEGs remain in `src/assets/` (already in git). The About page does **not** import
+those binaries into the JS bundle — it loads the converted WebP from `/media/hero/`.
 
-Place JPEGs/WebPs in `public/media/hero/` and update `AboutPage.vue` paths, or keep the SVG names and replace files:
+`dasm_ride.jpg` is a 6000×4000 / ~11 MB original; the WebP is resized to 1600px on the
+long edge.
 
-| Slot | Suggested filename |
-|------|-------------------|
-| Portrait | `portrait.jpg` (or keep `portrait.svg`) |
-| Lifestyle | `lifestyle-windsurf.jpg`, `lifestyle-snowboard.jpg`, … |
+## Optional CDN override
 
-### Option B — Surfing / CDN (preferred)
+Set build env `VITE_ABOUT_MEDIA_BASE=https://…cdn…/about` (no trailing slash) and About
+will load `{base}/portrait.webp`, `{base}/dasm_ride.webp`, etc. Until that is set, local
+WebP is used.
 
-1. Publish public media in Surfing.
-2. Set build env `VITE_ABOUT_MEDIA_BASE=https://…cdn…/about` (no trailing slash).
-3. About will load `{base}/portrait.jpg`, `{base}/windsurf.jpg`, etc.
-
-Until `VITE_ABOUT_MEDIA_BASE` is set, the site uses the local SVG illustrations and shows an on-page note.
+The homepage `design-carousel-service` feed is a separate spinner (infra / MCP diagrams).
+These personal photos belong on About, not that service.
