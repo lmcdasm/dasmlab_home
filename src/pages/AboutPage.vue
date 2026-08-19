@@ -16,11 +16,8 @@
           class="about-head"
           width="420"
           height="525"
-          alt="Portrait for Daniel Smith, founder of Technologies DASMLAB Inc."
+          alt="Daniel Smith (dasm), founder of Technologies DASMLAB Inc."
         />
-        <p class="media-note">
-          {{ usingPlaceholders ? 'Interim illustrated assets — drop real Surfing/CDN photos anytime.' : 'From Surfing / CDN media.' }}
-        </p>
       </div>
       <div class="bio-panel">
         <h2>Who am I?</h2>
@@ -79,41 +76,35 @@
           When I’m not in a cluster or a PR, I’m usually chasing wind on the water, carving snow at Mont Ste. Anne,
           or tending the garden with Princess Leah nearby.
         </p>
-        <p class="media-note media-note--inline">
-          Want real photos here? Publish them in Surfing (public day) or place files under
-          <code>public/media/hero/</code> — paths are listed in <code>docs/ABOUT-MEDIA.md</code>.
-        </p>
       </div>
     </section>
   </q-page>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useSeo } from 'src/composables/useSeo'
 
 const carouselIndex = ref(0)
 
-// Prefer Surfing/CDN URLs when set; fall back to local illustrated SVGs.
+// Prefer a CDN base when set; otherwise serve local WebP under public/media/hero/.
 const CDN = (import.meta.env.VITE_ABOUT_MEDIA_BASE || '').replace(/\/$/, '')
 
-function media(name, fallback) {
-  return CDN ? `${CDN}/${name}` : fallback
+function media(name) {
+  return CDN ? `${CDN}/${name}` : `/media/hero/${name}`
 }
 
-const meHead = media('portrait.jpg', '/media/hero/portrait.svg')
+const meHead = media('portrait.webp')
 const lifestyleImages = [
-  { src: media('windsurf.jpg', '/media/hero/lifestyle-windsurf.svg'), caption: 'Windsurfing on a summer low-wind day' },
-  { src: media('snowboard.jpg', '/media/hero/lifestyle-snowboard.svg'), caption: 'Snowboarding at Mont Ste. Anne' },
-  { src: media('country.jpg', '/media/hero/lifestyle-country.svg'), caption: 'Country living focus' },
-  { src: media('garden.jpg', '/media/hero/lifestyle-garden.svg'), caption: 'Garden therapy in action' },
-  { src: media('leah.jpg', '/media/hero/lifestyle-leah.svg'), caption: 'Princess Leah herself' },
-  { src: media('sail.jpg', '/media/hero/lifestyle-sail.svg'), caption: 'Current favorite sail setup' },
-  { src: media('bake.jpg', '/media/hero/lifestyle-bake.svg'), caption: 'Weekend baking mode' },
-  { src: media('reward.jpg', '/media/hero/lifestyle-reward.svg'), caption: 'And the reward at the end' }
+  { src: media('dasm_ride.webp'), caption: 'Windsurfing on a summer low-wind day' },
+  { src: media('me_ride_2.webp'), caption: 'Snowboarding at Mont Ste. Anne' },
+  { src: media('me_home.webp'), caption: 'Country living focus' },
+  { src: media('me_plant_1.webp'), caption: 'Garden therapy in action' },
+  { src: media('me_leah_1.webp'), caption: 'Princess Leah herself' },
+  { src: media('me_sail_1.webp'), caption: 'Current favorite sail setup' },
+  { src: media('me_baking_1.webp'), caption: 'Weekend baking mode' },
+  { src: media('me_baking_2.webp'), caption: 'And the reward at the end' }
 ]
-
-const usingPlaceholders = computed(() => !CDN)
 
 useSeo({
   title: 'About',
@@ -121,7 +112,7 @@ useSeo({
     'Daniel Smith (dasm) — Technologies DASMLAB Inc. Living lab, 60+ countries, windsurfing, and engineering teach-back.',
   path: '/about',
   person: true,
-  image: 'https://dasmlab.org/media/hero/portrait.svg'
+  image: 'https://dasmlab.org/media/hero/portrait.webp'
 })
 </script>
 
@@ -178,6 +169,9 @@ useSeo({
 .about-head {
   width: 100%;
   max-width: 420px;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center 18%;
   border-radius: 14px;
   border: 1px solid rgba(41, 72, 99, 0.16);
   display: block;
