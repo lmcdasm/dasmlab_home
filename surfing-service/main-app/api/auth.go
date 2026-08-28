@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"net/url"
 	"os"
@@ -205,17 +206,18 @@ func AuthCallback(c *gin.Context) {
 	cfg.RedirectURL = oauthRedirectURI(origin)
 	tok, err := cfg.Exchange(oidc.ClientContext(c.Request.Context(), oidcHTTPClient()), code)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "token exchange failed", "detail": err.Error()})
+		log.Warnf("OIDC token exchange failed: %v", err)
+		authCallbackError(c, http.StatusBadRequest, "token exchange failed", err.Error(), origin)
 		return
 	}
 	rawID, okTok := tok.Extra("id_token").(string)
 	if !okTok || rawID == "" {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "missing id_token"})
+		authCallbackError(c, http.StatusBadRequest, "missing id_token", "", origin)
 		return
 	}
 	idTok, err := authSvc.verifier.Verify(c.Request.Context(), rawID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid id_token"})
+		authCallbackError(c, http.StatusUnauthorized, "invalid id_token", err.Error(), origin)
 		return
 	}
 	var claims map[string]any
@@ -226,10 +228,10 @@ func AuthCallback(c *gin.Context) {
 		mergeRolesIntoUser(&user, accessClaims, authSvc.cfg.ClientID)
 	}
 	applyOwnerUsernames(&user)
+	// Session cookie must stay small: stuffing the JWT made nginx return HTML 502
+	// ("upstream sent too big header") on the browser callback redirect.
 	payload, _ := json.Marshal(map[string]any{
-		"user":         user,
-		"access_token": tok.AccessToken,
-		"expiry":       tok.Expiry.UTC().Format(time.RFC3339),
+		"user": user,
 	})
 	setAuthCookie(c, cookieSession, base64.RawURLEncoding.EncodeToString(payload), int(sessionTTL.Seconds()))
 	setAuthCookie(c, cookieState, "", -1)
@@ -244,6 +246,51 @@ func AuthCallback(c *gin.Context) {
 		return
 	}
 	c.Redirect(http.StatusFound, dest+"/#/surfing")
+}
+
+// authCallbackError responds to OAuth callback failures. Prefer 4xx (not 502) so
+// nginx does not replace the body with its generic Bad Gateway page; browsers get
+// a short HTML retry page instead of raw JSON.
+func authCallbackError(c *gin.Context, status int, errMsg, detail, origin string) {
+	if origin == "" {
+		origin = requestAppOrigin(c)
+	}
+	if origin == "" && authSvc != nil {
+		origin = authSvc.cfg.AppPublicURL
+	}
+	accept := c.GetHeader("Accept")
+	wantsHTML := strings.Contains(accept, "text/html") || accept == "" || strings.Contains(accept, "*/*")
+	if wantsHTML && !strings.Contains(accept, "application/json") {
+		retry := origin
+		if retry == "" {
+			retry = "/"
+		} else {
+			retry = strings.TrimRight(retry, "/") + "/#/surfing"
+		}
+		body := fmt.Sprintf(
+			`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sign-in failed</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem;line-height:1.5}
+a{color:#0b5}code{font-size:.9em;word-break:break-word}</style></head><body>
+<h1>Sign-in failed</h1><p>%s</p>%s<p><a href="%s">Back to Surfing</a> · <a href="/api/surfing/auth/login">Try Sign in again</a></p>
+</body></html>`,
+			html.EscapeString(errMsg),
+			func() string {
+				if detail == "" {
+					return ""
+				}
+				return "<p><code>" + html.EscapeString(detail) + "</code></p>"
+			}(),
+			html.EscapeString(retry),
+		)
+		c.Data(status, "text/html; charset=utf-8", []byte(body))
+		return
+	}
+	out := gin.H{"error": errMsg}
+	if detail != "" {
+		out["detail"] = detail
+	}
+	c.JSON(status, out)
 }
 
 func AuthLogout(c *gin.Context) {
